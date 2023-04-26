@@ -1,12 +1,14 @@
 """Console script for vcl."""
 import concurrent.futures
 import sys
+import time
 
 import click
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import zmq
 from numpy import cos, mgrid, pi, sin
 
 
@@ -47,11 +49,28 @@ def opencv_window():
 
 
 def matplotlib_window():
+    print("starting matplotlib")
+    context = zmq.Context()
+
+    socket = context.socket(zmq.SUB)
+    socket.connect("tcp://localhost:5555")
+    print("matplotlib socket", socket)
+
+    socket.setsockopt(zmq.SUBSCRIBE, b'')
+
     matplotlib.use('qtagg')
     fig, ax = plt.subplots()
     ax.plot([1, 2], [1, 2])
     # keep window open
-    plt.show()
+
+    plt.show(block=False)
+    plt.pause(0.1)
+    # TODO: put message receiving in zmq.polling thing....
+    while True:
+        print('waiting for message')
+        message = socket.recv()
+        plt.pause(0.01)
+        print(message, 'from matplotlib')
 
 
 
@@ -59,10 +78,24 @@ def matplotlib_window():
 def main(args=None):
     """Console script for vcl."""
 
+
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
     executor.submit(matplotlib_window)
     # executor.submit(mayavi_window)
     executor.submit(opencv_window)
+
+
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    socket.bind("tcp://*:5555")
+    print('socket', socket)
+    while True:
+        #  Wait for next request from client
+        message = "yo give me a scenario"
+        time.sleep(1)
+        socket.send(message.encode())
+        print(f'sent message {message}')
+
 
     # return exit status 0
     return 0
