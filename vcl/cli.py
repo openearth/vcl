@@ -12,6 +12,8 @@ def main(args=None):
     matplotlib.use('qtagg')
     fig, ax = plt.subplots()
     ax.plot([1, 2], [1, 2])
+    # keep window open
+    plt.show()
     # return exit status 0
     return 0
 
