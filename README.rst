@@ -22,6 +22,11 @@ Virtual Climate Lab: an interactive table to discuss the future of your environm
 * Free software: GNU General Public License v3
 * Documentation: https://vcl.readthedocs.io.
 
+install
+-------
+* We don't include qt5 as a dependency. But we do expect it to be installed. Please install it separately according to your environment (use mamba/anaconda for windows)
+* We also don't include opencv (version 4, cv2) as a dependency.
+
 
 Features
 --------
