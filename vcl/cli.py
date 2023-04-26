@@ -12,17 +12,21 @@ import matplotlib.pyplot as plt
 def main(args=None):
     """Console script for vcl."""
 
-
     # empty image
     img = np.zeros([100, 100, 3])
-
-    cv2.imshow("Display window", img)
+    cv2.namedWindow("window", cv2.WINDOW_NORMAL)
+    cv2.imshow("window", img)
+    cv2.setWindowProperty('window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     matplotlib.use('qtagg')
     fig, ax = plt.subplots()
     ax.plot([1, 2], [1, 2])
     # keep window open
+
     plt.show()
+
+
+
     # return exit status 0
     return 0
 
