@@ -2,13 +2,17 @@
 import sys
 import click
 
+import matplotlib
+import matplotlib.pyplot as plt
+
 
 @click.command()
 def main(args=None):
     """Console script for vcl."""
-    click.echo("Replace this message by putting your code into "
-               "vcl.cli.main")
-    click.echo("See click documentation at https://click.palletsprojects.com/")
+    matplotlib.use('qtagg')
+    fig, ax = plt.subplots()
+    ax.plot([1, 2], [1, 2])
+    # return exit status 0
     return 0
 
 
