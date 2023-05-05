@@ -3,10 +3,12 @@ import concurrent.futures
 import sys
 import time
 
+import json
 import click
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider, Button
 import numpy as np
 import zmq
 from numpy import cos, mgrid, pi, sin
@@ -34,10 +36,11 @@ def opencv_window():
     img = np.zeros([100, 100, 3])
     cv2.namedWindow("window", cv2.WINDOW_NORMAL)
     cv2.imshow("window", img)
+
     while True:
         k = cv2.waitKey(0)
         if k == ord('f'):
-            cv2.setWindowProperty('window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            cv2.setWindowProperty('window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)           
         elif k == ord('n'):
             cv2.setWindowProperty('window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
         elif k == ord('q'):
@@ -49,28 +52,75 @@ def opencv_window():
 
 
 def matplotlib_window():
-    print("starting matplotlib")
-    context = zmq.Context()
 
+    #def key_press(event):
+    #    if event.key == 'x':
+    #        line.set_ydata()
+
+    print("starting matplotlib")
+
+
+    #print("matplotlib socket", socket)
+    context = zmq.Context()
     socket = context.socket(zmq.SUB)
     socket.connect("tcp://localhost:5555")
-    print("matplotlib socket", socket)
-
     socket.setsockopt(zmq.SUBSCRIBE, b'')
+
 
     matplotlib.use('qtagg')
     fig, ax = plt.subplots()
-    ax.plot([1, 2], [1, 2])
+    line, = ax.plot([1, 2], [1, 2])
     # keep window open
-
     plt.show(block=False)
     plt.pause(0.1)
     # TODO: put message receiving in zmq.polling thing....
+    print(socket.recv().decode)
     while True:
         print('waiting for message')
         message = socket.recv()
+        #print(int(message.decode()) <= 3)
         plt.pause(0.01)
-        print(message, 'from matplotlib')
+        #if message.decode() == "yo give me a scenario":
+            #print(message.decode(), 'from matplotlib')
+        if int(message.decode()) <=  3:
+            line.set_ydata([1, 2])
+            plt.pause(0.01)
+
+        elif int(message.decode()) >  3:
+            #data = json.loads(message.decode())
+            line.set_ydata([2, 2])
+            plt.pause(0.01)
+
+
+def slider_window():
+
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    socket.bind("tcp://*:5556")
+
+    fig, axes = plt.subplots()
+
+    x_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])
+    x_slider = Slider(
+        ax=x_ax,
+        label='x',
+        valmin=0,
+        valmax=6,
+        valinit=1,
+        valstep=1,
+    )
+
+    # The function to be called anytime a slider's value changes
+    def update(val):
+        socket.send(str(val).encode())
+        fig.canvas.draw_idle()
+        #plt.draw()
+
+
+    # register the update function with each slider
+    x_slider.on_changed(update)
+
+    plt.show()
 
 
 
@@ -78,24 +128,45 @@ def matplotlib_window():
 def main(args=None):
     """Console script for vcl."""
 
+    contextr = zmq.Context()
+    socketr = contextr.socket(zmq.SUB)
+    socketr.connect("tcp://localhost:5556")
+    socketr.setsockopt(zmq.SUBSCRIBE, b'')
 
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
     executor.submit(matplotlib_window)
     # executor.submit(mayavi_window)
     executor.submit(opencv_window)
+    executor.submit(slider_window)
 
 
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     socket.bind("tcp://*:5555")
     print('socket', socket)
-    while True:
-        #  Wait for next request from client
-        message = "yo give me a scenario"
-        time.sleep(1)
-        socket.send(message.encode())
-        print(f'sent message {message}')
 
+    i = 0
+    while True:
+        update = socketr.recv()
+        socket.send(update)
+        time.sleep(1)
+        i += 1
+        if i == 20:
+            break
+    # while True:
+    #     #  Wait for next request from client
+    #     message = "yo give me a scenario"
+    #     time.sleep(1)
+    #     socket.send(message.encode())
+    #     time.sleep(1)
+    #     if i%2 == 0:
+    #         socket.send(json.dumps([1,2]).encode())
+    #     if i%2 == 1:
+    #         socket.send(json.dumps([2,2]).encode())
+    #     print(f'sent message {message}')
+    #     i += 1
+    #     if i == 10:
+    #         break
 
     # return exit status 0
     return 0
