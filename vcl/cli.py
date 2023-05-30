@@ -20,8 +20,13 @@ from matplotlib.widgets import Button, Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy import cos, mgrid, pi, sin
 
+
+matplotlib.use("qtagg")
+
+
 import vcl.display
 import vcl.data
+
 
 matplotlib.rcParams["toolbar"] = "None"
 
@@ -87,68 +92,56 @@ X2, Y2 = np.meshgrid(
 # indicates a nan value
 nbpixels_x = 160
 nbpixels_y = rot_img_shade.shape[0]
-conc_contours_x = np.zeros((nbpixels_x, nbpixels_y, rot_ds.shape[-1])) - 2
-for i in range(conc_contours_x.shape[-1]):
-    cf = plt.contourf(Y1, Z1, rot_ds[:, :, i], levels=[0, 1.5, 16])
-    conc_contours_x[:, :, i] = np.flip(
-        vcl.data.contourf_to_array(cf, nbpixels_x, nbpixels_y, Y1, Z1), axis=0
-    )
-    # Change all values smaller than -1 to nan, since they were nan values before converting the contours to arrays
-    conc_contours_x[:, :, i][np.where(conc_contours_x[:, :, i] < -1)] = np.nan
-plt.close("all")
+
+
+# conc_contours_x = np.zeros((nbpixels_x, nbpixels_y, rot_ds.shape[-1])) - 2
+# for i in range(conc_contours_x.shape[-1]):
+#     cf = plt.contourf(Y1, Z1, rot_ds[:, :, i], levels=[0, 1.5, 16])
+#     conc_contours_x[:, :, i] = np.flip(
+#         vcl.data.contourf_to_array(cf, nbpixels_x, nbpixels_y, Y1, Z1), axis=0
+#     )
+#     # Change all values smaller than -1 to nan, since they were nan values before converting the contours to arrays
+#     conc_contours_x[:, :, i][np.where(conc_contours_x[:, :, i] < -1)] = np.nan
+# plt.close("all")
+
+
+def make_sockets():
+    sockets = {}
+
+    context = zmq.Context()
+
+    socket = context.socket(zmq.SUB)
+    socket.connect("tcp://localhost:5556")
+    socket.setsockopt(zmq.SUBSCRIBE, b"")
+    sockets["SUB"] = socket
+    sockets["context"] = context
+
+    socket = context.socket(zmq.PUB)
+    socket.bind("tcp://*:5555")
+    sockets["PUB"] = socket
+    return sockets
 
 
 @click.command()
-@click.option('--satellite/--no-satellite', default=False)
-@click.option('--contour/--no-contour', default=False)
+@click.option("--satellite/--no-satellite", default=False)
+@click.option("--contour/--no-contour", default=False)
 def main(satellite, contour, args=None):
     """Console script for vcl."""
 
-
-    contextr = zmq.Context()
-    socketr = contextr.socket(zmq.SUB)
-    socketr.connect("tcp://localhost:5556")
-    socketr.setsockopt(zmq.SUBSCRIBE, b"")
+    sockets = make_sockets()
 
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
 
     if satellite:
-        executor.submit(vcl.display.satellite_window)
+        executor.submit(vcl.display.satellite_window, rot_img_shade, extent_n)
     # executor.submit(mayavi_window)
     # executor.submit(vcl.display.opencv_window)
     # executor.submit(slider_window)
     if contour:
         executor.submit(vcl.display.contour_slice_window)
 
-    context = zmq.Context()
-    socket = context.socket(zmq.PUB)
-    socket.bind("tcp://*:5555")
-    print("socket", socket)
-
-    i = 0
     while True:
-        update = socketr.recv()
-        socket.send(update)
-        time.sleep(1)
-        i += 1
-        if i == 20:
-            break
-    # while True:
-    #     #  Wait for next request from client
-    #     message = "yo give me a scenario"
-    #     time.sleep(1)
-    #     socket.send(message.encode())
-    #     time.sleep(1)
-    #     if i%2 == 0:
-    #         socket.send(json.dumps([1,2]).encode())
-    #     if i%2 == 1:
-    #         socket.send(json.dumps([2,2]).encode())
-    #     print(f'sent message {message}')
-    #     i += 1
-    #     if i == 10:
-    #         break
-
-    # return exit status 0
+        time.sleep(0.1)
     return 0
 
 

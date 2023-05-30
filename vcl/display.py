@@ -25,7 +25,31 @@ def opencv_window():
             break
 
 
-def satellite_window():
+def make_listen_sockets():
+    context = zmq.Context()
+    socket1 = context.socket(zmq.SUB)
+    socket1.connect("tcp://localhost:5556")
+    socket1.subscribe("x_slice")
+
+    socket2 = context.socket(zmq.SUB)
+    socket2.connect("tcp://localhost:5556")
+    socket2.subscribe("top_view")
+
+    poller = zmq.Poller()
+    poller.register(socket1, zmq.POLLIN)
+    poller.register(socket2, zmq.POLLIN)
+
+    sockets = {
+        "context": context,
+        "x_slice": socket1,
+        "top_view": socket2,
+        "poller": poller,
+    }
+    return sockets
+
+
+def satellite_window(rot_img_shade, extent_n):
+    matplotlib.use("qtagg")
     # def key_press(event):
     #    if event.key == 'x':
     #        line.set_ydata()
@@ -40,26 +64,46 @@ def satellite_window():
     socket.setsockopt(zmq.SUBSCRIBE, b'')
     """
 
-    context = zmq.Context()
-    socket1 = context.socket(zmq.SUB)
-    socket1.connect("tcp://localhost:5556")
-    socket1.subscribe("x_slice")
+    print("constructed subs")
 
-    socket2 = context.socket(zmq.SUB)
-    socket2.connect("tcp://localhost:5556")
-    socket2.subscribe("top_view")
+    sockets = make_listen_sockets()
 
-    poller = zmq.Poller()
-    poller.register(socket1, zmq.POLLIN)
-    poller.register(socket2, zmq.POLLIN)
+    print("connected sockets")
+    print("have sockets")
 
-    print('constructed subs')
+    poller = sockets["poller"]
+
+    socket1 = sockets["x_slice"]
+    socket2 = sockets["top_view"]
 
     init_x = 100
-    matplotlib.use("qtagg")
+
     fig, ax = plt.subplots()
-    return
+    # No margins
+    fig.tight_layout()
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+
+    # No axis
+    ax.set_axis_off()
+    ax.set_frame_on(False)
+
+    # fullscreen
+    manager = plt.get_current_fig_manager()
+    try:
+        manager.resize(*manager.window.maxsize())
+    except AttributeError:
+        # no resize available
+        pass
+
     im_sat = ax.imshow(rot_img_shade, extent=extent_n)  # keep window open
+    # interactive
+    plt.ion()
+    print("image shown")
+    plt.show(block=False)
+    print("I am not here")
+
+    for i in range(10):
+        plt.pause(1)
     im_c = ax.contourf(
         X2,
         Y2,
@@ -120,6 +164,7 @@ def satellite_window():
                     legend.get_texts()[i].set_alpha(1)
                 legend.draw_frame(True)
             plt.pause(0.04)
+        plt.pause(0.04)
 
 
 def contour_slice_window():
