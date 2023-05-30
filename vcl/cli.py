@@ -102,9 +102,6 @@ plt.close("all")
 def main(args=None):
     """Console script for vcl."""
 
-    import ipdb
-
-    ipdb.set_trace()
     contextr = zmq.Context()
     socketr = contextr.socket(zmq.SUB)
     socketr.connect("tcp://localhost:5556")

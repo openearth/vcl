@@ -85,9 +85,7 @@ def satellite_window():
     # manager.full_screen_toggle()
     plt.show(block=False)
     plt.pause(0.1)
-    import ipdb
 
-    ipdb.set_trace()
     while True:
         socks = dict(poller.poll(10))
         if socket1 in socks and socks[socket1] == zmq.POLLIN:
