@@ -53,9 +53,12 @@ def satellite_window():
     poller.register(socket1, zmq.POLLIN)
     poller.register(socket2, zmq.POLLIN)
 
+    print('constructed subs')
+
     init_x = 100
     matplotlib.use("qtagg")
     fig, ax = plt.subplots()
+    return
     im_sat = ax.imshow(rot_img_shade, extent=extent_n)  # keep window open
     im_c = ax.contourf(
         X2,

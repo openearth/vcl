@@ -99,8 +99,11 @@ plt.close("all")
 
 
 @click.command()
-def main(args=None):
+@click.option('--satellite/--no-satellite', default=False)
+@click.option('--contour/--no-contour', default=False)
+def main(satellite, contour, args=None):
     """Console script for vcl."""
+
 
     contextr = zmq.Context()
     socketr = contextr.socket(zmq.SUB)
@@ -108,11 +111,14 @@ def main(args=None):
     socketr.setsockopt(zmq.SUBSCRIBE, b"")
 
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
-    executor.submit(vcl.display.satellite_window)
+
+    if satellite:
+        executor.submit(vcl.display.satellite_window)
     # executor.submit(mayavi_window)
-    executor.submit(vcl.display.opencv_window)
+    # executor.submit(vcl.display.opencv_window)
     # executor.submit(slider_window)
-    executor.submit(vcl.display.contour_slice_window)
+    if contour:
+        executor.submit(vcl.display.contour_slice_window)
 
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
