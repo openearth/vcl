@@ -31,7 +31,11 @@ install
 Features
 --------
 
-* TODO
+* satellite images, projected on tabel
+    * show contourlines on top 
+    * slider position on top
+* shows a 2d cross-section on a 2nd screen
+* shows slider on a main screen
 
 Credits
 -------
