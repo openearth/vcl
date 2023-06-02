@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zmq
 
+import vcl.prep_data
+
 
 def opencv_window():
     img = np.zeros([100, 100, 3])
@@ -48,7 +50,7 @@ def make_listen_sockets():
     return sockets
 
 
-def satellite_window(rot_img_shade, extent_n):
+def satellite_window(rot_img_shade=vcl.prep_data.rot_img_shade, extent_n=vcl.prep_data.extent_n):
     matplotlib.use("qtagg")
     # def key_press(event):
     #    if event.key == 'x':
@@ -213,7 +215,7 @@ def contour_slice_window():
     def update(val):
         # socket.send(json.dumps(['x_slice', val]).encode())
         socket.send_string("x_slice %d" % val)
-        im_x.set_data(conc_contours_x[:, :, val])
+        im_x.set_data(vcl.prep_data.conc_contours_x[:, :, val])
         fig.canvas.draw_idle()
         # plt.draw()
 
