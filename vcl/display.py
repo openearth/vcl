@@ -3,8 +3,14 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import zmq
+from matplotlib.colors import LightSource, ListedColormap
+
+from matplotlib.widgets import Slider, Button
+
 
 import vcl.prep_data
+
+cmap = ListedColormap(["royalblue", "coral"])
 
 
 def opencv_window():
@@ -50,7 +56,11 @@ def make_listen_sockets():
     return sockets
 
 
-def satellite_window(rot_img_shade=vcl.prep_data.rot_img_shade, extent_n=vcl.prep_data.extent_n):
+def satellite_window(datasets):
+    print("satellite window")
+    rot_img_shade = datasets["sat"]
+    extent_n = datasets["extent_n"]
+
     matplotlib.use("qtagg")
     # def key_press(event):
     #    if event.key == 'x':
@@ -82,7 +92,7 @@ def satellite_window(rot_img_shade=vcl.prep_data.rot_img_shade, extent_n=vcl.pre
 
     fig, ax = plt.subplots()
     # Set background color
-    fig.patch.set_facecolor('black')
+    fig.patch.set_facecolor("black")
     # No margins
     fig.tight_layout()
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
@@ -171,7 +181,8 @@ def satellite_window(rot_img_shade=vcl.prep_data.rot_img_shade, extent_n=vcl.pre
         plt.pause(0.04)
 
 
-def contour_slice_window():
+def contour_slice_window(datasets):
+    matplotlib.use("qtagg")
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     socket.bind("tcp://*:5556")
@@ -181,12 +192,15 @@ def contour_slice_window():
     #        line.set_ydata()
 
     print("starting matplotlib")
+    print(datasets.keys())
+
+    nbpixels_y = datasets["nbpixels_y"]
+    conc_contours_x = datasets["conc_contours_x"]
 
     # Define initial parameters (index instead of x value)
     init_x = 100
     extent_x = (0, nbpixels_y, -140, 25.5)
 
-    matplotlib.use("qtagg")
     fig, axes = plt.subplots()
 
     # adjust the main plot to make room for the slider
@@ -201,6 +215,7 @@ def contour_slice_window():
         aspect="auto",
         cmap=cmap,
     )
+    return
 
     # Make a horizontal slider to control the position on the x-axis.
     x_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])

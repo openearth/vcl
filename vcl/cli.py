@@ -54,6 +54,13 @@ def start_thread_to_terminate_when_parent_process_dies(ppid):
     thread.start()
 
 
+def test(datasets):
+    print("data loaded")
+    for key, val in datasets.items():
+        print(key, type(val))
+    return "ok"
+
+
 @click.command()
 @click.option("--satellite/--no-satellite", default=False)
 @click.option("--contour/--no-contour", default=False)
@@ -64,21 +71,23 @@ def main(satellite, contour, args=None):
 
     executor = concurrent.futures.ProcessPoolExecutor(
         max_workers=10,
-        initializer=start_thread_to_terminate_when_parent_process_dies,
-        initargs=(os.getpid(),),
+        # initializer=start_thread_to_terminate_when_parent_process_dies,
+        # initargs=(os.getpid(),),
     )
 
+    datasets = vcl.load_data.load()
+    datasets = vcl.prep_data.preprocess(datasets)
+
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     task = executor.submit(test, datasets)
+
     if satellite:
-        executor.submit(
-            vcl.display.satellite_window,
-            vcl.prep_data.rot_img_shade,
-            vcl.prep_data.extent_n,
-        )
-    # executor.submit(mayavi_window)
-    # executor.submit(vcl.display.opencv_window)
-    # executor.submit(slider_window)
+        executor.submit(vcl.display.satellite_window, datasets)
+    # # executor.submit(mayavi_window)
+    # # executor.submit(vcl.display.opencv_window)
+    # # executor.submit(slider_window)
     if contour:
-        executor.submit(vcl.display.contour_slice_window)
+        executor.submit(vcl.display.contour_slice_window, datasets)
 
     while True:
         time.sleep(0.1)
