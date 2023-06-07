@@ -18,6 +18,7 @@ matplotlib.use("qtagg")
 
 import vcl.display
 import vcl.data
+import vcl.prep_data
 
 
 def make_sockets():
@@ -48,7 +49,7 @@ def main(satellite, contour, args=None):
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
 
     if satellite:
-        executor.submit(vcl.display.satellite_window, rot_img_shade, extent_n)
+        executor.submit(vcl.display.satellite_window, vcl.prep_data.rot_img_shade, vcl.prep_data.extent_n)
     # executor.submit(mayavi_window)
     # executor.submit(vcl.display.opencv_window)
     # executor.submit(slider_window)
