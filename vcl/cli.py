@@ -3,14 +3,15 @@ import concurrent.futures
 import json
 import sys
 import time
-
+import os
+import threading
+import signal
 
 import click
 
 import matplotlib
 
 import zmq
-
 
 
 matplotlib.use("qtagg")
@@ -38,6 +39,21 @@ def make_sockets():
     return sockets
 
 
+def start_thread_to_terminate_when_parent_process_dies(ppid):
+    pid = os.getpid()
+
+    def f():
+        while True:
+            try:
+                os.kill(ppid, 0)
+            except OSError:
+                os.kill(pid, signal.SIGTERM)
+            time.sleep(1)
+
+    thread = threading.Thread(target=f, daemon=True)
+    thread.start()
+
+
 @click.command()
 @click.option("--satellite/--no-satellite", default=False)
 @click.option("--contour/--no-contour", default=False)
@@ -46,10 +62,18 @@ def main(satellite, contour, args=None):
 
     sockets = make_sockets()
 
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
+    executor = concurrent.futures.ProcessPoolExecutor(
+        max_workers=10,
+        initializer=start_thread_to_terminate_when_parent_process_dies,
+        initargs=(os.getpid(),),
+    )
 
     if satellite:
-        executor.submit(vcl.display.satellite_window, vcl.prep_data.rot_img_shade, vcl.prep_data.extent_n)
+        executor.submit(
+            vcl.display.satellite_window,
+            vcl.prep_data.rot_img_shade,
+            vcl.prep_data.extent_n,
+        )
     # executor.submit(mayavi_window)
     # executor.submit(vcl.display.opencv_window)
     # executor.submit(slider_window)
