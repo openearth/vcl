@@ -81,6 +81,8 @@ def satellite_window(rot_img_shade=vcl.prep_data.rot_img_shade, extent_n=vcl.pre
     init_x = 100
 
     fig, ax = plt.subplots()
+    # Set background color
+    fig.patch.set_facecolor('black')
     # No margins
     fig.tight_layout()
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
