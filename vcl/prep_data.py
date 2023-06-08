@@ -82,5 +82,6 @@ def preprocess(datasets):
         "extent_n": extent_n,
         "X2": X2,
         "Y2": Y2,
+        "conc": rot_ds,
     }
     return updated_datasets
