@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zmq
 from matplotlib.colors import LightSource, ListedColormap
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from matplotlib.widgets import Slider, Button
 
@@ -11,6 +12,8 @@ from matplotlib.widgets import Slider, Button
 import vcl.prep_data
 
 cmap = ListedColormap(["royalblue", "coral"])
+contour_show = True
+matplotlib.rcParams['toolbar'] = 'None'
 
 
 def opencv_window():
@@ -60,6 +63,9 @@ def satellite_window(datasets):
     print("satellite window")
     rot_img_shade = datasets["sat"]
     extent_n = datasets["extent_n"]
+    X2 = datasets["X2"]
+    Y2 = datasets["Y2"]
+    conc = datasets["conc"]
 
     matplotlib.use("qtagg")
     # def key_press(event):
@@ -121,7 +127,7 @@ def satellite_window(datasets):
     im_c = ax.contourf(
         X2,
         Y2,
-        rot_ds[-10, :, :],
+        conc[-10, :, :],
         levels=[0, 1.5, 16],
         vmin=0,
         vmax=15,
@@ -140,6 +146,13 @@ def satellite_window(datasets):
     lbl[0] = "Zoet water"
     lbl[1] = "Zout water"
     legend = ax.legend(nm, lbl, fontsize=8, loc="upper left", framealpha=1)
+
+    for c in im_c.collections:
+        c.set_alpha(0)
+    for i in range(2):
+        legend.get_patches()[i].set(alpha=0)
+        legend.get_texts()[i].set(alpha=0)
+    legend.draw_frame(False)
 
     plt.axis("off")
     manager = plt.get_current_fig_manager()
@@ -196,6 +209,8 @@ def contour_slice_window(datasets):
 
     nbpixels_y = datasets["nbpixels_y"]
     conc_contours_x = datasets["conc_contours_x"]
+    conc = datasets["conc"]
+
 
     # Define initial parameters (index instead of x value)
     init_x = 100
@@ -215,7 +230,6 @@ def contour_slice_window(datasets):
         aspect="auto",
         cmap=cmap,
     )
-    return
 
     # Make a horizontal slider to control the position on the x-axis.
     x_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])
@@ -223,7 +237,7 @@ def contour_slice_window(datasets):
         ax=x_ax,
         label="x",
         valmin=0,
-        valmax=rot_ds.shape[2] - 1,
+        valmax=conc.shape[2] - 1,
         valinit=init_x,
         valstep=1,
     )
@@ -232,7 +246,7 @@ def contour_slice_window(datasets):
     def update(val):
         # socket.send(json.dumps(['x_slice', val]).encode())
         socket.send_string("x_slice %d" % val)
-        im_x.set_data(vcl.prep_data.conc_contours_x[:, :, val])
+        im_x.set_data(conc_contours_x[:, :, val])
         fig.canvas.draw_idle()
         # plt.draw()
 
