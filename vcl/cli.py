@@ -4,6 +4,7 @@ import json
 import sys
 import time
 import os
+import psutil
 import threading
 import signal
 
@@ -46,8 +47,17 @@ def start_thread_to_terminate_when_parent_process_dies(ppid):
         while True:
             try:
                 os.kill(ppid, 0)
-            except OSError:
+                # for proc in psutil.process_iter():
+                #     if proc.pid == ppid:
+                #         proc.terminate()
+                #p = psutil.Process(ppid)
+                #p.terminate()
+
+            except:
                 os.kill(pid, signal.SIGTERM)
+                # for proc in psutil.process_iter():
+                #     if proc.pid == pid:
+                #         proc.terminate()
             time.sleep(1)
 
     thread = threading.Thread(target=f, daemon=True)
@@ -71,8 +81,8 @@ def main(satellite, contour, args=None):
 
     executor = concurrent.futures.ProcessPoolExecutor(
         max_workers=10,
-        # initializer=start_thread_to_terminate_when_parent_process_dies,
-        # initargs=(os.getpid(),),
+        initializer=start_thread_to_terminate_when_parent_process_dies,
+        initargs=(os.getpid(),),
     )
 
     datasets = vcl.load_data.load()
