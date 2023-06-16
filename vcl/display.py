@@ -12,7 +12,7 @@ from matplotlib.widgets import Slider, Button
 import vcl.prep_data
 
 cmap = ListedColormap(["royalblue", "coral"])
-contour_show = True
+contour_show = False
 matplotlib.rcParams['toolbar'] = 'None'
 
 
