@@ -39,6 +39,7 @@ def opencv_window():
 def make_listen_sockets():
     context = zmq.Context()
     socket1 = context.socket(zmq.SUB)
+    socket1.setsockopt(zmq.CONFLATE, 1)
     socket1.connect("tcp://localhost:5556")
     socket1.subscribe("x_slice")
 
@@ -169,7 +170,7 @@ def satellite_window(datasets):
             slider_val = int(message)
             line.set_xdata([2.5 * slider_val, 2.5 * slider_val])
             # if message[0] == 'top_view':
-            plt.pause(0.04)
+            plt.pause(0.001)
 
         if socket2 in socks and socks[socket2] == zmq.POLLIN:
             # message = json.loads(socket2.recv().decode())
@@ -190,8 +191,8 @@ def satellite_window(datasets):
                     legend.get_patches()[i].set_alpha(0.3)
                     legend.get_texts()[i].set_alpha(1)
                 legend.draw_frame(True)
-            plt.pause(0.04)
-        plt.pause(0.04)
+            plt.pause(0.01)
+        plt.pause(0.001)
 
 
 def contour_slice_window(datasets):

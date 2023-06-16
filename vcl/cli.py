@@ -27,12 +27,13 @@ def make_sockets():
     sockets = {}
 
     context = zmq.Context()
+    sockets["context"] = context
 
     socket = context.socket(zmq.SUB)
+    socket.setsockopt(zmq.CONFLATE, 1)
     socket.connect("tcp://localhost:5556")
     socket.setsockopt(zmq.SUBSCRIBE, b"")
     sockets["SUB"] = socket
-    sockets["context"] = context
 
     socket = context.socket(zmq.PUB)
     socket.bind("tcp://*:5555")
