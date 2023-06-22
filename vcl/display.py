@@ -3,6 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import zmq
+import cmocean
 from matplotlib.colors import LightSource, ListedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -11,6 +12,7 @@ from matplotlib.widgets import Slider, Button
 import vcl.prep_data
 
 cmap = ListedColormap(["royalblue", "coral"])
+cmap = ListedColormap([cmocean.cm.haline(0),  cmocean.cm.haline(0.99)])
 cmap_n = ListedColormap(["royalblue", "coral", "red"])
 contour_show = False
 compare = False
@@ -140,8 +142,16 @@ def satellite_window(datasets):
     (line,) = ax.plot(
         [2.5 * init_x, 2.5 * init_x],
         [extent_n[2], extent_n[3]],
-        color="blue",
-        linewidth=2,
+        color='#255070',
+        linewidth=3,
+        alpha=0.7,
+    )
+
+    (line_white,) = ax.plot(
+        [2.5 * init_x, 2.5 * init_x],
+        [extent_n[2], extent_n[3]],
+        color='white',
+        linewidth=1,
     )
 
     nm, lbl = im_c.legend_elements()
@@ -170,6 +180,7 @@ def satellite_window(datasets):
             # if message[0] == 'x_slice':
             slider_val = int(message)
             line.set_xdata([2.5 * slider_val, 2.5 * slider_val])
+            line_white.set_xdata([2.5 * slider_val, 2.5 * slider_val])
             # if message[0] == 'top_view':
             plt.pause(0.001)
 
@@ -230,6 +241,9 @@ def contour_slice_window(datasets):
 
     # adjust the main plot to make room for the slider
     fig.subplots_adjust(left=0.05, bottom=0.25)
+
+    # zorder=0 is default order for images
+    axes.fill_between([extent_x[0], extent_x[1]], y1=-140, y2=0, facecolor='#255070', zorder=0)
 
     # pcolormesh is faster, but not as smooth as contourf
     im_x = axes.imshow(
@@ -321,6 +335,8 @@ def contour_slice_window(datasets):
     cbar.ax.get_yaxis().set_ticks([])
     for i, label in enumerate(["Zoet water", "Zout water"]):
         cbar.ax.text(3.5, (3 + i * 6) / 8, label, ha="center", va="center")
+
+    fig.tight_layout()
     plt.show()
     # print("matplotlib socket", socket)
 
