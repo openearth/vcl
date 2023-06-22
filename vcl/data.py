@@ -1,7 +1,7 @@
 import numpy as np
 import scipy
 import cv2
-
+import matplotlib.pyplot as plt
 
 def rotate_and_crop(arr, ang):
     """Array arr to be rotated by ang degrees and cropped afterwards"""
@@ -45,3 +45,14 @@ def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
                 )  # dtype integer is necessary for the next instruction
                 cv2.fillPoly(image, poly, z)
     return image
+
+def contourf_to_array_3d(cs, nbpixels_x, nbpixels_y, scale_x, scale_y, levels):
+    res = np.zeros((nbpixels_x, nbpixels_y, cs.shape[-1])) - 2
+    for i in range(res.shape[-1]):
+        cf = plt.contourf(scale_x, scale_y, cs[:, :, i], levels=levels)
+        res[:, :, i] = np.flip(
+                contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
+            )
+        res[:, :, i][np.where(res[:, :, i] < -1)] = np.nan
+    plt.close("all")
+    return res
