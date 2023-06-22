@@ -8,11 +8,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from matplotlib.widgets import Slider, Button
 
-
 import vcl.prep_data
 
 cmap = ListedColormap(["royalblue", "coral"])
+cmap_n = ListedColormap(["royalblue", "coral", "red"])
 contour_show = False
+compare = False
 matplotlib.rcParams['toolbar'] = 'None'
 
 
@@ -210,7 +211,15 @@ def contour_slice_window(datasets):
 
     nbpixels_y = datasets["nbpixels_y"]
     conc_contours_x = datasets["conc_contours_x"]
+    conc_contours_x_n = datasets["conc_contours_x_n"]
     conc = datasets["conc"]
+
+    diff = np.copy(conc_contours_x_n)
+    #diff[(conc_contours_x_n == 0.0) & (conc_contours_x == 0.0)] = 0
+    diff[(conc_contours_x_n == 0.0) & (conc_contours_x != 0.0)] = 20
+    diff[(conc_contours_x_n != 0.0) & (conc_contours_x == 0.0)] = 20
+    diff[(conc_contours_x_n != 0.0) & (conc_contours_x != 0.0)] = 10
+    diff[(np.isnan(conc_contours_x_n)) & (np.isnan(conc_contours_x))] = np.nan
 
 
     # Define initial parameters (index instead of x value)
@@ -232,6 +241,16 @@ def contour_slice_window(datasets):
         cmap=cmap,
     )
 
+    im_x_n = axes.imshow(
+        diff[:, :, init_x],
+        vmin=0,
+        vmax=20,
+        extent=extent_x,
+        aspect="auto",
+        cmap=cmap_n,
+        alpha=0
+    )
+
     # Make a horizontal slider to control the position on the x-axis.
     x_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])
     x_slider = Slider(
@@ -245,11 +264,15 @@ def contour_slice_window(datasets):
 
     # The function to be called anytime a slider's value changes
     def update(val):
+        global compare
         # socket.send(json.dumps(['x_slice', val]).encode())
         socket.send_string("x_slice %d" % val)
-        im_x.set_data(conc_contours_x[:, :, val])
+        if compare:
+            im_x.set_data(conc_contours_x[:, :, val])
+            im_x_n.set_data(diff[:, :, val])
+        else:
+            im_x.set_data(conc_contours_x[:, :, val])
         fig.canvas.draw_idle()
-        # plt.draw()
 
     # Change the transparency for each individual element, especially the legend had to be made transparent partswise
     # Contour plot does not have Artist, hence call Artist of im_c.collections
@@ -263,13 +286,31 @@ def contour_slice_window(datasets):
             # socket.send(json.dumps(['top_view', 0]).encode())
             socket.send_string("top_view %d" % 0)
             contour_show = False
+    
+    def comparison(event):
+        global compare
+        if compare:
+            compare = False
+            
+            im_x_n.set_alpha(0)
+            
+        elif not compare:
+            compare = True
+
+            im_x_n.set_alpha(1)
+
+        fig.canvas.draw_idle()
 
     contourax = fig.add_axes([0.6, 0.025, 0.1, 0.04])
-    contour_button = Button(contourax, "Contour", hovercolor="0.900")
+    contour_button = Button(contourax, "Contour", hovercolor="0.600")
+
+    comparisonax = fig.add_axes([0.72, 0.025, 0.1, 0.04])
+    comparison_button = Button(comparisonax, 'Compare', hovercolor='0.600')
 
     # register the update function with each slider
     x_slider.on_changed(update)
     contour_button.on_clicked(contour)
+    comparison_button.on_clicked(comparison)
 
     # register the update function with each slider
     x_slider.on_changed(update)
@@ -280,7 +321,6 @@ def contour_slice_window(datasets):
     cbar.ax.get_yaxis().set_ticks([])
     for i, label in enumerate(["Zoet water", "Zout water"]):
         cbar.ax.text(3.5, (3 + i * 6) / 8, label, ha="center", va="center")
-
     plt.show()
     # print("matplotlib socket", socket)
 
@@ -309,3 +349,21 @@ def slider_window():
         # plt.draw()
 
     plt.show()
+
+# datasets = vcl.load_data.load()
+# datasets = vcl.prep_data.preprocess(datasets)
+
+# conc_contours_x = datasets["conc_contours_x"]
+# conc_contours_x_n = datasets["conc_contours_x_n"]
+# conc = datasets["conc"]    
+
+# diff = np.copy(conc_contours_x_n)
+# diff[(int(conc_contours_x_n) == 0) & (int(conc_contours_x) == 0)] = 0
+# diff[(int(conc_contours_x_n) == 0) & (int(conc_contours_x) != 0)] = 2
+# diff[(int(conc_contours_x_n) != 0) & (int(conc_contours_x) == 0)] = 2
+# diff[(conc_contours_x_n != 0) & (conc_contours_x != 0)] = 1.5
+# diff[(np.isnan(conc_contours_x_n)) & (np.isnan(conc_contours_x))] = np.nan
+
+# print(conc_contours_x_n)
+# print((conc_contours_x_n == 0) & (conc_contours_x == 0))
+# print(np.nanmax(diff))
