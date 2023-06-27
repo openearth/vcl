@@ -88,5 +88,6 @@ def preprocess(datasets):
         "Y2": Y2,
         "conc": rot_ds,
         "conc_n": rot_ds_n,
+        "bodem": rot_bodem0,
     }
     return updated_datasets

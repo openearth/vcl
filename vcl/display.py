@@ -8,12 +8,14 @@ from matplotlib.colors import LightSource, ListedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from matplotlib.widgets import Slider, Button
+import scipy
 
 import vcl.prep_data
 
 cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0),  cmocean.cm.haline(0.99)])
 cmap_n = ListedColormap(["royalblue", "coral", "red"])
+cmap_n = ListedColormap([cmocean.cm.haline(0),  cmocean.cm.haline(0.99), "red"])
 contour_show = False
 compare = False
 matplotlib.rcParams['toolbar'] = 'None'
@@ -31,7 +33,8 @@ def opencv_window():
                 "window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN
             )
         elif k == ord("n"):
-            cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+            cv2.setWindowProperty(
+                "window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
         elif k == ord("q"):
             cv2.destroyWindow("window")
             break
@@ -224,29 +227,39 @@ def contour_slice_window(datasets):
     conc_contours_x = datasets["conc_contours_x"]
     conc_contours_x_n = datasets["conc_contours_x_n"]
     conc = datasets["conc"]
+    bodem = datasets["bodem"]
+    sat = datasets["sat"]
 
     diff = np.copy(conc_contours_x_n)
-    #diff[(conc_contours_x_n == 0.0) & (conc_contours_x == 0.0)] = 0
+    # diff[(conc_contours_x_n == 0.0) & (conc_contours_x == 0.0)] = 0
     diff[(conc_contours_x_n == 0.0) & (conc_contours_x != 0.0)] = 20
     diff[(conc_contours_x_n != 0.0) & (conc_contours_x == 0.0)] = 20
     diff[(conc_contours_x_n != 0.0) & (conc_contours_x != 0.0)] = 10
     diff[(np.isnan(conc_contours_x_n)) & (np.isnan(conc_contours_x))] = np.nan
 
-
     # Define initial parameters (index instead of x value)
     init_x = 100
     extent_x = (0, nbpixels_y, -140, 25.5)
+    yb0 = np.linspace(0, sat.shape[0], sat.shape[0])
 
-    fig, axes = plt.subplots()
+    # Calculate index for bathymetry dataset (due to varying grid size)
+    x_index = init_x
+    if x_index%2 == 0:
+        xb_index = int(2.5 * x_index)
+    else:
+        xb_index = int(np.ceil(2.5 * x_index))
+
+    fig, ax = plt.subplots()
 
     # adjust the main plot to make room for the slider
     fig.subplots_adjust(left=0.05, bottom=0.25)
 
     # zorder=0 is default order for images
-    axes.fill_between([extent_x[0], extent_x[1]], y1=-140, y2=0, facecolor='#255070', zorder=0)
+    ax.fill_between([extent_x[0], extent_x[1]], y1=-140,
+                      y2=0, facecolor='#255070', zorder=0)
 
     # pcolormesh is faster, but not as smooth as contourf
-    im_x = axes.imshow(
+    im_x = ax.imshow(
         conc_contours_x[:, :, init_x],
         vmin=0,
         vmax=1.5,
@@ -255,7 +268,7 @@ def contour_slice_window(datasets):
         cmap=cmap,
     )
 
-    im_x_n = axes.imshow(
+    im_x_n = ax.imshow(
         diff[:, :, init_x],
         vmin=0,
         vmax=20,
@@ -264,6 +277,11 @@ def contour_slice_window(datasets):
         cmap=cmap_n,
         alpha=0
     )
+
+    bodem_smoother = scipy.interpolate.UnivariateSpline(yb0, bodem[:, xb_index])
+    bodem_smooth = bodem_smoother(yb0)
+    #im_b, = ax.plot(yb0, bodem[:, xb_index], color='#70543e')
+    im_b, = ax.plot(yb0, bodem_smooth, color='#70543e')
 
     # Make a horizontal slider to control the position on the x-axis.
     x_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])
@@ -300,14 +318,14 @@ def contour_slice_window(datasets):
             # socket.send(json.dumps(['top_view', 0]).encode())
             socket.send_string("top_view %d" % 0)
             contour_show = False
-    
+
     def comparison(event):
         global compare
         if compare:
             compare = False
-            
+
             im_x_n.set_alpha(0)
-            
+
         elif not compare:
             compare = True
 
@@ -329,7 +347,7 @@ def contour_slice_window(datasets):
     # register the update function with each slider
     x_slider.on_changed(update)
 
-    divider = make_axes_locatable(axes)
+    divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.10)
     cbar = plt.colorbar(im_x, cax=cax)
     cbar.ax.get_yaxis().set_ticks([])
@@ -365,21 +383,3 @@ def slider_window():
         # plt.draw()
 
     plt.show()
-
-# datasets = vcl.load_data.load()
-# datasets = vcl.prep_data.preprocess(datasets)
-
-# conc_contours_x = datasets["conc_contours_x"]
-# conc_contours_x_n = datasets["conc_contours_x_n"]
-# conc = datasets["conc"]    
-
-# diff = np.copy(conc_contours_x_n)
-# diff[(int(conc_contours_x_n) == 0) & (int(conc_contours_x) == 0)] = 0
-# diff[(int(conc_contours_x_n) == 0) & (int(conc_contours_x) != 0)] = 2
-# diff[(int(conc_contours_x_n) != 0) & (int(conc_contours_x) == 0)] = 2
-# diff[(conc_contours_x_n != 0) & (conc_contours_x != 0)] = 1.5
-# diff[(np.isnan(conc_contours_x_n)) & (np.isnan(conc_contours_x))] = np.nan
-
-# print(conc_contours_x_n)
-# print((conc_contours_x_n == 0) & (conc_contours_x == 0))
-# print(np.nanmax(diff))
