@@ -19,6 +19,7 @@ requirements = [
     "numpy",
     "netCDF4",
     "cmocean",
+    "scipy",
 ]
 
 test_requirements = [
