@@ -278,10 +278,10 @@ def contour_slice_window(datasets):
         alpha=0
     )
 
-    bodem_smoother = scipy.interpolate.UnivariateSpline(yb0, bodem[:, xb_index])
-    bodem_smooth = bodem_smoother(yb0)
+    # bodem_smoother = scipy.interpolate.UnivariateSpline(yb0, bodem[:, xb_index])
+    # bodem_smooth = bodem_smoother(yb0)
     #im_b, = ax.plot(yb0, bodem[:, xb_index], color='#70543e')
-    im_b, = ax.plot(yb0, bodem_smooth, color='#70543e')
+    im_b, = ax.plot(yb0, bodem[:, xb_index], color='#70543e', linewidth=3)
 
     # Make a horizontal slider to control the position on the x-axis.
     x_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])
@@ -299,11 +299,17 @@ def contour_slice_window(datasets):
         global compare
         # socket.send(json.dumps(['x_slice', val]).encode())
         socket.send_string("x_slice %d" % val)
+        if val % 2 == 0:
+            xb_index = int(2.5 * val)
+        else:
+            xb_index = int(np.ceil(2.5 * val))
         if compare:
             im_x.set_data(conc_contours_x[:, :, val])
             im_x_n.set_data(diff[:, :, val])
+            im_b.set_ydata(bodem[:, xb_index])
         else:
             im_x.set_data(conc_contours_x[:, :, val])
+            im_b.set_ydata(bodem[:, xb_index])
         fig.canvas.draw_idle()
 
     # Change the transparency for each individual element, especially the legend had to be made transparent partswise
@@ -353,6 +359,7 @@ def contour_slice_window(datasets):
     cbar.ax.get_yaxis().set_ticks([])
     for i, label in enumerate(["Zoet water", "Zout water"]):
         cbar.ax.text(3.5, (3 + i * 6) / 8, label, ha="center", va="center")
+    ax.set_ylim(-100, 25)
 
     fig.tight_layout()
     plt.show()

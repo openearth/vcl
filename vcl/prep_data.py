@@ -2,6 +2,7 @@ import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 
 from matplotlib.colors import LightSource, ListedColormap
 
@@ -55,6 +56,12 @@ def preprocess(datasets):
     rot_img_shade = vcl.data.rotate_and_crop(img_shade, -15)
     rot_bodem0 = vcl.data.rotate_and_crop(bodem0, -15)
 
+    yb0 = np.linspace(0, rot_img_shade.shape[0], rot_img_shade.shape[0])
+    smooth_bodem = np.zeros_like(rot_bodem0)
+    for i in range(smooth_bodem.shape[1]):
+        smoother = scipy.interpolate.UnivariateSpline(yb0, rot_bodem0[:, i])
+        smooth_bodem[:, i] = smoother(yb0)
+
     # Set new extent
     extent_n = 0, rot_img_shade.shape[1], 0, rot_img_shade.shape[0]
 
@@ -88,6 +95,6 @@ def preprocess(datasets):
         "Y2": Y2,
         "conc": rot_ds,
         "conc_n": rot_ds_n,
-        "bodem": rot_bodem0,
+        "bodem": smooth_bodem,
     }
     return updated_datasets
