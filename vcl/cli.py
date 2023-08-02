@@ -75,10 +75,9 @@ def test(datasets):
 @click.command()
 @click.option("--satellite/--no-satellite", default=False)
 @click.option("--contour/--no-contour", default=False)
-def main(satellite, contour, args=None):
+@click.option("-s", "--size")
+def main(satellite, contour, size, args=None):
     """Console script for vcl."""
-
-    sockets = make_sockets()
 
     executor = concurrent.futures.ProcessPoolExecutor(
         max_workers=10,
@@ -93,12 +92,14 @@ def main(satellite, contour, args=None):
     #     task = executor.submit(test, datasets)
 
     if satellite:
-        executor.submit(vcl.display.satellite_window, datasets)
+        executor.submit(vcl.display.satellite_window, datasets[size])
     # # executor.submit(mayavi_window)
     # # executor.submit(vcl.display.opencv_window)
-    # # executor.submit(slider_window)
+    executor.submit(vcl.display.slider_window, datasets[size])
     if contour:
-        executor.submit(vcl.display.contour_slice_window, datasets)
+        # executor.submit(vcl.display.satellite_window2, datasets)
+        executor.submit(vcl.display.contour_slice_window, datasets[size])
+
 
     while True:
         time.sleep(0.1)

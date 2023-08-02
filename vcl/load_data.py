@@ -20,5 +20,7 @@ def load():
 
     # Read satellite image with surrounding sea
     sat = mpimg.imread(data_dir.joinpath("terschelling-sat2.png"))
+    sat_k = mpimg.imread(data_dir.joinpath('terschelling-sat-klein.png'))
+    sat_g = mpimg.imread(data_dir.joinpath('terschelling-sat-groot.png'))
 
-    return {"ds": ds, "ds_n": ds_n, "ds_b0": ds_b0, "ds_b0_n": ds_b0_n, "sat": sat}
+    return {"ds": ds, "ds_n": ds_n, "ds_b0": ds_b0, "ds_b0_n": ds_b0_n, "sat": sat, "sat_k": sat_k, "sat_g": sat_g}
