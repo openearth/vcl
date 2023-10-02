@@ -1,56 +1,209 @@
 """Console script for vcl."""
+import concurrent.futures
+import json
 import sys
+import os
+import psutil
+import threading
+import signal
+
 import click
 
-import numpy as np
-from numpy import pi, sin, cos, mgrid
-import cv2
 import matplotlib
-import matplotlib.pyplot as plt
-import mayavi
-from mayavi import mlab
+
+import zmq
+import time
+# import pdb
+
+matplotlib.use("qtagg")
+
+
+import vcl.display
+import vcl.data
+import vcl.prep_data
+
+
+def make_sockets():
+    sockets = {}
+
+    context = zmq.Context()
+    sockets["context"] = context
+
+    socket = context.socket(zmq.SUB)
+    socket.setsockopt(zmq.CONFLATE, 1)
+    socket.connect("tcp://localhost:5556")
+    socket.setsockopt(zmq.SUBSCRIBE, b"")
+    sockets["SUB"] = socket
+
+    socket = context.socket(zmq.PUB)
+    socket.bind("tcp://*:5555")
+    sockets["PUB"] = socket
+    return sockets
+
+
+def start_thread_to_terminate_when_parent_process_dies(ppid):
+    pid = os.getpid()
+
+    # def f():
+    #     while True:
+    #         try:
+    #             os.kill(ppid, 0)
+    #             # for proc in psutil.process_iter():
+    #             #     if proc.pid == ppid:
+    #             #         proc.terminate()
+    #             #p = psutil.Process(ppid)
+    #             #p.terminate()
+
+    #         except:
+    #             os.kill(pid, signal.SIGTERM)
+    #             # for proc in psutil.process_iter():
+    #             #     if proc.pid == pid:
+    #             #         proc.terminate()
+    #         time.sleep(1)
+
+    # thread = threading.Thread(target=f, daemon=True)
+    thread = threading.Thread(daemon=True)
+    thread.start()
+
+
+def test(datasets):
+    print("data loaded")
+    for key, val in datasets.items():
+        print(key, type(val))
+    return "ok"
 
 
 @click.command()
-def main(args=None):
+@click.option("--satellite/--no-satellite", default=False)
+@click.option("--contour/--no-contour", default=False)
+@click.option("-s", "--size")
+def main(satellite, contour, size, args=None):
     """Console script for vcl."""
 
-    # empty image
-    if False:
-        img = np.zeros([100, 100, 3])
-        cv2.namedWindow("window", cv2.WINDOW_NORMAL)
-        cv2.imshow("window", img)
-        k = cv2.waitKey(0)
-        if k == ord('f'):    
-            cv2.setWindowProperty('window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-        if k == ord('n'):
-            cv2.setWindowProperty('window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+    executor = concurrent.futures.ProcessPoolExecutor(
+        max_workers=10,
+        initializer=start_thread_to_terminate_when_parent_process_dies,
+        initargs=(os.getpid(),),
+    )
 
-    matplotlib.use('qtagg')
-    fig, ax = plt.subplots()
-    ax.plot([1, 2], [1, 2])
-    # keep window open
+    datasets = vcl.load_data.load()
+    datasets = vcl.prep_data.preprocess(datasets)
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     task = executor.submit(test, datasets)
 
-    plt.show()
-    
-    # Create the data.
-    dphi, dtheta = pi/250.0, pi/250.0
-    [phi,theta] = mgrid[0:pi+dphi*1.5:dphi,0:2*pi+dtheta*1.5:dtheta]
-    m0 = 4; m1 = 3; m2 = 2; m3 = 3; m4 = 6; m5 = 2; m6 = 6; m7 = 4;
-    r = sin(m0*phi)**m1 + cos(m2*phi)**m3 + sin(m4*theta)**m5 + cos(m6*theta)**m7
-    x = r*sin(phi)*cos(theta)
-    y = r*cos(phi)
-    z = r*sin(phi)*sin(theta)
-    
-    # View it.
-    s = mlab.mesh(x, y, z)
-    mlab.show()
+    if satellite:
+        executor.submit(vcl.display.satellite_window, datasets[size])
+    # # executor.submit(mayavi_window)
+    # # executor.submit(vcl.display.opencv_window)
+    executor.submit(vcl.display.slider_window, datasets[size])
+    if contour:
+        # executor.submit(vcl.display.satellite_window2, datasets)
+        executor.submit(vcl.display.contour_slice_window, datasets[size])
 
 
-
-    # return exit status 0
+    # while True:
+    #     time.sleep(0.1)
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())  # pragma: no cover
+
+
+
+
+# """Console script for vcl."""
+# import concurrent.futures
+# import json
+# import sys
+# import os
+# import psutil
+# import threading
+# import signal
+
+# import click
+
+# import matplotlib
+
+# import zmq
+# import time
+# # import pdb
+
+# matplotlib.use("qtagg")
+
+
+# import vcl.display
+# import vcl.data
+# import vcl.prep_data
+
+
+# def make_sockets():
+#     sockets = {}
+
+#     context = zmq.Context()
+#     sockets["context"] = context
+
+#     socket = context.socket(zmq.SUB)
+#     socket.setsockopt(zmq.CONFLATE, 1)
+#     socket.connect("tcp://localhost:5556")
+#     socket.setsockopt(zmq.SUBSCRIBE, b"")
+#     sockets["SUB"] = socket
+
+#     socket = context.socket(zmq.PUB)
+#     socket.bind("tcp://*:5555")
+#     sockets["PUB"] = socket
+#     return sockets
+
+
+# def start_thread_to_terminate_when_parent_process_dies(ppid):
+#     pid = os.getpid()
+
+#     def f():
+#         while True:
+#             try:
+#                 os.kill(ppid, 0)
+#                 # for proc in psutil.process_iter():
+#                 #     if proc.pid == ppid:
+#                 #         proc.terminate()
+#                 #p = psutil.Process(ppid)
+#                 #p.terminate()
+
+#             except:
+#                 os.kill(pid, signal.SIGTERM)
+#                 # for proc in psutil.process_iter():
+#                 #     if proc.pid == pid:
+#                 #         proc.terminate()
+#             time.sleep(1)
+
+#     thread = threading.Thread(target=f, daemon=True)
+#     thread.start()
+
+
+# def test(datasets):
+#     print("data loaded")
+#     for key, val in datasets.items():
+#         print(key, type(val))
+#     return "ok"
+
+
+# @click.command()
+# @click.option("--satellite/--no-satellite", default=False)
+# @click.option("--contour/--no-contour", default=False)
+# @click.option("-s", "--size")
+# def main(satellite, contour, size, args=None):
+#     """Console script for vcl."""
+
+
+#     datasets = vcl.load_data.load()
+#     datasets = vcl.prep_data.preprocess(datasets)
+#     print("gaat nog prima 6")
+
+#     if satellite:
+#         # vcl.display.satellite_window(datasets[size])
+#         vcl.display.contour_slice_window(datasets[size])
+#         print("gaat nog prima 7")
+#     return 0
+
+
+# if __name__ == "__main__":
+#     sys.exit(main())  # pragma: no cover
