@@ -60,9 +60,11 @@ def preprocess(datasets):
     # Each z layer of concentration dataset needs to be rotated and cropped seperately to account for the slices in x and y direction
     # Create dummy array of one layer and apply the function to it to obtain its shape
     # Note that the first dimension of ds_n is time instead of z
+
     dummy = vcl.data.rotate_and_crop(ds.conc.values[0, :, :], -15)
     dummy_k = vcl.data.rotate_and_crop(klein["conc0"][0, ...], -15)
     dummy_g = vcl.data.rotate_and_crop(groot["conc0"][0, ...], -15)
+
 
     rot_ds = np.zeros((ds.conc.shape[0], dummy.shape[0], dummy.shape[1]))
     rot_ds_n = np.zeros((ds_n.conc.shape[1], dummy.shape[0], dummy.shape[1]))
@@ -74,10 +76,12 @@ def preprocess(datasets):
         klein["conc"][i, ...] = vcl.data.rotate_and_crop(klein["conc0"][i, ...], -15)
         groot["conc"][i, ...] = vcl.data.rotate_and_crop(groot["conc0"][i, ...], -15)
 
+
     rot_img_shade = vcl.data.rotate_and_crop(img_shade, -15)
     klein["sat"] = vcl.data.rotate_and_crop(klein["img_shade"], -15)
     groot["sat"] = vcl.data.rotate_and_crop(groot["img_shade"], -15)
     rot_bodem0 = vcl.data.rotate_and_crop(bodem0, -15)
+
 
     # yb0 = np.linspace(0, rot_img_shade.shape[0], rot_img_shade.shape[0])
     # smooth_bodem = np.zeros_like(rot_bodem0)
