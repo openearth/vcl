@@ -13,12 +13,12 @@ import scipy
 import vcl.prep_data
 
 cmap = ListedColormap(["royalblue", "coral"])
-cmap = ListedColormap([cmocean.cm.haline(0),  cmocean.cm.haline(0.99)])
+cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
 cmap_n = ListedColormap(["royalblue", "coral", "red"])
-cmap_n = ListedColormap([cmocean.cm.haline(0),  cmocean.cm.haline(0.99), "red"])
+cmap_n = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99), "red"])
 contour_show = False
 compare = False
-matplotlib.rcParams['toolbar'] = 'None'
+matplotlib.rcParams["toolbar"] = "None"
 
 
 def opencv_window():
@@ -33,8 +33,7 @@ def opencv_window():
                 "window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN
             )
         elif k == ord("n"):
-            cv2.setWindowProperty(
-                "window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+            cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
         elif k == ord("q"):
             cv2.destroyWindow("window")
             break
@@ -135,7 +134,7 @@ def satellite_window(datasets):
     (line,) = ax.plot(
         [init_x, init_x],
         [extent_n[2], extent_n[3]],
-        color='#255070',
+        color="#255070",
         linewidth=3,
         alpha=0.7,
     )
@@ -143,7 +142,7 @@ def satellite_window(datasets):
     (line_white,) = ax.plot(
         [init_x, init_x],
         [extent_n[2], extent_n[3]],
-        color='white',
+        color="white",
         linewidth=1,
     )
 
@@ -180,26 +179,23 @@ def satellite_window(datasets):
             topic2, message2 = socket2.recv(zmq.DONTWAIT).split()
             alpha = int(message2)
             for c in im_c.collections:
-                c.set_alpha(alpha*0.3)
+                c.set_alpha(alpha * 0.3)
             for i in range(2):
-                legend.get_patches()[i].set(alpha=alpha*0.3)
-                legend.get_texts()[i].set(alpha=alpha*0.3)
+                legend.get_patches()[i].set(alpha=alpha * 0.3)
+                legend.get_texts()[i].set(alpha=alpha * 0.3)
             plt.pause(0.01)
         plt.pause(0.01)
-
 
 
 def contour_slice_window(datasets):
     print("Ook al gelukt!")
     matplotlib.use("qtagg")
 
-
     sockets = make_listen_sockets()
 
     poller = sockets["poller"]
 
     socket3 = sockets["x_slice_c"]
-
 
     print("starting matplotlib")
 
@@ -209,7 +205,6 @@ def contour_slice_window(datasets):
     conc = datasets["conc"]
     bodem = datasets["bodem0"]
     sat = datasets["sat"]
-    
 
     diff = np.copy(conc_contours_x_n)
     # diff[(conc_contours_x_n == 0.0) & (conc_contours_x == 0.0)] = 0
@@ -225,7 +220,7 @@ def contour_slice_window(datasets):
 
     # Calculate index for bathymetry dataset (due to varying grid size)
     x_index = init_x
-    if x_index%2 == 0:
+    if x_index % 2 == 0:
         xb_index = int(2.5 * x_index)
     else:
         xb_index = int(np.ceil(2.5 * x_index))
@@ -241,8 +236,9 @@ def contour_slice_window(datasets):
     print("I am not here")
 
     # zorder=0 is default order for images
-    ax.fill_between([extent_x[0], extent_x[1]], y1=-140,
-                      y2=0, facecolor='#255070', zorder=0)
+    ax.fill_between(
+        [extent_x[0], extent_x[1]], y1=-140, y2=0, facecolor="#255070", zorder=0
+    )
 
     # pcolormesh is faster, but not as smooth as contourf
     im_x = ax.imshow(
@@ -261,7 +257,7 @@ def contour_slice_window(datasets):
         extent=extent_x,
         aspect="auto",
         cmap=cmap_n,
-        alpha=0
+        alpha=0,
     )
 
     plt.pause(10)
@@ -307,7 +303,7 @@ def slider_window(datasets):
     init_x = 100
 
     fig, ax = plt.subplots()
-    plt.axis('off')
+    plt.axis("off")
     ax.set_axis_off()
     ax.set_frame_on(False)
 
@@ -337,7 +333,7 @@ def slider_window(datasets):
         socket.send_string("x_slice %d" % val)
         fig.canvas.draw_idle()
         # plt.draw()
-    
+
     contourax = fig.add_axes([0.6, 0.025, 0.1, 0.04])
     contour_button = Button(contourax, "Contour", hovercolor="0.600")
 
@@ -345,10 +341,6 @@ def slider_window(datasets):
     contour_button.on_clicked(contour)
 
     plt.show()
-
-
-
-
 
 
 def satellite_window2(datasets):
@@ -374,11 +366,11 @@ def satellite_window2(datasets):
 
     # Calculate index for bathymetry dataset (due to varying grid size)
     x_index = init_x
-    if x_index%2 == 0:
+    if x_index % 2 == 0:
         xb_index = int(2.5 * x_index)
     else:
         xb_index = int(np.ceil(2.5 * x_index))
-    
+
     matplotlib.use("qtagg")
     # def key_press(event):
     #    if event.key == 'x':
@@ -430,8 +422,9 @@ def satellite_window2(datasets):
 
     # for i in range(10):
     #     plt.pause(1)
-    ax.fill_between([extent_x[0], extent_x[1]], y1=-140,
-                      y2=0, facecolor='#255070', zorder=0)
+    ax.fill_between(
+        [extent_x[0], extent_x[1]], y1=-140, y2=0, facecolor="#255070", zorder=0
+    )
 
     # pcolormesh is faster, but not as smooth as contourf
     im_x = ax.imshow(
@@ -444,7 +437,7 @@ def satellite_window2(datasets):
     )
     plt.pause(10)
 
-    im_b, = ax.plot(yb0, bodem[:, xb_index], color='#70543e', linewidth=3)
+    (im_b,) = ax.plot(yb0, bodem[:, xb_index], color="#70543e", linewidth=3)
 
     plt.axis("off")
     manager = plt.get_current_fig_manager()

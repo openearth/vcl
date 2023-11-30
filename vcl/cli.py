@@ -13,6 +13,7 @@ import matplotlib
 
 import zmq
 import time
+
 # import pdb
 
 matplotlib.use("qtagg")
@@ -90,7 +91,9 @@ def main(satellite, contour, size, args=None):
     datasets = vcl.prep_data.preprocess(datasets)
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)
+    import ipdb
 
+    ipdb.set_trace()
     if satellite:
         executor.submit(vcl.display.satellite_window, datasets[size])
     # # executor.submit(mayavi_window)
@@ -100,7 +103,6 @@ def main(satellite, contour, size, args=None):
         # executor.submit(vcl.display.satellite_window2, datasets)
         executor.submit(vcl.display.contour_slice_window, datasets[size])
 
-
     # while True:
     #     time.sleep(0.1)
     return 0
@@ -108,8 +110,6 @@ def main(satellite, contour, size, args=None):
 
 if __name__ == "__main__":
     sys.exit(main())  # pragma: no cover
-
-
 
 
 # """Console script for vcl."""

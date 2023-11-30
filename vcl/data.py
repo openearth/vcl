@@ -1,8 +1,34 @@
+import shapely
+import pandas as pd
 import numpy as np
 import scipy
 import cv2
 import matplotlib.pyplot as plt
 from matplotlib.colors import LightSource
+
+
+def compute_rotation_angle(extent):
+    coords = list(extent.exterior.coords)
+    coords = pd.DataFrame(coords)
+    coords.columns = ["x", "y"]
+
+    xmin = coords.idxmin(0)["x"]
+    ymin = coords.idxmin(0)["y"]
+    xmax = coords.idxmax(0)["x"]
+    ymax = coords.idxmax(0)["y"]
+
+    # Find bottom left point and bottom right point of original extent
+    bottom_point = [coords.iloc[ymin]["x"], coords.iloc[ymin]["y"]]
+    right_point = [coords.iloc[xmax]["x"], coords.iloc[xmax]["y"]]
+
+    # Compute the rotation angle of original extent
+    o = right_point[1] - bottom_point[1]
+    a = right_point[0] - bottom_point[0]
+
+    angle = np.rad2deg(np.arctan(o / a))
+
+    return angle
+
 
 def rotate_and_crop(arr, ang):
     """Array arr to be rotated by ang degrees and cropped afterwards"""
@@ -47,63 +73,76 @@ def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
                 cv2.fillPoly(image, poly, z)
     return image
 
+
 def contourf_to_array_3d(cs, nbpixels_x, nbpixels_y, scale_x, scale_y, levels):
     res = np.zeros((nbpixels_x, nbpixels_y, cs.shape[-1])) - 5
     for i in range(res.shape[-1]):
         cf = plt.contourf(scale_x, scale_y, cs[:, :, i], levels=levels)
         res[:, :, i] = np.flip(
-                contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
-            )
+            contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
+        )
         res[:, :, i][np.where(res[:, :, i] < -4)] = np.nan
     plt.close("all")
     return res
 
+
 def create_bounds():
     bounds_k = {
-        'x': {
-            'min': 137089.2373932857299224,
-            'max': 168249.9520578108495101, 
+        "x": {
+            "min": 137089.2373932857299224,
+            "max": 168249.9520578108495101,
         },
-        'y': {
-            'min': 589482.3877100050449371,
-            'max': 610702.8749795859912410, 
+        "y": {
+            "min": 589482.3877100050449371,
+            "max": 610702.8749795859912410,
         },
     }
     bounds_g = {
-        'x': {
-            'min': 129971.5049754020292312,
-            'max': 170784.9834783510013949, 
+        "x": {
+            "min": 129971.5049754020292312,
+            "max": 170784.9834783510013949,
         },
-        'y': {
-            'min': 584191.5390384565107524,
-            'max': 611985.5710535547696054, 
+        "y": {
+            "min": 584191.5390384565107524,
+            "max": 611985.5710535547696054,
         },
     }
     for key, value in bounds_k.items():
-        bounds_k[key]['delta'] = ((bounds_k[key]['max'] - bounds_k[key]['min']) / (8.94 / 10.22) - (bounds_k[key]['max'] - bounds_k[key]['min'])) / 2
-        bounds_g[key]['delta'] = ((bounds_g[key]['max'] - bounds_g[key]['min']) / (8.94 / 10.22) - (bounds_g[key]['max'] - bounds_g[key]['min'])) / 2
+        bounds_k[key]["delta"] = (
+            (bounds_k[key]["max"] - bounds_k[key]["min"]) / (8.94 / 10.22)
+            - (bounds_k[key]["max"] - bounds_k[key]["min"])
+        ) / 2
+        bounds_g[key]["delta"] = (
+            (bounds_g[key]["max"] - bounds_g[key]["min"]) / (8.94 / 10.22)
+            - (bounds_g[key]["max"] - bounds_g[key]["min"])
+        ) / 2
 
-        bounds_k[key]['min'] -= bounds_k[key]['delta']
-        bounds_k[key]['max'] += bounds_k[key]['delta']
-        bounds_g[key]['min'] -= bounds_g[key]['delta']
-        bounds_g[key]['max'] += bounds_g[key]['delta']
+        bounds_k[key]["min"] -= bounds_k[key]["delta"]
+        bounds_k[key]["max"] += bounds_k[key]["delta"]
+        bounds_g[key]["min"] -= bounds_g[key]["delta"]
+        bounds_g[key]["max"] += bounds_g[key]["delta"]
     return bounds_k, bounds_g
 
+
 def get_bathymetry_extent(ds, bounds):
-    print(np.where(ds.x.values >= bounds['x']['min'])[0].min())
-    x_index_min = np.where(ds.x.values >= bounds['x']['min'])[0].min() - 1
-    x_index_max = np.where(ds.x.values >= bounds['x']['max'])[0].min()
-    y_index_min = np.where(ds.y.values >= bounds['y']['min'])[0].max() + 1
-    y_index_max = np.where(ds.y.values >= bounds['y']['max'])[0].max()
+    print(np.where(ds.x.values >= bounds["x"]["min"])[0].min())
+    x_index_min = np.where(ds.x.values >= bounds["x"]["min"])[0].min() - 1
+    x_index_max = np.where(ds.x.values >= bounds["x"]["max"])[0].min()
+    y_index_min = np.where(ds.y.values >= bounds["y"]["min"])[0].max() + 1
+    y_index_max = np.where(ds.y.values >= bounds["y"]["max"])[0].max()
 
     extent = (x_index_min, x_index_max, y_index_min, y_index_max)
     return extent
 
+
 def prep_bathymetry_data(ds, extent):
-    x_b, y_b = np.array(ds.x[extent[0]:extent[1]]), np.array(ds.y[extent[3]:extent[2]])
-    bodem = np.array(ds[0, extent[3]:extent[2], extent[0]:extent[1]])
+    x_b, y_b = np.array(ds.x[extent[0] : extent[1]]), np.array(
+        ds.y[extent[3] : extent[2]]
+    )
+    bodem = np.array(ds[0, extent[3] : extent[2], extent[0] : extent[1]])
     bodem[np.where(bodem == -9999)] = -43.8
     return x_b, y_b, bodem
+
 
 def get_conc_extent(ds, x_b, y_b):
     x_min = np.where(x_b >= ds.x.values.min())[0].min() - 1
@@ -114,21 +153,22 @@ def get_conc_extent(ds, x_b, y_b):
     extent = (x_min, x_max, y_min, y_max)
     return extent
 
+
 def rescale_and_fit_ds(ds, ds_bounds, rescale_size1, rescale_size2, axis=0):
     """
     Rescales dataset ds to fit over the satellite image with size rescale_size2
-    It also fits the dataset values such that the x and y bounds of the dataset are 
+    It also fits the dataset values such that the x and y bounds of the dataset are
     placed on the right positions over the satellite image
-    
-    Input: 
+
+    Input:
         ds - dataset to rescale and fit
         ds_bounds - indices of the bounds of the bathymetry, corresponding to the ds bounds
         rescale_size1 - shape of the bathymetry
         rescale_size2 - shape of the satellite image
         axis - axis of ds over which we want to rescale and fit
-    
+
     Output:
-        ds_rescaled - dataset with known values on the right positions over the satellite and 
+        ds_rescaled - dataset with known values on the right positions over the satellite and
                       nan's everywhere else
     """
     xmin, ymin = ds_bounds[0]
@@ -136,27 +176,122 @@ def rescale_and_fit_ds(ds, ds_bounds, rescale_size1, rescale_size2, axis=0):
     ds_sub = np.zeros(rescale_size1)
     ds_sub[:] = np.nan
     for i in range(ds.shape[axis]):
-        ds_inter = cv2.resize(ds[i, :, :], dsize=(xmax - xmin, ymin - ymax), interpolation=cv2.INTER_CUBIC)
+        ds_inter = cv2.resize(
+            ds[i, :, :], dsize=(xmax - xmin, ymin - ymax), interpolation=cv2.INTER_CUBIC
+        )
         ds_sub[ymax:ymin, xmin:xmax] = ds_inter
-        ds_sub2 = np.expand_dims(cv2.resize(ds_sub, dsize=(rescale_size2[1], rescale_size2[0]), interpolation=cv2.INTER_CUBIC), axis=axis)
+        ds_sub2 = np.expand_dims(
+            cv2.resize(
+                ds_sub,
+                dsize=(rescale_size2[1], rescale_size2[0]),
+                interpolation=cv2.INTER_CUBIC,
+            ),
+            axis=axis,
+        )
         if i == 0:
             ds_rescaled = ds_sub2
         else:
             ds_rescaled = np.concatenate([ds_rescaled, ds_sub2], axis=axis)
     return ds_rescaled
 
-def create_shaded_image(sat, bodem, shape):
-    ls = LightSource(azdeg=315, altdeg=45)
-    # Create shade using lightsource
-    rgb = ls.hillshade(bodem, vert_exag=5, dx=20, dy=20)
+
+def sat_and_bodem_bounds(sat, bodem):
+    # Get bounds of bodem and sat files
+    sat_bounds = sat.bounds
+    bodem_bounds = bodem.bounds
+
+    # Compute the minimum (and maximum) point which sat and bodem still share in their extent
+    left = max([sat_bounds[0], bodem_bounds[0]])
+    bottom = max([sat_bounds[1], bodem_bounds[1]])
+    right = min([sat_bounds[2], bodem_bounds[2]])
+    top = min([sat_bounds[3], bodem_bounds[3]])
+
+    return left, right, bottom, top
+
+
+def contour_bounds(ds):
+    left = ds.x.values.min()
+    right = ds.x.values.max()
+    bottom = ds.y.values.min()
+    top = ds.y.values.max()
+
+    return left, right, bottom, top
+
+
+def create_shaded_image(sat_extent, bodem):
+    # Get satellite image
+    sat = sat_extent.read()
+    sat = np.transpose(sat, (1, 2, 0))
+
+    # Get bounds of bodem and sat files
+    left, right, bottom, top = sat_and_bodem_bounds(sat_extent, bodem)
+
+    # Get transform of the files (for indices instead of coordinates)
+    t_sat = sat_extent.transform
+    t_bodem = bodem.transform
+
+    # Apply inverse transform to extrema to get indices of arrays
+    window_bodem_min = ~t_bodem * (left, top)
+    window_bodem_max = ~t_bodem * (right, bottom)
+
+    window_sat_min = ~t_sat * (left, top)
+    window_sat_max = ~t_sat * (right, bottom)
+
+    bodem = bodem.read(1)
+
+    # Get extent of arrays from indices
+    bodem = bodem[
+        int(window_bodem_min[1]) : int(window_bodem_max[1]),
+        int(window_bodem_min[0]) : int(window_bodem_max[0]),
+    ]
+    sat = sat[
+        int(window_sat_min[1]) : int(window_sat_max[1]),
+        int(window_sat_min[0]) : int(window_sat_max[0]),
+    ]
 
     # Scale satellite image to bathymetry shapes
-    sat_scaled = cv2.resize(sat, dsize=(bodem.shape[1], bodem.shape[0]), interpolation=cv2.INTER_CUBIC).astype('float64')
+    sat_scaled = (
+        cv2.resize(
+            sat, dsize=(bodem.shape[1], bodem.shape[0]), interpolation=cv2.INTER_CUBIC
+        ).astype("float64")
+        / 255
+    )
+
+    ls = LightSource(azdeg=315, altdeg=45)
 
     # Add shade to scaled image
-    img_shade = ls.shade_rgb(sat_scaled, bodem, vert_exag=5, blend_mode='soft')
-    img_shade = cv2.resize(img_shade, dsize=shape, interpolation=cv2.INTER_CUBIC).astype('float64')
+    img_shade = ls.shade_rgb(sat_scaled, bodem, vert_exag=5, blend_mode="soft")
 
     return img_shade
 
 
+def get_plot_lims(extent):
+    return extent.exterior.bounds
+
+
+def fit_rot_ds_to_bounds(ds, rot_ds, extent, angle):
+    left = ds.conc.x.values[0]
+    bottom = ds.conc.y.values[-1]
+    right = ds.conc.x.values[-1]
+    top = ds.conc.y.values[0]
+
+    geom = shapely.Polygon([(left, bottom), (left, top), (right, top), (right, bottom)])
+
+    geom_rot = shapely.affinity.rotate(geom, angle)
+    xmin1, ymin1, xmax1, ymax1 = geom_rot.bounds
+
+    dx = (xmax1 - xmin1) / rot_ds.shape[2]
+    dy = (ymax1 - ymin1) / rot_ds.shape[1]
+
+    xmin2, ymin2, xmax2, ymax2 = extent
+
+    # Compute bounds (in indices) corresponding to extent
+    # Note that ymax1 and ymax2 are the actual coordinate values, therefore the ymin index is computed using ymax coordinates
+    xmin = int((xmin2 - xmin1) / dx)
+    xmax = int(rot_ds.shape[2] - (xmax1 - xmax2) / dx)
+    ymin = int((ymax1 - ymax2) / dy)
+    ymax = int(rot_ds.shape[1] - (ymin2 - ymin1) / dy)
+
+    rot_ds = rot_ds[:, ymin:ymax, xmin:xmax]
+
+    return rot_ds
