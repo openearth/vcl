@@ -7,6 +7,8 @@ import cmocean
 from matplotlib.colors import LightSource, ListedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+import matplotlib.transforms as mtransforms
+import matplotlib.patches as patches
 from matplotlib.widgets import Slider, Button
 import scipy
 
@@ -77,6 +79,13 @@ def satellite_window(datasets):
     print("satellite window")
     rot_img_shade = datasets["sat"]
     extent_n = datasets["extent_n"]
+    sat_extent = datasets["img_shade_extent"]
+    contour_extent = datasets["top_contour_extent"]
+    angle = datasets["angle"]
+    mid_point = datasets["mid_point"]
+
+    xmin, ymin, xmax, ymax = datasets["plt_lims"]
+
     X2 = datasets["X2"]
     Y2 = datasets["Y2"]
     conc = datasets["conc"]
@@ -91,7 +100,7 @@ def satellite_window(datasets):
     socket1 = sockets["x_slice"]
     socket2 = sockets["top_view"]
 
-    init_x = 100
+    init_x = xmin + 100 * 50
 
     fig, ax = plt.subplots()
     # Set background color
@@ -112,7 +121,7 @@ def satellite_window(datasets):
         # no resize available
         pass
 
-    im_sat = ax.imshow(rot_img_shade, extent=extent_n)  # keep window open
+    im_sat = ax.imshow(rot_img_shade, extent=sat_extent)  # keep window open
     plt.pause(10)
     # interactive
     plt.ion()
@@ -127,13 +136,20 @@ def satellite_window(datasets):
         levels=[0, 1.5, 16],
         vmin=0,
         vmax=15,
-        extent=extent_n,
+        extent=contour_extent,
         alpha=0,
         cmap=cmap,
     )
+
+    transform = mtransforms.Affine2D().rotate_deg_around(
+        mid_point[0], mid_point[1], -angle
+    )
+    trans_data = transform + ax.transData
+    im_sat.set_transform(trans_data)
+
     (line,) = ax.plot(
         [init_x, init_x],
-        [extent_n[2], extent_n[3]],
+        [ymin, ymax],
         color="#255070",
         linewidth=3,
         alpha=0.7,
@@ -141,10 +157,13 @@ def satellite_window(datasets):
 
     (line_white,) = ax.plot(
         [init_x, init_x],
-        [extent_n[2], extent_n[3]],
+        [ymin, ymax],
         color="white",
         linewidth=1,
     )
+
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
 
     nm, lbl = im_c.legend_elements()
     lbl[0] = "Zoet water"
@@ -152,15 +171,14 @@ def satellite_window(datasets):
     legend = ax.legend(nm, lbl, fontsize=8, loc="upper left", framealpha=1)
 
     for c in im_c.collections:
-        c.set_alpha(0)
+        c.set_alpha(0.3)
     for i in range(2):
         legend.get_patches()[i].set(alpha=0)
         legend.get_texts()[i].set(alpha=0)
     legend.draw_frame(False)
-
     plt.axis("off")
     manager = plt.get_current_fig_manager()
-    # manager.full_screen_toggle()
+    manager.full_screen_toggle()
     plt.show(block=False)
     plt.pause(0.1)
 
@@ -181,8 +199,8 @@ def satellite_window(datasets):
             for c in im_c.collections:
                 c.set_alpha(alpha * 0.3)
             for i in range(2):
-                legend.get_patches()[i].set(alpha=alpha * 0.3)
-                legend.get_texts()[i].set(alpha=alpha * 0.3)
+                legend.get_patches()[i].set(alpha=alpha * 0.5)
+                legend.get_texts()[i].set(alpha=alpha * 0.5)
             plt.pause(0.01)
         plt.pause(0.01)
 
@@ -201,17 +219,7 @@ def contour_slice_window(datasets):
 
     nbpixels_y = datasets["nbpixels_y"]
     conc_contours_x = datasets["conc_contours_x"]
-    conc_contours_x_n = datasets["conc_contours_x_n"]
-    conc = datasets["conc"]
-    bodem = datasets["bodem0"]
     sat = datasets["sat"]
-
-    diff = np.copy(conc_contours_x_n)
-    # diff[(conc_contours_x_n == 0.0) & (conc_contours_x == 0.0)] = 0
-    diff[(conc_contours_x_n == 0.0) & (conc_contours_x != 0.0)] = 20
-    diff[(conc_contours_x_n != 0.0) & (conc_contours_x == 0.0)] = 20
-    diff[(conc_contours_x_n != 0.0) & (conc_contours_x != 0.0)] = 10
-    diff[(np.isnan(conc_contours_x_n)) & (np.isnan(conc_contours_x))] = np.nan
 
     # Define initial parameters (index instead of x value)
     init_x = 100
@@ -248,16 +256,6 @@ def contour_slice_window(datasets):
         extent=extent_x,
         aspect="auto",
         cmap=cmap,
-    )
-
-    im_x_n = ax.imshow(
-        diff[:, :, init_x],
-        vmin=0,
-        vmax=20,
-        extent=extent_x,
-        aspect="auto",
-        cmap=cmap_n,
-        alpha=0,
     )
 
     plt.pause(10)

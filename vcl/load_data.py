@@ -29,6 +29,14 @@ def load():
         .iloc[0]
         .geometry
     )
+
+    extent_klein = (
+        gpd.read_file("C:/Users/hemert/data/vcl/dataset/testbeeld-extent.geojson")
+        .to_crs(epsg=28992)
+        .iloc[0]
+        .geometry
+    )
+
     extent_groot = (
         gpd.read_file(data_dir / "afmetingen_box.shp")
         .to_crs(epsg=28992)

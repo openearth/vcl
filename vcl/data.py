@@ -42,12 +42,12 @@ def rotate_and_crop(arr, ang):
         int(shift_right) : arr_rot.shape[1] - int(shift_right),
     ]
 
-    return arr_crop
+    return arr_rot
 
 
 def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
     """Draws filled contours from contourf or tricontourf cs on output array of size (nbpixels_x, nbpixels_y)"""
-    image = np.zeros((nbpixels_x, nbpixels_y)) - 5
+    image = np.zeros((nbpixels_x, nbpixels_y)) - 10
 
     for i, collection in enumerate(cs.collections):
         z = cs.levels[i]  # get contour levels from cs
@@ -75,7 +75,7 @@ def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
 
 
 def contourf_to_array_3d(cs, nbpixels_x, nbpixels_y, scale_x, scale_y, levels):
-    res = np.zeros((nbpixels_x, nbpixels_y, cs.shape[-1])) - 5
+    res = np.zeros((nbpixels_x, nbpixels_y, cs.shape[-1])) - 10
     for i in range(res.shape[-1]):
         cf = plt.contourf(scale_x, scale_y, cs[:, :, i], levels=levels)
         res[:, :, i] = np.flip(
@@ -269,20 +269,33 @@ def get_plot_lims(extent):
     return extent.exterior.bounds
 
 
-def fit_rot_ds_to_bounds(ds, rot_ds, extent, angle):
+def get_rotated_vertex(center, point, angle):
+    new_point = np.array(point) - np.array(center)
+    rot_matrix = np.array(
+        [[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]]
+    )
+    rotated_point = np.matmul(rot_matrix, new_point)
+    rotated_point = rotated_point + np.array(center)
+    return rotated_point
+
+
+def fit_rot_ds_to_bounds(ds, rot_ds, center, extent, angle):
     left = ds.conc.x.values[0]
     bottom = ds.conc.y.values[-1]
     right = ds.conc.x.values[-1]
     top = ds.conc.y.values[0]
 
-    geom = shapely.Polygon([(left, bottom), (left, top), (right, top), (right, bottom)])
+    # Compute new vertex positions after rotation
+    xmin1 = get_rotated_vertex(center, (left, bottom), np.deg2rad(angle))[0]
+    ymin1 = get_rotated_vertex(center, (right, bottom), np.deg2rad(angle))[1]
+    xmax1 = get_rotated_vertex(center, (right, top), np.deg2rad(angle))[0]
+    ymax1 = get_rotated_vertex(center, (left, top), np.deg2rad(angle))[1]
 
-    geom_rot = shapely.affinity.rotate(geom, angle)
-    xmin1, ymin1, xmax1, ymax1 = geom_rot.bounds
-
+    # Compute dx and dy
     dx = (xmax1 - xmin1) / rot_ds.shape[2]
     dy = (ymax1 - ymin1) / rot_ds.shape[1]
 
+    # Get extent of area of interest
     xmin2, ymin2, xmax2, ymax2 = extent
 
     # Compute bounds (in indices) corresponding to extent
@@ -293,5 +306,4 @@ def fit_rot_ds_to_bounds(ds, rot_ds, extent, angle):
     ymax = int(rot_ds.shape[1] - (ymin2 - ymin1) / dy)
 
     rot_ds = rot_ds[:, ymin:ymax, xmin:xmax]
-
     return rot_ds
