@@ -30,6 +30,11 @@ def preprocess(datasets):
 
     klein = {}
     groot = {}
+    klein["bodem"] = bodem
+    groot["bodem"] = bodem
+
+    klein["bodem_bounds"] = ds_b0.bounds
+    groot["bodem_bounds"] = ds_b0.bounds
 
     klein["extent"] = datasets["extent_klein"]
     groot["extent"] = datasets["extent_klein"]

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zmq
 import cmocean
-from matplotlib.colors import LightSource, ListedColormap
+from matplotlib.colors import LightSource, ListedColormap, LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import matplotlib.transforms as mtransforms
@@ -18,7 +18,27 @@ cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
 cmap_n = ListedColormap(["royalblue", "coral", "red"])
 cmap_n = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99), "red"])
+
+# Define the colors for the blue-green-orange gradient
+colors = [(0, 0, 1), (0, 1, 0), (1, 0.5, 0)]  # Blue -> Green -> Orange
+cmap_colors = [
+    (0, (10 / 255, 28 / 255, 92 / 255)),
+    (0.13, (10 / 255, 173 / 255, 127 / 255)),  # 0m
+    (0.2, (24 / 255, 181 / 255, 81 / 255)),  # 10m
+    (0.5, (240 / 255, 233 / 255, 50 / 255)),
+    (1, (237 / 255, 189 / 255, 92 / 255)),  # 20m and above
+]
+from matplotlib.colors import Normalize
+
+norm = Normalize(vmin=-6, vmax=40)
+n_bins = [20]  # Number of bins for each color
+
+# Create the colormap
+cmap_bodem = "custom_blue_green_orange"
+cmap_bodem = LinearSegmentedColormap.from_list(cmap_bodem, cmap_colors, N=sum(n_bins))
+
 contour_show = False
+height_map_show = False
 compare = False
 matplotlib.rcParams["toolbar"] = "None"
 
@@ -89,6 +109,8 @@ def satellite_window(datasets):
     X2 = datasets["X2"]
     Y2 = datasets["Y2"]
     conc = datasets["conc"]
+    bodem = datasets["bodem"]
+    xmin_b, ymin_b, xmax_b, ymax_b = datasets["bodem_bounds"]
 
     print(conc[..., -10])
     matplotlib.use("qtagg")
@@ -141,11 +163,21 @@ def satellite_window(datasets):
         cmap=cmap,
     )
 
+    im_bodem = ax.imshow(
+        bodem,
+        alpha=0,
+        vmin=-6,
+        vmax=40,
+        extent=(xmin_b, xmax_b, ymin_b, ymax_b),
+        cmap=cmap_bodem,
+    )
+
     transform = mtransforms.Affine2D().rotate_deg_around(
         mid_point[0], mid_point[1], -angle
     )
     trans_data = transform + ax.transData
     im_sat.set_transform(trans_data)
+    im_bodem.set_transform(trans_data)
 
     (line,) = ax.plot(
         [init_x, init_x],
@@ -171,14 +203,14 @@ def satellite_window(datasets):
     legend = ax.legend(nm, lbl, fontsize=8, loc="upper left", framealpha=1)
 
     for c in im_c.collections:
-        c.set_alpha(0.3)
+        c.set_alpha(0)
     for i in range(2):
         legend.get_patches()[i].set(alpha=0)
         legend.get_texts()[i].set(alpha=0)
     legend.draw_frame(False)
     plt.axis("off")
     manager = plt.get_current_fig_manager()
-    manager.full_screen_toggle()
+    # manager.full_screen_toggle()
     plt.show(block=False)
     plt.pause(0.1)
 
@@ -195,13 +227,20 @@ def satellite_window(datasets):
             plt.pause(0.01)
         if socket2 in socks and socks[socket2] == zmq.POLLIN:
             topic2, message2 = socket2.recv(zmq.DONTWAIT).split()
-            alpha = int(message2)
-            for c in im_c.collections:
-                c.set_alpha(alpha * 0.3)
-            for i in range(2):
-                legend.get_patches()[i].set(alpha=alpha * 0.5)
-                legend.get_texts()[i].set(alpha=alpha * 0.5)
-            plt.pause(0.01)
+            message2 = message2.decode("utf-8")
+            if message2[0] == "c":
+                alpha = int(message2[1])
+                for c in im_c.collections:
+                    c.set_alpha(alpha * 0.3)
+                for i in range(2):
+                    legend.get_patches()[i].set(alpha=alpha * 0.5)
+                    legend.get_texts()[i].set(alpha=alpha * 0.5)
+                plt.pause(0.01)
+            if message2[0] == "b":
+                alpha = int(message2[1])
+                im_sat.set_alpha(abs(1 - alpha))
+                im_bodem.set_alpha(alpha)
+                plt.pause(0.01)
         plt.pause(0.01)
 
 
@@ -298,7 +337,8 @@ def slider_window(datasets):
     socket.bind("tcp://*:5556")
 
     conc = datasets["conc"]
-    init_x = 100
+    xmin, ymin, xmax, ymax = datasets["plt_lims"]
+    init_x = xmin + 100 * 50
 
     fig, ax = plt.subplots()
     plt.axis("off")
@@ -309,22 +349,31 @@ def slider_window(datasets):
     x_slider = Slider(
         ax=ax,
         label="x",
-        valmin=0,
-        valmax=conc.shape[2] - 1,
+        valmin=xmin,
+        valmax=xmax,
         valinit=init_x,
-        valstep=1,
+        valstep=50,
     )
 
     def contour(event):
         global contour_show
         if not contour_show:
             # socket.send(json.dumps(['top_view', 0.3]).encode())
-            socket.send_string("top_view %d" % 1)
+            socket.send_string("top_view c%d" % 1)
             contour_show = True
         else:
             # socket.send(json.dumps(['top_view', 0]).encode())
-            socket.send_string("top_view %d" % 0)
+            socket.send_string("top_view c%d" % 0)
             contour_show = False
+
+    def height_map(event):
+        global height_map_show
+        if not height_map_show:
+            socket.send_string("top_view b%d" % 1)
+            height_map_show = True
+        else:
+            socket.send_string("top_view b%d" % 0)
+            height_map_show = False
 
     # The function to be called anytime a slider's value changes
     def update(val):
@@ -332,11 +381,15 @@ def slider_window(datasets):
         fig.canvas.draw_idle()
         # plt.draw()
 
-    contourax = fig.add_axes([0.6, 0.025, 0.1, 0.04])
+    contourax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
     contour_button = Button(contourax, "Contour", hovercolor="0.600")
+
+    height_map_ax = fig.add_axes([0.65, 0.025, 0.1, 0.04])
+    height_map_button = Button(height_map_ax, "Hoogtekaart", hovercolor="0.600")
 
     x_slider.on_changed(update)
     contour_button.on_clicked(contour)
+    height_map_button.on_clicked(height_map)
 
     plt.show()
 
