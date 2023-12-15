@@ -266,7 +266,12 @@ def create_shaded_image(sat_extent, bodem):
 
 
 def get_plot_lims(extent):
-    return extent.exterior.bounds
+    lims = extent.exterior.bounds
+    lims = list(lims)
+    lims[0] += 1000
+    lims[1] -= 500
+    lims[-1] -= 500
+    return tuple(lims)
 
 
 def get_rotated_vertex(center, point, angle):

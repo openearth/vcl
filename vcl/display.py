@@ -260,6 +260,8 @@ def contour_slice_window(datasets):
     conc_contours_x = datasets["conc_contours_x"]
     sat = datasets["sat"]
 
+    xmin, ymin, xmax, ymax = datasets["plt_lims"]
+
     # Define initial parameters (index instead of x value)
     init_x = 100
     extent_x = (0, nbpixels_y, -140, 25.5)
@@ -319,6 +321,7 @@ def contour_slice_window(datasets):
         if socket3 in socks and socks[socket3] == zmq.POLLIN:
             topic, message = socket3.recv(zmq.DONTWAIT).split()
             slider_val = int(message)
+            slider_val = int((slider_val - xmin) / 50)
             if slider_val % 2 == 0:
                 xb_index = int(2.5 * slider_val)
             else:
