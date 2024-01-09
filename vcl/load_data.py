@@ -24,10 +24,7 @@ def load():
 
     # Extents of what we want to show
     extent_klein = (
-        gpd.read_file(data_dir / "afmetingen_krappebox.shp")
-        .to_crs(epsg=28992)
-        .iloc[0]
-        .geometry
+        gpd.read_file(data_dir / "bounding_box.shp").to_crs(epsg=28992).iloc[0].geometry
     )
 
     # extent_klein = (
@@ -51,6 +48,10 @@ def load():
 
     sat = rasterio.open(data_dir / "test3.tif")
 
+    GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
+    GVG = rasterio.open(data_dir / "GVGzonderrotatie.png")
+    ecotopen = rasterio.open(data_dir / "Ecotopen zonder rotatie en legend.png")
+
     return {
         "ds": ds,
         "ds_n": ds_n,
@@ -61,4 +62,7 @@ def load():
         "sat": sat,
         "sat_k": sat_k,
         "sat_g": sat_g,
+        "GSR": GSR,
+        "GVG": GVG,
+        "ecotoop": ecotopen,
     }

@@ -110,7 +110,14 @@ def satellite_window(datasets):
     Y2 = datasets["Y2"]
     conc = datasets["conc"]
     bodem = datasets["bodem"]
+    ecotoop = datasets["ecotoop"]
+    GSR = datasets["GSR"]
+    GVG = datasets["GVG"]
+
     xmin_b, ymin_b, xmax_b, ymax_b = datasets["bodem_bounds"]
+    xmin_e, ymin_e, xmax_e, ymax_e = datasets["ecotoop_extent"]
+    xmin_gsr, ymin_gsr, xmax_gsr, ymax_gsr = datasets["GSR_extent"]
+    xmin_gvg, ymin_gvg, xmax_gvg, ymax_gvg = datasets["GVG_extent"]
 
     print(conc[..., -10])
     matplotlib.use("qtagg")
@@ -122,7 +129,7 @@ def satellite_window(datasets):
     socket1 = sockets["x_slice"]
     socket2 = sockets["top_view"]
 
-    init_x = xmin + 100 * 50
+    init_x = xmin
 
     fig, ax = plt.subplots()
     # Set background color
@@ -172,12 +179,20 @@ def satellite_window(datasets):
         cmap=cmap_bodem,
     )
 
+    im_gsr = ax.imshow(GSR, alpha=0, extent=(xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr))
+    im_e = ax.imshow(ecotoop, alpha=0, extent=(xmin_e, xmax_e, ymin_e, ymax_e))
+    im_gvg = ax.imshow(GVG, alpha=0, extent=(xmin_gvg, xmax_gvg, ymin_gvg, ymax_gvg))
+    # print((xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr))
+
     transform = mtransforms.Affine2D().rotate_deg_around(
         mid_point[0], mid_point[1], -angle
     )
     trans_data = transform + ax.transData
     im_sat.set_transform(trans_data)
     im_bodem.set_transform(trans_data)
+    im_gsr.set_transform(trans_data)
+    im_e.set_transform(trans_data)
+    im_gvg.set_transform(trans_data)
 
     (line,) = ax.plot(
         [init_x, init_x],
@@ -196,6 +211,8 @@ def satellite_window(datasets):
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
+
+    print(xmin, xmax, ymin, ymax)
 
     nm, lbl = im_c.legend_elements()
     lbl[0] = "Zoet water"
@@ -224,7 +241,8 @@ def satellite_window(datasets):
             line.set_xdata([slider_val, slider_val])
             line_white.set_xdata([slider_val, slider_val])
             # if message[0] == 'top_view':
-            plt.pause(0.01)
+            # plt.pause(0.1)
+            fig.canvas.draw_idle()
         if socket2 in socks and socks[socket2] == zmq.POLLIN:
             topic2, message2 = socket2.recv(zmq.DONTWAIT).split()
             message2 = message2.decode("utf-8")
@@ -249,9 +267,7 @@ def contour_slice_window(datasets):
     matplotlib.use("qtagg")
 
     sockets = make_listen_sockets()
-
     poller = sockets["poller"]
-
     socket3 = sockets["x_slice_c"]
 
     print("starting matplotlib")
@@ -263,9 +279,12 @@ def contour_slice_window(datasets):
     xmin, ymin, xmax, ymax = datasets["plt_lims"]
 
     # Define initial parameters (index instead of x value)
-    init_x = 100
-    extent_x = (0, nbpixels_y, -140, 25.5)
-    yb0 = np.linspace(0, sat.shape[0], sat.shape[0])
+    init_x = 0
+    extent_x = (ymin, ymax, -140, 25.5)
+    extent_x = (ymin, ymax, -140, 25.5)
+    bodem = datasets["rotated_bodem"]
+    yb0 = np.linspace(ymax, ymin, bodem.shape[0])
+    print(bodem.shape)
 
     # Calculate index for bathymetry dataset (due to varying grid size)
     x_index = init_x
@@ -299,6 +318,8 @@ def contour_slice_window(datasets):
         cmap=cmap,
     )
 
+    (line_bodem,) = ax.plot(yb0, bodem[:, init_x], color="#70543e", linewidth=3)
+
     plt.pause(10)
 
     divider = make_axes_locatable(ax)
@@ -308,6 +329,7 @@ def contour_slice_window(datasets):
     for i, label in enumerate(["Zoet water", "Zout water"]):
         cbar.ax.text(3.5, (3 + i * 6) / 8, label, ha="center", va="center")
     ax.set_ylim(-100, 25)
+    ax.set_xlim(ymin, ymax)
     fig.tight_layout()
 
     plt.axis("off")
@@ -321,13 +343,16 @@ def contour_slice_window(datasets):
         if socket3 in socks and socks[socket3] == zmq.POLLIN:
             topic, message = socket3.recv(zmq.DONTWAIT).split()
             slider_val = int(message)
-            slider_val = int((slider_val - xmin) / 50)
+            # print(int((slider_val - xmin) / datasets["dx_bodem"]))
+            # print(int((slider_val - xmin) / datasets["dx_conc"]))
+            bodem_val = int((slider_val - xmin) / datasets["dx_bodem"])
+            slider_val = int((slider_val - xmin) / datasets["dx_conc"])
             if slider_val % 2 == 0:
                 xb_index = int(2.5 * slider_val)
             else:
                 xb_index = int(np.ceil(2.5 * slider_val))
             im_x.set_data(conc_contours_x[:, :, slider_val])
-            # im_b.set_ydata(bodem[:, xb_index])
+            line_bodem.set_ydata(bodem[:, bodem_val])
             plt.pause(0.01)
             fig.canvas.draw_idle()
         plt.pause(0.01)
@@ -337,11 +362,12 @@ def contour_slice_window(datasets):
 def slider_window(datasets):
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
+    socket.setsockopt(zmq.CONFLATE, 1)
     socket.bind("tcp://*:5556")
 
     conc = datasets["conc"]
     xmin, ymin, xmax, ymax = datasets["plt_lims"]
-    init_x = xmin + 100 * 50
+    init_x = xmin
 
     fig, ax = plt.subplots()
     plt.axis("off")
@@ -355,7 +381,7 @@ def slider_window(datasets):
         valmin=xmin,
         valmax=xmax,
         valinit=init_x,
-        valstep=50,
+        valstep=datasets["dx_conc"],
     )
 
     def contour(event):

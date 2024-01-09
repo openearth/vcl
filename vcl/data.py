@@ -1,4 +1,5 @@
 import shapely
+import rasterio
 import pandas as pd
 import numpy as np
 import scipy
@@ -30,9 +31,9 @@ def compute_rotation_angle(extent):
     return angle
 
 
-def rotate_and_crop(arr, ang):
+def rotate_and_crop(arr, ang, cval=np.nan):
     """Array arr to be rotated by ang degrees and cropped afterwards"""
-    arr_rot = scipy.ndimage.rotate(arr, ang, reshape=True, order=0)
+    arr_rot = scipy.ndimage.rotate(arr, ang, reshape=True, order=0, cval=cval)
 
     shift_up = np.ceil(np.arcsin(abs(ang) / 360 * 2 * np.pi) * arr.shape[1])
     shift_right = np.ceil(np.arcsin(abs(ang) / 360 * 2 * np.pi) * arr.shape[0])
@@ -47,7 +48,7 @@ def rotate_and_crop(arr, ang):
 
 def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
     """Draws filled contours from contourf or tricontourf cs on output array of size (nbpixels_x, nbpixels_y)"""
-    image = np.zeros((nbpixels_x, nbpixels_y)) - 10
+    image = np.zeros((nbpixels_x, nbpixels_y)) - 5
 
     for i, collection in enumerate(cs.collections):
         z = cs.levels[i]  # get contour levels from cs
@@ -268,10 +269,16 @@ def create_shaded_image(sat_extent, bodem):
 def get_plot_lims(extent):
     lims = extent.exterior.bounds
     lims = list(lims)
-    lims[0] += 1000
-    lims[1] -= 500
-    lims[-1] -= 500
     return tuple(lims)
+
+
+def prepare_rasterio_image(src):
+    image = src.read()
+    image = np.transpose(image, (1, 2, 0))
+
+    bounds = src.bounds
+
+    return image, bounds
 
 
 def get_rotated_vertex(center, point, angle):
@@ -312,3 +319,61 @@ def fit_rot_ds_to_bounds(ds, rot_ds, center, extent, angle):
 
     rot_ds = rot_ds[:, ymin:ymax, xmin:xmax]
     return rot_ds
+
+
+def fit_array_to_bounds(array, array_bounds, center, extent, angle):
+    left, bottom, right, top = array_bounds
+
+    # Compute new vertex positions after rotation
+    xmin1 = get_rotated_vertex(center, (left, bottom), np.deg2rad(angle))[0]
+    ymin1 = get_rotated_vertex(center, (right, bottom), np.deg2rad(angle))[1]
+    xmax1 = get_rotated_vertex(center, (right, top), np.deg2rad(angle))[0]
+    ymax1 = get_rotated_vertex(center, (left, top), np.deg2rad(angle))[1]
+
+    # Get extent of area of interest
+    xmin2, ymin2, xmax2, ymax2 = extent
+
+    if len(array.shape) == 2:
+        # Compute dx and dy
+        dx = (xmax1 - xmin1) / array.shape[1]
+        dy = (ymax1 - ymin1) / array.shape[0]
+
+        # Compute bounds (in indices) corresponding to extent
+        # Note that ymax1 and ymax2 are the actual coordinate values, therefore the ymin index is computed using ymax coordinates
+        xmin = int((xmin2 - xmin1) / dx)
+        xmax = int(array.shape[1] - (xmax1 - xmax2) / dx)
+        ymin = int((ymax1 - ymax2) / dy)
+        ymax = int(array.shape[0] - (ymin2 - ymin1) / dy)
+
+        array = array[ymin:ymax, xmin:xmax]
+    elif len(array.shape) == 3:
+        # Compute dx and dy
+        dx = (xmax1 - xmin1) / array.shape[2]
+        dy = (ymax1 - ymin1) / array.shape[1]
+
+        # Compute bounds (in indices) corresponding to extent
+        # Note that ymax1 and ymax2 are the actual coordinate values, therefore the ymin index is computed using ymax coordinates
+        xmin = int((xmin2 - xmin1) / dx)
+        xmax = int(array.shape[2] - (xmax1 - xmax2) / dx)
+        ymin = int((ymax1 - ymax2) / dy)
+        ymax = int(array.shape[1] - (ymin2 - ymin1) / dy)
+
+        array = array[:, ymin:ymax, xmin:xmax]
+    return (array, dx, dy)
+
+
+def compute_mid_point_rectangle(rect_bounds):
+    """
+    Function for computing the center point of the rectangle defined by rect_bounds
+
+    Input:
+        -rect_bounds, the boundary vertices of the rectangle in the order of (left, bottom, right, top)
+
+    Output:
+        -the center point of the rectangle in (x, y) or (lat, lon)
+    """
+
+    x = (rect_bounds[0] + rect_bounds[2]) / 2
+    y = (rect_bounds[1] + rect_bounds[3]) / 2
+
+    return [x, y]

@@ -14,81 +14,104 @@ import vcl.data
 import vcl.load_data
 
 
-def preprocess(datasets):
+def preprocess(datasets, size):
+    # Get salt concentration datasets
     ds = datasets["ds"]
     ds_n = datasets["ds_n"]
-
-    ds_b0 = datasets["ds_b0"]
-    # ds_b0_n = datasets["ds_b0_n"]
-
-    bodem = ds_b0.read(1)
-    bodem[np.where(bodem == -9999)] = -43.8
 
     # Replace negative concentrations (due to model errors) with 0
     ds = ds.where((ds.conc >= 0) | ds.isnull(), other=0)
     # ds_n = ds_n.where((ds_n.conc >= 0) | ds_n.isnull(), other=0)
+    conc_bounds = (
+        ds.conc.x.values[0],
+        ds.conc.y.values[-1],
+        ds.conc.x.values[-1],
+        ds.conc.y.values[0],
+    )
 
-    klein = {}
-    groot = {}
-    klein["bodem"] = bodem
-    groot["bodem"] = bodem
+    # Get bathymetry datasets
+    ds_b0 = datasets["ds_b0"]
+    # ds_b0_n = datasets["ds_b0_n"]
 
-    klein["bodem_bounds"] = ds_b0.bounds
-    groot["bodem_bounds"] = ds_b0.bounds
+    # Replace -9999 with second lowest value
+    bodem = ds_b0.read(1)
+    bodem[np.where(bodem == -9999)] = -43.8
 
-    klein["extent"] = datasets["extent_klein"]
-    groot["extent"] = datasets["extent_klein"]
+    ecotoop = datasets["ecotoop"]
+    GSR = datasets["GSR"]
+    GVG = datasets["GVG"]
 
-    klein["angle"] = vcl.data.compute_rotation_angle(klein["extent"])
-    groot["angle"] = vcl.data.compute_rotation_angle(groot["extent"])
+    # Create dictionary to store processed data and values
+    preprocessed = {}
 
-    klein["mid_point"] = klein["extent"].centroid.coords[0]
-    groot["mid_point"] = groot["extent"].centroid.coords[0]
+    # Get the extent we want to show
+    preprocessed["extent"] = datasets[f"extent_{size}"]
 
-    # klein["sat_extent"] = datasets["sat"]
-    # groot["sat_extent"] = datasets["sat"]
+    # Add satellite image
     sat = datasets["sat"]
 
-    klein["plt_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
-    groot["plt_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
+    # Add bathymetry and its bounds from the dataset
+    preprocessed["bodem"] = bodem
+    preprocessed["bodem_bounds"] = ds_b0.bounds
 
-    klein["plt_lims"] = vcl.data.get_plot_lims(
-        shapely.affinity.rotate(klein["extent"], -klein["angle"])
+    # Get other datasets and their bounds
+    (
+        preprocessed["ecotoop"],
+        preprocessed["ecotoop_extent"],
+    ) = vcl.data.prepare_rasterio_image(ecotoop)
+    preprocessed["GSR"], preprocessed["GSR_extent"] = vcl.data.prepare_rasterio_image(
+        GSR
     )
-    # print(klein["plt_lims"])
-    groot["plt_lims"] = vcl.data.get_plot_lims(
-        shapely.affinity.rotate(groot["extent"], -groot["angle"])
+    preprocessed["GVG"], preprocessed["GVG_extent"] = vcl.data.prepare_rasterio_image(
+        GVG
     )
 
-    # bodem0_n = np.array(ds_b0_n[0, 1435:2466, 1201:2970])
-    # bodem0_n[np.where(bodem0_n == -9999)] = -43.8
+    # Compute rotation angle of the extent as well as centre point of the extent
+    preprocessed["angle"] = vcl.data.compute_rotation_angle(preprocessed["extent"])
+    preprocessed["mid_point"] = preprocessed["extent"].centroid.coords[0]
+    bodem_mid_point = vcl.data.compute_mid_point_rectangle(preprocessed["bodem_bounds"])
 
-    # Ratio of 13.14 / 8.94 is that of width / height of satellite image, which is needed to make sure the ratio after rotation
-    # is ~ 2 / 1
-    klein["sat"] = vcl.data.create_shaded_image(sat, ds_b0)
-    groot["sat"] = vcl.data.create_shaded_image(sat, ds_b0)
+    # Create shaded image from satellite and bathymetry
+    preprocessed["sat"] = vcl.data.create_shaded_image(sat, ds_b0)
+    # Compute combined bounds of satellite image and the bathymetry
+    preprocessed["plt_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
+    # Get plot lims of rotated extent (rotated such that extent has an angle of 0 with the horizontal axis)
+    preprocessed["plt_lims"] = vcl.data.get_plot_lims(
+        shapely.affinity.rotate(preprocessed["extent"], -preprocessed["angle"])
+    )
+
+    # Rotate bathymetry
+    preprocessed["rotated_bodem"] = vcl.data.rotate_and_crop(
+        preprocessed["bodem"], -preprocessed["angle"], cval=-43.8
+    )
+    (
+        preprocessed["rotated_bodem"],
+        preprocessed["dx_bodem"],
+        preprocessed["dy_bodem"],
+    ) = vcl.data.fit_array_to_bounds(
+        preprocessed["rotated_bodem"],
+        preprocessed["bodem_bounds"],
+        bodem_mid_point,
+        preprocessed["plt_lims"],
+        -preprocessed["angle"],
+    )
 
     # Each z layer of concentration dataset needs to be rotated and cropped seperately to account for the slices in x and y direction
     # Create dummy array of one layer and apply the function to it to obtain its shape
     # Note that the first dimension of ds_n is time instead of z
 
-    dummy = vcl.data.rotate_and_crop(ds.conc.values[0, :, :], -klein["angle"])
+    dummy = vcl.data.rotate_and_crop(ds.conc.values[0, :, :], -preprocessed["angle"])
 
     rot_ds = np.zeros((ds.conc.shape[0], dummy.shape[0], dummy.shape[1]))
-    klein["conc"] = np.zeros((ds.conc.shape[0], dummy.shape[0], dummy.shape[1]))
-    groot["conc"] = np.zeros((ds.conc.shape[0], dummy.shape[0], dummy.shape[1]))
+    preprocessed["conc"] = np.zeros((ds.conc.shape[0], dummy.shape[0], dummy.shape[1]))
 
     for i in range(rot_ds.shape[0]):
-        klein["conc"][i, ...] = vcl.data.rotate_and_crop(
-            ds.conc.values[i, ...], -klein["angle"]
-        )
-        groot["conc"][i, ...] = vcl.data.rotate_and_crop(
-            ds.conc.values[i, ...], -groot["angle"]
+        preprocessed["conc"][i, ...] = vcl.data.rotate_and_crop(
+            ds.conc.values[i, ...], -preprocessed["angle"]
         )
 
-    print("Prima zo")
     # rot_img_shade = vcl.data.rotate_and_crop(img_shade, -15)
-    # klein["sat"] = vcl.data.rotate_and_crop(klein["img_shade"], -15)
+    # preprocessed["sat"] = vcl.data.rotate_and_crop(preprocessed["img_shade"], -15)
     # groot["sat"] = vcl.data.rotate_and_crop(groot["img_shade"], -15)
     # rot_bodem0 = vcl.data.rotate_and_crop(bodem0, -15)
 
@@ -98,43 +121,58 @@ def preprocess(datasets):
     #     smoother = scipy.interpolate.UnivariateSpline(yb0, rot_bodem0[:, i])
     #     smooth_bodem[:, i] = smoother(yb0)
 
-    klein["conc"] = vcl.data.fit_rot_ds_to_bounds(
-        ds, klein["conc"], klein["mid_point"], klein["plt_lims"], -klein["angle"]
-    )
+    # Make sure rotated data fits to plt_lims
+    # preprocessed["conc"] = vcl.data.fit_rot_ds_to_bounds(
+    #     ds,
+    #     preprocessed["conc"],
+    #     preprocessed["mid_point"],
+    #     preprocessed["plt_lims"],
+    #     -preprocessed["angle"],
+    # )
 
-    groot["conc"] = vcl.data.fit_rot_ds_to_bounds(
-        ds, groot["conc"], klein["mid_point"], groot["plt_lims"], -groot["angle"]
+    (
+        preprocessed["conc"],
+        preprocessed["dx_conc"],
+        preprocessed["dy_conc"],
+    ) = vcl.data.fit_array_to_bounds(
+        preprocessed["conc"],
+        conc_bounds,
+        preprocessed["mid_point"],
+        preprocessed["plt_lims"],
+        -preprocessed["angle"],
     )
-
-    print("Prima zo")
 
     # Set new extent
-    klein["img_shade_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
-    groot["img_shade_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
-
-    klein["top_contour_extent"] = vcl.data.contour_bounds(ds)
-    groot["top_contour_extent"] = vcl.data.contour_bounds(ds)
-
-    klein["extent_n"] = 0, klein["sat"].shape[1], 0, klein["sat"].shape[0]
-    groot["extent_n"] = 0, groot["sat"].shape[1], 0, groot["sat"].shape[0]
-
-    klein["X2"], klein["Y2"] = np.meshgrid(
-        np.linspace(klein["plt_lims"][0], klein["plt_lims"][2], klein["conc"].shape[2]),
-        np.linspace(klein["plt_lims"][3], klein["plt_lims"][1], klein["conc"].shape[1]),
-    )
-    groot["X2"], groot["Y2"] = np.meshgrid(
-        np.linspace(groot["plt_lims"][0], groot["plt_lims"][2], groot["conc"].shape[2]),
-        np.linspace(groot["plt_lims"][3], groot["plt_lims"][1], groot["conc"].shape[1]),
+    preprocessed["img_shade_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
+    preprocessed["top_contour_extent"] = vcl.data.contour_bounds(ds)
+    preprocessed["extent_n"] = (
+        0,
+        preprocessed["sat"].shape[1],
+        0,
+        preprocessed["sat"].shape[0],
     )
 
-    Yk, Zk = np.meshgrid(
-        np.linspace(klein["plt_lims"][3], klein["plt_lims"][1], klein["conc"].shape[1]),
+    # Make meshgrid for contour plots
+    preprocessed["Y1"], preprocessed["Z1"] = np.meshgrid(
+        np.linspace(
+            preprocessed["plt_lims"][3],
+            preprocessed["plt_lims"][1],
+            preprocessed["conc"].shape[1],
+        ),
         ds.z,
     )
 
-    Yg, Zg = np.meshgrid(
-        np.linspace(groot["plt_lims"][3], groot["plt_lims"][1], groot["conc"].shape[1]),
-        ds.z,
+    preprocessed["X2"], preprocessed["Y2"] = np.meshgrid(
+        np.linspace(
+            preprocessed["plt_lims"][0],
+            preprocessed["plt_lims"][2],
+            preprocessed["conc"].shape[2],
+        ),
+        np.linspace(
+            preprocessed["plt_lims"][3],
+            preprocessed["plt_lims"][1],
+            preprocessed["conc"].shape[1],
+        ),
     )
 
     # Set contour cmap
@@ -144,31 +182,24 @@ def preprocess(datasets):
     # Initialize an array to store the intersections
     # Note that we choose an array filled with -2 instead of 0, since we have a contour level of 0. So in this case a value of -2
     # indicates a nan value
-    klein["nbpixels_x"] = 160
-    klein["nbpixels_y"] = klein["conc"].shape[1]
-    groot["nbpixels_x"] = 160
-    groot["nbpixels_y"] = groot["conc"].shape[1]
+    preprocessed["nbpixels_x"] = 320
+    preprocessed["nbpixels_y"] = preprocessed["conc"].shape[1]
 
-    print("Prima zo")
-    klein["conc_contours_x"] = vcl.data.contourf_to_array_3d(
-        klein["conc"],
-        klein["nbpixels_x"],
-        klein["nbpixels_y"],
-        Yk,
-        Zk,
-        levels=[-3, 1.5, 16],
-    )
-    print("Prima zo")
-    groot["conc_contours_x"] = vcl.data.contourf_to_array_3d(
-        groot["conc"],
-        groot["nbpixels_x"],
-        groot["nbpixels_y"],
-        Yg,
-        Zg,
-        levels=[-3, 1.5, 16],
+    # Compute filled contours
+    preprocessed["conc_contours_x"] = vcl.data.contourf_to_array_3d(
+        preprocessed["conc"],
+        preprocessed["nbpixels_x"],
+        preprocessed["nbpixels_y"],
+        preprocessed["Y1"],
+        preprocessed["Z1"],
+        levels=[-1, 1.5, 16],
     )
 
+    # Close opened files
     ds_b0.close()
     sat.close()
+    ecotoop.close()
+    GSR.close()
+    GVG.close()
 
-    return {"klein": klein, "groot": groot}
+    return preprocessed

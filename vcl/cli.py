@@ -88,18 +88,18 @@ def main(satellite, contour, size, args=None):
     )
 
     datasets = vcl.load_data.load()
-    datasets = vcl.prep_data.preprocess(datasets)
+    datasets = vcl.prep_data.preprocess(datasets, size)
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)
 
-    if satellite:
-        executor.submit(vcl.display.satellite_window, datasets[size])
     # # executor.submit(mayavi_window)
     # # executor.submit(vcl.display.opencv_window)
-    executor.submit(vcl.display.slider_window, datasets[size])
+    executor.submit(vcl.display.slider_window, datasets)
+    if satellite:
+        executor.submit(vcl.display.satellite_window, datasets)
     if contour:
         # executor.submit(vcl.display.satellite_window2, datasets)
-        executor.submit(vcl.display.contour_slice_window, datasets[size])
+        executor.submit(vcl.display.contour_slice_window, datasets)
 
     # while True:
     #     time.sleep(0.1)
