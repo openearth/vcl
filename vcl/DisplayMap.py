@@ -16,7 +16,7 @@ import vcl.prep_data
 
 
 class DisplayMap:
-    def __init__(self) -> None:
+    def __init__(self, sat_img, sat_extent, plt_lims, transform=None) -> None:
         super(DisplayMap, self).__init__()
         self.fig, self.ax = plt.subplots()
         # Set background color
@@ -28,6 +28,16 @@ class DisplayMap:
         # No axis
         self.ax.set_axis_off()
         self.ax.set_frame_on(False)
+        self.transform = self.ax.transData
+
+        im = self.ax.imshow(sat_img, extent=sat_extent)
+
+        if transform is not None:
+            im.set_transform(transform + self.transform)
+
+        xmin, ymin, xmax, ymax = plt_lims
+        self.ax.set_xlim(xmin, xmax)
+        self.ax.set_ylim(ymin, ymax)
 
         self.current_layer = None
 
@@ -35,7 +45,7 @@ class DisplayMap:
         im = self.ax.imshow(data, **kwargs)
 
         if transform is not None:
-            im.set_transform(transform)
+            im.set_transform(transform + self.transform)
 
         self.current_layer = im
 
@@ -45,21 +55,16 @@ class DisplayMap:
         im = self.ax.contourf(X, Y, data, **kwargs)
 
         if transform is not None:
-            im.set_transform(transform)
+            im.set_transform(transform + self.transform)
 
         self.current_layer = im
 
         return im
 
-    def get_transform(self):
-        return self.ax.transData
-
-    def change_layer(self, data, transform=None, **kwargs):
+    def change_layer(self, data=None, transform=None, **kwargs):
         self.current_layer.remove()
 
-        im = self.imshow(data, **kwargs)
-
-        if transform is not None:
-            im.set_transform(transform)
-
-        self.current_layer = im
+        if data is not None:
+            self.imshow(data, transform=transform, **kwargs)
+        else:
+            self.current_layer = None

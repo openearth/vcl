@@ -13,6 +13,7 @@ from matplotlib.widgets import Slider, Button
 import scipy
 
 import vcl.prep_data
+import vcl.DisplayMap
 
 cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
@@ -109,6 +110,7 @@ def satellite_window(datasets):
     X2 = datasets["X2"]
     Y2 = datasets["Y2"]
     conc = datasets["conc"]
+    conc = datasets["conc_contours_x"]
     bodem = datasets["bodem"]
     ecotoop = datasets["ecotoop"]
     GSR = datasets["GSR"]
@@ -131,100 +133,113 @@ def satellite_window(datasets):
 
     init_x = xmin
 
-    fig, ax = plt.subplots()
-    # Set background color
-    fig.patch.set_facecolor("black")
-    # No margins
-    fig.tight_layout()
-    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+    transform = mtransforms.Affine2D().rotate_deg_around(
+        mid_point[0], mid_point[1], -angle
+    )
+    display = vcl.DisplayMap.DisplayMap(
+        rot_img_shade, sat_extent, datasets["plt_lims"], transform
+    )
 
-    # No axis
-    ax.set_axis_off()
-    ax.set_frame_on(False)
-
-    # fullscreen
-    manager = plt.get_current_fig_manager()
-    try:
-        manager.resize(*manager.window.maxsize())
-    except AttributeError:
-        # no resize available
-        pass
-
-    im_sat = ax.imshow(rot_img_shade, extent=sat_extent)  # keep window open
+    # im_sat = ax.imshow(rot_img_shade, extent=sat_extent)  # keep window open
     plt.pause(10)
     # interactive
     plt.ion()
     print("image shown")
     plt.show(block=False)
     print("I am not here")
-
-    im_c = ax.contourf(
-        X2,
-        Y2,
-        conc[-10, :, :],
-        levels=[0, 1.5, 16],
-        vmin=0,
-        vmax=15,
-        extent=contour_extent,
-        alpha=0,
+    display.imshow(
+        datasets["conc_contour_top_view"][..., 0],
+        # vmin=0,
+        # vmax=1.5,
+        extent=(xmin, xmax, ymin, ymax),
         cmap=cmap,
+        alpha=0.7,
     )
+    plt.pause(10)
 
-    im_bodem = ax.imshow(
-        bodem,
-        alpha=0,
-        vmin=-6,
-        vmax=40,
-        extent=(xmin_b, xmax_b, ymin_b, ymax_b),
-        cmap=cmap_bodem,
-    )
-
-    im_gsr = ax.imshow(GSR, alpha=0, extent=(xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr))
-    im_e = ax.imshow(ecotoop, alpha=0, extent=(xmin_e, xmax_e, ymin_e, ymax_e))
-    im_gvg = ax.imshow(GVG, alpha=0, extent=(xmin_gvg, xmax_gvg, ymin_gvg, ymax_gvg))
-    # print((xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr))
-
-    transform = mtransforms.Affine2D().rotate_deg_around(
-        mid_point[0], mid_point[1], -angle
-    )
-    trans_data = transform + ax.transData
-    im_sat.set_transform(trans_data)
-    im_bodem.set_transform(trans_data)
-    im_gsr.set_transform(trans_data)
-    im_e.set_transform(trans_data)
-    im_gvg.set_transform(trans_data)
-
-    (line,) = ax.plot(
-        [init_x, init_x],
-        [ymin, ymax],
-        color="#255070",
-        linewidth=3,
+    display.change_layer(
+        GSR,
+        transform=transform,
+        extent=(xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr),
         alpha=0.7,
     )
 
-    (line_white,) = ax.plot(
-        [init_x, init_x],
-        [ymin, ymax],
-        color="white",
-        linewidth=1,
-    )
+    # im_gsr = ax.imshow(GSR, alpha=0, extent=(xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr))
+    # im_x = ax.imshow(
+    #     conc_contours_x[:, :, init_x],
+    #     vmin=0,
+    #     vmax=1.5,
+    #     extent=extent_x,
+    #     aspect="auto",
+    #     cmap=cmap,
+    # )
 
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
+    # im_c = ax.contourf(
+    #     X2,
+    #     Y2,
+    #     conc[-10, :, :],
+    #     levels=[0, 1.5, 16],
+    #     vmin=0,
+    #     vmax=15,
+    #     extent=contour_extent,
+    #     alpha=0,
+    #     cmap=cmap,
+    # )
 
-    print(xmin, xmax, ymin, ymax)
+    # im_bodem = ax.imshow(
+    #     bodem,
+    #     alpha=0,
+    #     vmin=-6,
+    #     vmax=40,
+    #     extent=(xmin_b, xmax_b, ymin_b, ymax_b),
+    #     cmap=cmap_bodem,
+    # )
 
-    nm, lbl = im_c.legend_elements()
-    lbl[0] = "Zoet water"
-    lbl[1] = "Zout water"
-    legend = ax.legend(nm, lbl, fontsize=8, loc="upper left", framealpha=1)
+    # im_e = ax.imshow(ecotoop, alpha=0, extent=(xmin_e, xmax_e, ymin_e, ymax_e))
+    # im_gvg = ax.imshow(GVG, alpha=0, extent=(xmin_gvg, xmax_gvg, ymin_gvg, ymax_gvg))
+    # # print((xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr))
 
-    for c in im_c.collections:
-        c.set_alpha(0)
-    for i in range(2):
-        legend.get_patches()[i].set(alpha=0)
-        legend.get_texts()[i].set(alpha=0)
-    legend.draw_frame(False)
+    # transform = mtransforms.Affine2D().rotate_deg_around(
+    #     mid_point[0], mid_point[1], -angle
+    # )
+    # trans_data = transform + ax.transData
+    # im_sat.set_transform(trans_data)
+    # im_bodem.set_transform(trans_data)
+    # im_gsr.set_transform(trans_data)
+    # im_e.set_transform(trans_data)
+    # im_gvg.set_transform(trans_data)
+
+    # (line,) = ax.plot(
+    #     [init_x, init_x],
+    #     [ymin, ymax],
+    #     color="#255070",
+    #     linewidth=3,
+    #     alpha=0.7,
+    # )
+
+    # (line_white,) = ax.plot(
+    #     [init_x, init_x],
+    #     [ymin, ymax],
+    #     color="white",
+    #     linewidth=1,
+    # )
+
+    # ax.set_xlim(xmin, xmax)
+    # ax.set_ylim(ymin, ymax)
+
+    # print(xmin, xmax, ymin, ymax)
+
+    # nm, lbl = im_c.legend_elements()
+    # lbl[0] = "Zoet water"
+    # lbl[1] = "Zout water"
+    # legend = ax.legend(nm, lbl, fontsize=8, loc="upper left", framealpha=1)
+
+    # for c in im_c.collections:
+    #     c.set_alpha(0)
+    # for i in range(2):
+    #     legend.get_patches()[i].set(alpha=0)
+    #     legend.get_texts()[i].set(alpha=0)
+    # legend.draw_frame(False)
     plt.axis("off")
     manager = plt.get_current_fig_manager()
     # manager.full_screen_toggle()

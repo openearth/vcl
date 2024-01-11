@@ -48,15 +48,18 @@ def rotate_and_crop(arr, ang, cval=np.nan):
 
 def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
     """Draws filled contours from contourf or tricontourf cs on output array of size (nbpixels_x, nbpixels_y)"""
-    image = np.zeros((nbpixels_x, nbpixels_y)) - 5
+    image = np.zeros((nbpixels_x, nbpixels_y)) - 10
+    images = {}
+    shapes = {}
 
     for i, collection in enumerate(cs.collections):
         z = cs.levels[i]  # get contour levels from cs
+        images[i] = np.full((nbpixels_x, nbpixels_y), np.nan)
         for path in collection.get_paths():
             verts = (
                 path.to_polygons()
             )  # get vertices of current contour level (is a list of arrays)
-            for v in verts:
+            for j, v in enumerate(verts):
                 # rescale vertices to image size
                 v[:, 0] = (
                     (v[:, 0] - np.min(scale_x))
@@ -71,18 +74,66 @@ def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
                 poly = np.array(
                     [v], dtype=np.int32
                 )  # dtype integer is necessary for the next instruction
-                cv2.fillPoly(image, poly, z)
+                cv2.fillPoly(images[i], poly, z)
+                if j == 0:
+                    shapes[i] = shapely.Polygon(poly[0, ...])
+                    shapes[i] = shapely.MultiPolygon([shapes[i]])
+                else:
+                    try:
+                        shapes[i] = shapes[i].union(shapely.Polygon(poly[0, ...]))
+                    except:
+                        continue
+    return images, shapes
+
+
+def combine_polygons(images, shapes):
+    polygons = sorted(shapes.items(), key=lambda item: item[1].area, reverse=True)
+    # print(len(polygons))
+    image = np.full(images[0].shape, np.nan)
+    for i in polygons:
+        image[~np.isnan(images[i[0]])] = np.nanmax(images[i[0]])
+
+    # print(image.shape)
     return image
 
 
-def contourf_to_array_3d(cs, nbpixels_x, nbpixels_y, scale_x, scale_y, levels):
-    res = np.zeros((nbpixels_x, nbpixels_y, cs.shape[-1])) - 10
-    for i in range(res.shape[-1]):
-        cf = plt.contourf(scale_x, scale_y, cs[:, :, i], levels=levels)
-        res[:, :, i] = np.flip(
-            contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
-        )
-        res[:, :, i][np.where(res[:, :, i] < -4)] = np.nan
+def contourf_to_array_3d(
+    cs, nbpixels_x, nbpixels_y, nbpixels_z, axis, scale_x, scale_y, levels
+):
+    res = np.zeros((nbpixels_x, nbpixels_y, nbpixels_z)) - 10
+    res = np.full((nbpixels_x, nbpixels_y, nbpixels_z), np.nan)
+    if axis > 0:
+        for i in range(res.shape[-1]):
+            # print(i)
+            s = [slice(None)] * res.ndim  # create a full slice
+            s[axis] = i  # replace the slice on the desired axis
+            indexing = tuple(s)
+            cf = plt.contourf(scale_x, scale_y, cs[indexing], levels=levels)
+            contourfs, shapes = contourf_to_array(
+                cf, nbpixels_x, nbpixels_y, scale_x, scale_y
+            )
+            res[..., i] = np.flip(combine_polygons(contourfs, shapes), axis=0)
+            # res[..., i] = np.flip(
+            #     contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
+            # )
+            # res[..., i][np.where(res[..., i] < -4)] = np.nan
+    else:
+        for i in range(res.shape[-1]):
+            s = [slice(None)] * res.ndim  # create a full slice
+            s[axis] = i  # replace the slice on the desired axis
+            indexing = tuple(s)
+            print(np.nanmax(cs[-10, ...]))
+            cf = plt.contourf(
+                scale_x, scale_y, cs[-10, ...], levels=levels, vmin=0, vmax=15
+            )
+            contourfs, shapes = contourf_to_array(
+                cf, nbpixels_x, nbpixels_y, scale_x, scale_y
+            )
+            res[..., i] = np.flip(combine_polygons(contourfs, shapes), axis=0)
+            # res[..., i] = np.flip(
+            #     contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
+            # )
+            # res[..., i][np.where(res[..., i] < -4)] = np.nan
     plt.close("all")
     return res
 
