@@ -40,6 +40,7 @@ class DisplayMap:
         self.ax.set_ylim(ymin, ymax)
 
         self.current_layer = None
+        plt.show(block=False)
 
     def imshow(self, data, transform=None, **kwargs):
         im = self.ax.imshow(data, **kwargs)
@@ -50,6 +51,10 @@ class DisplayMap:
         self.current_layer = im
 
         return im
+
+    def line_plot(self, x_data, y_data, **kwargs):
+        # self.ax.plot(x_data, y_data, **kwargs)
+        return self.ax.plot(x_data, y_data, **kwargs)
 
     def contourf(self, X, Y, data, transform=None, **kwargs):
         im = self.ax.contourf(X, Y, data, **kwargs)
@@ -62,7 +67,8 @@ class DisplayMap:
         return im
 
     def change_layer(self, data=None, transform=None, **kwargs):
-        self.current_layer.remove()
+        if self.current_layer is not None:
+            self.current_layer.remove()
 
         if data is not None:
             self.imshow(data, transform=transform, **kwargs)

@@ -187,18 +187,16 @@ def preprocess(datasets, size):
 
     # Compute filled contours
     preprocessed["conc_contour_top_view"] = vcl.data.contourf_to_array_3d(
-        preprocessed["conc"],
-        preprocessed["conc"].shape[2],
+        np.expand_dims(preprocessed["conc"][-10, ...], axis=0),
         preprocessed["conc"].shape[1],
+        preprocessed["conc"].shape[2],
         1,
         0,
         preprocessed["X2"],
         preprocessed["Y2"],
         levels=[-1, 1.5, 16],
-    )
+    )[..., 0]
 
-    print(np.nanmin(preprocessed["conc"]))
-    print(np.nanmin(preprocessed["conc_contour_top_view"]))
     preprocessed["conc_contours_x"] = vcl.data.contourf_to_array_3d(
         preprocessed["conc"],
         preprocessed["nbpixels_x"],
@@ -209,7 +207,7 @@ def preprocess(datasets, size):
         preprocessed["Z1"],
         levels=[-1, 1.5, 16],
     )
-    print(np.nanmin(preprocessed["conc_contours_x"]))
+
     # Close opened files
     ds_b0.close()
     sat.close()

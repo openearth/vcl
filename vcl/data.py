@@ -102,38 +102,20 @@ def contourf_to_array_3d(
 ):
     res = np.zeros((nbpixels_x, nbpixels_y, nbpixels_z)) - 10
     res = np.full((nbpixels_x, nbpixels_y, nbpixels_z), np.nan)
-    if axis > 0:
-        for i in range(res.shape[-1]):
-            # print(i)
-            s = [slice(None)] * res.ndim  # create a full slice
-            s[axis] = i  # replace the slice on the desired axis
-            indexing = tuple(s)
-            cf = plt.contourf(scale_x, scale_y, cs[indexing], levels=levels)
-            contourfs, shapes = contourf_to_array(
-                cf, nbpixels_x, nbpixels_y, scale_x, scale_y
-            )
-            res[..., i] = np.flip(combine_polygons(contourfs, shapes), axis=0)
-            # res[..., i] = np.flip(
-            #     contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
-            # )
-            # res[..., i][np.where(res[..., i] < -4)] = np.nan
-    else:
-        for i in range(res.shape[-1]):
-            s = [slice(None)] * res.ndim  # create a full slice
-            s[axis] = i  # replace the slice on the desired axis
-            indexing = tuple(s)
-            print(np.nanmax(cs[-10, ...]))
-            cf = plt.contourf(
-                scale_x, scale_y, cs[-10, ...], levels=levels, vmin=0, vmax=15
-            )
-            contourfs, shapes = contourf_to_array(
-                cf, nbpixels_x, nbpixels_y, scale_x, scale_y
-            )
-            res[..., i] = np.flip(combine_polygons(contourfs, shapes), axis=0)
-            # res[..., i] = np.flip(
-            #     contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
-            # )
-            # res[..., i][np.where(res[..., i] < -4)] = np.nan
+    for i in range(res.shape[-1]):
+        # print(i)
+        s = [slice(None)] * res.ndim  # create a full slice
+        s[axis] = i  # replace the slice on the desired axis
+        indexing = tuple(s)
+        cf = plt.contourf(scale_x, scale_y, cs[indexing], levels=levels)
+        contourfs, shapes = contourf_to_array(
+            cf, nbpixels_x, nbpixels_y, scale_x, scale_y
+        )
+        res[..., i] = np.flip(combine_polygons(contourfs, shapes), axis=0)
+        # res[..., i] = np.flip(
+        #     contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
+        # )
+        # res[..., i][np.where(res[..., i] < -4)] = np.nan
     plt.close("all")
     return res
 
