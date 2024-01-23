@@ -368,8 +368,8 @@ def fit_array_to_bounds(array, array_bounds, center, extent, angle):
 
     if len(array.shape) == 2:
         # Compute dx and dy
-        dx = (xmax1 - xmin1) / array.shape[1]
-        dy = (ymax1 - ymin1) / array.shape[0]
+        dx = np.round((xmax1 - xmin1) / array.shape[1])
+        dy = np.round((ymax1 - ymin1) / array.shape[0])
 
         # Compute bounds (in indices) corresponding to extent
         # Note that ymax1 and ymax2 are the actual coordinate values, therefore the ymin index is computed using ymax coordinates
@@ -381,8 +381,8 @@ def fit_array_to_bounds(array, array_bounds, center, extent, angle):
         array = array[ymin:ymax, xmin:xmax]
     elif len(array.shape) == 3:
         # Compute dx and dy
-        dx = (xmax1 - xmin1) / array.shape[2]
-        dy = (ymax1 - ymin1) / array.shape[1]
+        dx = np.round((xmax1 - xmin1) / array.shape[2])
+        dy = np.round((ymax1 - ymin1) / array.shape[1])
 
         # Compute bounds (in indices) corresponding to extent
         # Note that ymax1 and ymax2 are the actual coordinate values, therefore the ymin index is computed using ymax coordinates

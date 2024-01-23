@@ -31,11 +31,14 @@ def preprocess(datasets, size):
 
     # Get bathymetry datasets
     ds_b0 = datasets["ds_b0"]
-    # ds_b0_n = datasets["ds_b0_n"]
+    ds_b0_n = datasets["ds_b0_n"]
 
     # Replace -9999 with second lowest value
     bodem = ds_b0.read(1)
     bodem[np.where(bodem == -9999)] = -43.8
+
+    bodem_nieuw = ds_b0_n.read(1)
+    bodem_nieuw[np.where(bodem_nieuw == -9999)] = -43.8
 
     ecotoop = datasets["ecotoop"]
     GSR = datasets["GSR"]
@@ -54,6 +57,9 @@ def preprocess(datasets, size):
     preprocessed["bodem"] = bodem
     preprocessed["bodem_bounds"] = ds_b0.bounds
 
+    preprocessed["bodem_2050"] = bodem_nieuw
+    preprocessed["bodem_2050_bounds"] = ds_b0_n.bounds
+
     # Get other datasets and their bounds
     (
         preprocessed["ecotoop"],
@@ -70,6 +76,9 @@ def preprocess(datasets, size):
     preprocessed["angle"] = vcl.data.compute_rotation_angle(preprocessed["extent"])
     preprocessed["mid_point"] = preprocessed["extent"].centroid.coords[0]
     bodem_mid_point = vcl.data.compute_mid_point_rectangle(preprocessed["bodem_bounds"])
+    bodem_2050_mid_point = vcl.data.compute_mid_point_rectangle(
+        preprocessed["bodem_2050_bounds"]
+    )
 
     # Create shaded image from satellite and bathymetry
     preprocessed["sat"] = vcl.data.create_shaded_image(sat, ds_b0)
@@ -96,6 +105,52 @@ def preprocess(datasets, size):
         -preprocessed["angle"],
     )
 
+    preprocessed["smooth_bodem"] = np.zeros_like(preprocessed["rotated_bodem"])
+
+    y_bodem = np.linspace(
+        preprocessed["plt_lims"][1],
+        preprocessed["plt_lims"][3],
+        preprocessed["rotated_bodem"].shape[0],
+    )
+    for i in range(preprocessed["smooth_bodem"].shape[1]):
+        bodem_smoother = scipy.interpolate.UnivariateSpline(
+            y_bodem, preprocessed["rotated_bodem"][:, i]
+        )
+        bodem_smooth = bodem_smoother(y_bodem)
+        preprocessed["smooth_bodem"][:, i] = bodem_smooth
+
+    # Repeat for other bathymetry
+    preprocessed["rotated_bodem_2050"] = vcl.data.rotate_and_crop(
+        preprocessed["bodem_2050"], -preprocessed["angle"], cval=-43.8
+    )
+    (
+        preprocessed["rotated_bodem_2050"],
+        preprocessed["dx_bodem_2050"],
+        preprocessed["dy_bodem_2050"],
+    ) = vcl.data.fit_array_to_bounds(
+        preprocessed["rotated_bodem_2050"],
+        preprocessed["bodem_2050_bounds"],
+        bodem_2050_mid_point,
+        preprocessed["plt_lims"],
+        -preprocessed["angle"],
+    )
+
+    preprocessed["smooth_bodem_2050"] = np.zeros_like(
+        preprocessed["rotated_bodem_2050"]
+    )
+
+    y_bodem = np.linspace(
+        preprocessed["plt_lims"][1],
+        preprocessed["plt_lims"][3],
+        preprocessed["rotated_bodem_2050"].shape[0],
+    )
+    for i in range(preprocessed["smooth_bodem_2050"].shape[1]):
+        bodem_smoother = scipy.interpolate.UnivariateSpline(
+            y_bodem, preprocessed["rotated_bodem_2050"][:, i]
+        )
+        bodem_smooth = bodem_smoother(y_bodem)
+        preprocessed["smooth_bodem_2050"][:, i] = bodem_smooth
+
     # Each z layer of concentration dataset needs to be rotated and cropped seperately to account for the slices in x and y direction
     # Create dummy array of one layer and apply the function to it to obtain its shape
     # Note that the first dimension of ds_n is time instead of z
@@ -104,10 +159,16 @@ def preprocess(datasets, size):
 
     rot_ds = np.zeros((ds.conc.shape[0], dummy.shape[0], dummy.shape[1]))
     preprocessed["conc"] = np.zeros((ds.conc.shape[0], dummy.shape[0], dummy.shape[1]))
+    preprocessed["conc_2050"] = np.zeros(
+        (ds_n.conc.shape[1], dummy.shape[0], dummy.shape[1])
+    )
 
     for i in range(rot_ds.shape[0]):
         preprocessed["conc"][i, ...] = vcl.data.rotate_and_crop(
             ds.conc.values[i, ...], -preprocessed["angle"]
+        )
+        preprocessed["conc_2050"][i, ...] = vcl.data.rotate_and_crop(
+            ds_n.conc.values[0, i, ...], -preprocessed["angle"]
         )
 
     # rot_img_shade = vcl.data.rotate_and_crop(img_shade, -15)
@@ -143,7 +204,7 @@ def preprocess(datasets, size):
     )
 
     # Set new extent
-    preprocessed["img_shade_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
+    preprocessed["sat_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
     preprocessed["top_contour_extent"] = vcl.data.contour_bounds(ds)
     preprocessed["extent_n"] = (
         0,

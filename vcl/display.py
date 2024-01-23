@@ -14,6 +14,7 @@ import scipy
 
 import vcl.prep_data
 import vcl.DisplayMap
+import vcl.DisplaySlice
 
 cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
@@ -101,7 +102,7 @@ def satellite_window(datasets):
     print("satellite window")
     rot_img_shade = datasets["sat"]
     extent_n = datasets["extent_n"]
-    sat_extent = datasets["img_shade_extent"]
+    sat_extent = datasets["sat_extent"]
     contour_extent = datasets["top_contour_extent"]
     angle = datasets["angle"]
     mid_point = datasets["mid_point"]
@@ -126,6 +127,7 @@ def satellite_window(datasets):
     )
 
     maps = {
+        "sat": {"extent": sat_extent},
         "conc_contour_top_view": {
             "extent": (xmin, xmax, ymin, ymax),
             "cmap": cmap,
@@ -156,7 +158,6 @@ def satellite_window(datasets):
         },
     }
 
-    print(conc[..., -10])
     matplotlib.use("qtagg")
 
     sockets = make_listen_sockets()
@@ -210,7 +211,7 @@ def satellite_window(datasets):
                 display.change_layer()
             if message == "1":
                 display.change_layer(datasets[layer], **maps[layer])
-                plt.pause(0.01)
+            plt.pause(0.01)
         plt.pause(0.01)
 
 
@@ -221,92 +222,58 @@ def contour_slice_window(datasets):
     sockets = make_listen_sockets()
     poller = sockets["poller"]
     socket3 = sockets["x_slice_c"]
+    socket4 = sockets["top_view"]
 
     print("starting matplotlib")
 
     nbpixels_y = datasets["nbpixels_y"]
     conc_contours_x = datasets["conc_contours_x"]
     sat = datasets["sat"]
-
+    print(conc_contours_x.shape)
     xmin, ymin, xmax, ymax = datasets["plt_lims"]
 
     # Define initial parameters (index instead of x value)
     init_x = 0
     extent_x = (ymin, ymax, -140, 25.5)
-    extent_x = (ymin, ymax, -140, 25.5)
-    bodem = datasets["rotated_bodem"]
+    bodem = datasets["smooth_bodem"]
+    bodem_2050 = datasets["smooth_bodem_2050"]
     yb0 = np.linspace(ymax, ymin, bodem.shape[0])
-    print(bodem.shape)
 
-    # Calculate index for bathymetry dataset (due to varying grid size)
-    x_index = init_x
-    if x_index % 2 == 0:
-        xb_index = int(2.5 * x_index)
-    else:
-        xb_index = int(np.ceil(2.5 * x_index))
+    datasets["bodem"] = bodem
 
-    fig, ax = plt.subplots()
-
-    # adjust the main plot to make room for the slider
-    fig.subplots_adjust(left=0.05, bottom=0.25)
-
-    plt.ion()
-    print("image shown")
-    plt.show(block=False)
-    print("I am not here")
-
-    # zorder=0 is default order for images
-    ax.fill_between(
-        [extent_x[0], extent_x[1]], y1=-140, y2=0, facecolor="#255070", zorder=0
+    display = vcl.DisplaySlice.DisplaySlice(
+        conc_contours_x, extent_x, datasets["plt_lims"], cmap, init_x
     )
 
-    # pcolormesh is faster, but not as smooth as contourf
-    im_x = ax.imshow(
-        conc_contours_x[:, :, init_x],
-        vmin=0,
-        vmax=1.5,
-        extent=extent_x,
-        aspect="auto",
-        cmap=cmap,
-    )
+    maps = {"bodem": {"color": "#70543e", "linewidth": 3}}
 
-    (line_bodem,) = ax.plot(yb0, bodem[:, init_x], color="#70543e", linewidth=3)
+    # display.line_plot(yb0, bodem, color="#70543e", linewidth=3)
 
     plt.pause(10)
-
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.10)
-    cbar = plt.colorbar(im_x, cax=cax)
-    cbar.ax.get_yaxis().set_ticks([])
-    for i, label in enumerate(["Zoet water", "Zout water"]):
-        cbar.ax.text(3.5, (3 + i * 6) / 8, label, ha="center", va="center")
-    ax.set_ylim(-100, 25)
-    ax.set_xlim(ymin, ymax)
-    fig.tight_layout()
-
-    plt.axis("off")
-    manager = plt.get_current_fig_manager()
-    # manager.full_screen_toggle()
-    plt.show(block=False)
-    plt.pause(0.1)
+    # display.change_line_data(yb0, bodem_2050, color="#70543e", linewidth=3)
 
     while True:
         socks = dict(poller.poll(10))
         if socket3 in socks and socks[socket3] == zmq.POLLIN:
             topic, message = socket3.recv(zmq.DONTWAIT).split()
             slider_val = int(message)
-            # print(int((slider_val - xmin) / datasets["dx_bodem"]))
-            # print(int((slider_val - xmin) / datasets["dx_conc"]))
             bodem_val = int((slider_val - xmin) / datasets["dx_bodem"])
-            slider_val = int((slider_val - xmin) / datasets["dx_conc"])
-            if slider_val % 2 == 0:
-                xb_index = int(2.5 * slider_val)
-            else:
-                xb_index = int(np.ceil(2.5 * slider_val))
-            im_x.set_data(conc_contours_x[:, :, slider_val])
-            line_bodem.set_ydata(bodem[:, bodem_val])
+            conc_val = int((slider_val - xmin) / datasets["dx_conc"])
+            display.change_slice(conc_val, bodem_val)
             plt.pause(0.01)
-            fig.canvas.draw_idle()
+            # fig.canvas.draw_idle()
+        if socket4 in socks and socks[socket4] == zmq.POLLIN:
+            topic2, message2 = socket4.recv(zmq.DONTWAIT).split()
+            message2 = message2.decode("utf-8")
+            layer, message = message2.split(",")
+            if message == "0":
+                display.change_line_data()
+            if message == "1":
+                try:
+                    display.change_line_data(yb0, datasets[layer], **maps[layer])
+                except:
+                    continue
+            plt.pause(0.01)
         plt.pause(0.01)
     # print("matplotlib socket", socket)
 
@@ -330,10 +297,10 @@ def slider_window(datasets):
     x_slider = Slider(
         ax=ax,
         label="x",
-        valmin=xmin,
-        valmax=xmax,
+        valmin=int(xmin),
+        valmax=int(xmax),
         valinit=init_x,
-        valstep=datasets["dx_conc"],
+        valstep=100,
     )
 
     def change_layer(event, text):

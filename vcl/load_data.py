@@ -17,11 +17,8 @@ def load():
     ds_n = xr.open_dataset(data_dir.joinpath("conc_nieuw.nc"))
 
     # Dataset of bathymetry
-    ds_b0 = rxr.open_rasterio(data_dir.joinpath("originele_bodem.tif"))
-    ds_b0_n = rxr.open_rasterio(data_dir.joinpath("nieuwe_bodem_v2.tif"))
-
     ds_b0 = rasterio.open(data_dir / "originele_bodem.tif")
-
+    ds_b0_n = rasterio.open(data_dir / "nieuwe_bodem_v2.tif")
     # Extents of what we want to show
     extent_klein = (
         gpd.read_file(data_dir / "bounding_box.shp").to_crs(epsg=28992).iloc[0].geometry
