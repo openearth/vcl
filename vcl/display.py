@@ -12,9 +12,10 @@ import matplotlib.patches as patches
 from matplotlib.widgets import Slider, Button
 import scipy
 
+import vcl.data
 import vcl.prep_data
-import vcl.DisplayMap
-import vcl.DisplaySlice
+import vcl.DisplayMap2
+import vcl.DisplaySlice2
 
 cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
@@ -83,49 +84,60 @@ def make_listen_sockets():
     socket3.connect("tcp://localhost:5556")
     socket3.subscribe("x_slice")
 
+    socket4 = context.socket(zmq.SUB)
+    socket4.connect("tcp://localhost:5556")
+    socket4.subscribe("scenario")
+
     poller = zmq.Poller()
     poller.register(socket1, zmq.POLLIN)
     poller.register(socket2, zmq.POLLIN)
     poller.register(socket3, zmq.POLLIN)
+    poller.register(socket4, zmq.POLLIN)
 
     sockets = {
         "context": context,
         "x_slice": socket1,
         "top_view": socket2,
         "x_slice_c": socket3,
+        "scenario": socket4,
         "poller": poller,
     }
     return sockets
 
 
 def satellite_window(datasets):
-    print("satellite window")
-    rot_img_shade = datasets["sat"]
-    extent_n = datasets["extent_n"]
-    sat_extent = datasets["sat_extent"]
-    contour_extent = datasets["top_contour_extent"]
-    angle = datasets["angle"]
-    mid_point = datasets["mid_point"]
+    # Retrieve sockets for communication
+    sockets = make_listen_sockets()
+    poller = sockets["poller"]
 
-    xmin, ymin, xmax, ymax = datasets["plt_lims"]
+    # Socket for slider
+    socket1 = sockets["x_slice"]
+    # Socket for changing layer
+    socket2 = sockets["top_view"]
+    # Socket for changing scenario
+    socket3 = sockets["scenario"]
 
-    X2 = datasets["X2"]
-    Y2 = datasets["Y2"]
-    conc = datasets["conc"]
-    conc = datasets["conc_contours_x"]
+    # Get plot lims
+    xmin, ymin, xmax, ymax = datasets["2023"]["plt_lims"]
 
-    xmin_b, ymin_b, xmax_b, ymax_b = datasets["bodem_bounds"]
-    xmin_e, ymin_e, xmax_e, ymax_e = datasets["ecotoop_extent"]
-    xmin_gsr, ymin_gsr, xmax_gsr, ymax_gsr = datasets["GSR_extent"]
-    xmin_gvg, ymin_gvg, xmax_gvg, ymax_gvg = datasets["GVG_extent"]
+    # Get extent of different layers
+    sat_extent = datasets["2023"]["sat_extent"]
+    xmin_b, ymin_b, xmax_b, ymax_b = datasets["2023"]["bodem_bounds"]
+    xmin_e, ymin_e, xmax_e, ymax_e = datasets["2023"]["ecotoop_extent"]
+    xmin_gsr, ymin_gsr, xmax_gsr, ymax_gsr = datasets["2023"]["GSR_extent"]
+    xmin_gvg, ymin_gvg, xmax_gvg, ymax_gvg = datasets["2023"]["GVG_extent"]
 
+    # Get mid point and rotation angle for transform
+    angle = datasets["2023"]["angle"]
+    mid_point = datasets["2023"]["mid_point"]
+    # Define rotation transform
     transform = mtransforms.Affine2D().rotate_deg_around(
         mid_point[0], mid_point[1], -angle
     )
-    display = vcl.DisplayMap.DisplayMap(
-        rot_img_shade, sat_extent, datasets["plt_lims"], transform
-    )
 
+    print("satellite window")
+
+    # Define dictionary with plot kwargs for the different layers
     maps = {
         "sat": {"extent": sat_extent},
         "conc_contour_top_view": {
@@ -156,20 +168,34 @@ def satellite_window(datasets):
             "alpha": 0.7,
             "transform": transform,
         },
+        "animation_data": {"transform": transform},
     }
+
+    # Create animation frames from file paths (ideally in prep_data, but gave errors so for now moved to here)
+    animation_files = datasets["2023"]["animation_data"]
+    animation_data = {}
+    for i, frame in enumerate(animation_files):
+        animation_data[i] = vcl.data.get_frame_data(frame)
+
+    datasets["2023"]["animation_data"] = animation_data
+    datasets["2050"]["animation_data"] = animation_data
+
+    # Create display window with satellite image
+    display = vcl.DisplayMap2.DisplayMap(
+        datasets,
+        maps,
+        "sat",
+        datasets["2023"]["plt_lims"],
+        "2023",
+        transform,
+    )
 
     matplotlib.use("qtagg")
 
-    sockets = make_listen_sockets()
-
-    poller = sockets["poller"]
-
-    socket1 = sockets["x_slice"]
-    socket2 = sockets["top_view"]
-
+    # Start position for vertical line
     init_x = xmin
 
-    # im_sat = ax.imshow(rot_img_shade, extent=sat_extent)  # keep window open
+    # Pause so you can move window around
     plt.pause(10)
     # interactive
     plt.ion()
@@ -177,7 +203,7 @@ def satellite_window(datasets):
     plt.show(block=False)
     print("I am not here")
 
-    plt.pause(1)
+    # Plot vertical lines on display
     (line_blue,) = display.line_plot(
         [init_x, init_x], [ymin, ymax], color="#255070", linewidth=3, alpha=0.7
     )
@@ -191,27 +217,32 @@ def satellite_window(datasets):
     plt.show(block=False)
     plt.pause(0.1)
 
+    # Loop to check if new message is received
     while True:
         socks = dict(poller.poll(10))
+        # If slider sends message, update vertical line
         if socket1 in socks and socks[socket1] == zmq.POLLIN:
-            # message = json.loads(socket1.recv().decode())
             topic, message = socket1.recv(zmq.DONTWAIT).split()
-            # if message[0] == 'x_slice':
             slider_val = int(message)
             line_blue.set_xdata([slider_val, slider_val])
             line_white.set_xdata([slider_val, slider_val])
-            # if message[0] == 'top_view':
-            # plt.pause(0.1)
 
+        # If button for new layer is pressed, display new layer
         if socket2 in socks and socks[socket2] == zmq.POLLIN:
-            topic2, message2 = socket2.recv(zmq.DONTWAIT).split()
-            message2 = message2.decode("utf-8")
-            layer, message = message2.split(",")
+            topic, message = socket2.recv(zmq.DONTWAIT).split()
+            message = message.decode("utf-8")
+            layer, message = message.split(",")
             if message == "0":
                 display.change_layer()
             if message == "1":
-                display.change_layer(datasets[layer], **maps[layer])
-            plt.pause(0.01)
+                display.change_layer(layer)
+
+        # If button for different scenario is pressed, change scenario
+        if socket3 in socks and socks[socket3] == zmq.POLLIN:
+            topic, message = socket3.recv(zmq.DONTWAIT).split()
+            scenario = message.decode("utf-8")
+            display.change_scenario(scenario)
+
         plt.pause(0.01)
 
 
@@ -219,83 +250,107 @@ def contour_slice_window(datasets):
     print("Ook al gelukt!")
     matplotlib.use("qtagg")
 
+    # Retrieve sockets for communication
     sockets = make_listen_sockets()
     poller = sockets["poller"]
-    socket3 = sockets["x_slice_c"]
-    socket4 = sockets["top_view"]
+
+    # Socket for slider
+    socket1 = sockets["x_slice_c"]
+    # Socket for changing layer
+    socket2 = sockets["top_view"]
+    # Socket for changing scenario
+    socket3 = sockets["scenario"]
 
     print("starting matplotlib")
 
-    nbpixels_y = datasets["nbpixels_y"]
-    conc_contours_x = datasets["conc_contours_x"]
-    sat = datasets["sat"]
-    print(conc_contours_x.shape)
-    xmin, ymin, xmax, ymax = datasets["plt_lims"]
-
-    # Define initial parameters (index instead of x value)
-    init_x = 0
+    # Get extent
+    xmin, ymin, xmax, ymax = datasets["2023"]["plt_lims"]
     extent_x = (ymin, ymax, -140, 25.5)
-    bodem = datasets["smooth_bodem"]
-    bodem_2050 = datasets["smooth_bodem_2050"]
+
+    # Get smoothed bathymetry lines
+    bodem = datasets["2023"]["smooth_bodem"]
+    # Create x coordinates for plotting the lines
     yb0 = np.linspace(ymax, ymin, bodem.shape[0])
 
-    datasets["bodem"] = bodem
+    # Change "bodem" in datasets to bathymetry lines (so the dict key corresponds to the dict key for satellite window)
+    datasets["2023"]["bodem"] = bodem
+    datasets["2050"]["bodem"] = datasets["2050"]["smooth_bodem"]
 
-    display = vcl.DisplaySlice.DisplaySlice(
-        conc_contours_x, extent_x, datasets["plt_lims"], cmap, init_x
+    # Define dictionary with plot kwargs for the different layers
+    maps = {
+        "bodem": {"x": yb0, "color": "#70543e", "linewidth": 3},
+        "conc_contours_x": {"extent": extent_x, "aspect": "auto", "cmap": cmap},
+    }
+
+    # Create display with concentration contours
+    display = vcl.DisplaySlice2.DisplaySlice(
+        datasets,
+        maps,
+        "conc_contours_x",
+        "2023",
+        extent_x,
+        datasets["2023"]["plt_lims"],
     )
 
-    maps = {"bodem": {"color": "#70543e", "linewidth": 3}}
+    # Pause so you can move window around
+    plt.pause(20)
 
-    # display.line_plot(yb0, bodem, color="#70543e", linewidth=3)
-
-    plt.pause(10)
-    # display.change_line_data(yb0, bodem_2050, color="#70543e", linewidth=3)
-
+    # Loop to check if new message is received
     while True:
         socks = dict(poller.poll(10))
-        if socket3 in socks and socks[socket3] == zmq.POLLIN:
-            topic, message = socket3.recv(zmq.DONTWAIT).split()
+        # If slider sends message, update contour or line
+        if socket1 in socks and socks[socket1] == zmq.POLLIN:
+            topic, message = socket1.recv(zmq.DONTWAIT).split()
             slider_val = int(message)
-            bodem_val = int((slider_val - xmin) / datasets["dx_bodem"])
-            conc_val = int((slider_val - xmin) / datasets["dx_conc"])
+            bodem_val = int((slider_val - xmin) / datasets["2023"]["dx_bodem"])
+            conc_val = int((slider_val - xmin) / datasets["2023"]["dx_conc"])
             display.change_slice(conc_val, bodem_val)
             plt.pause(0.01)
             # fig.canvas.draw_idle()
-        if socket4 in socks and socks[socket4] == zmq.POLLIN:
-            topic2, message2 = socket4.recv(zmq.DONTWAIT).split()
-            message2 = message2.decode("utf-8")
-            layer, message = message2.split(",")
+
+        # If button for new layer is pressed, display new layer (if they are 3D)
+        if socket2 in socks and socks[socket2] == zmq.POLLIN:
+            topic, message = socket2.recv(zmq.DONTWAIT).split()
+            message = message.decode("utf-8")
+            layer, message = message.split(",")
             if message == "0":
                 display.change_line_data()
             if message == "1":
                 try:
-                    display.change_line_data(yb0, datasets[layer], **maps[layer])
+                    display.change_line_data(layer)
                 except:
                     continue
             plt.pause(0.01)
+
+        # If button for different scenario is pressed, change scenario
+        if socket3 in socks and socks[socket3] == zmq.POLLIN:
+            topic, message = socket3.recv(zmq.DONTWAIT).split()
+            scenario = message.decode("utf-8")
+            display.change_scenario(scenario)
         plt.pause(0.01)
-    # print("matplotlib socket", socket)
 
 
 def slider_window(datasets):
+    # Create publishing socket
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     socket.setsockopt(zmq.CONFLATE, 1)
     socket.bind("tcp://*:5556")
 
-    conc = datasets["conc"]
-    xmin, ymin, xmax, ymax = datasets["plt_lims"]
+    # Get plot lims, for starting position slider
+    xmin, ymin, xmax, ymax = datasets["2023"]["plt_lims"]
     init_x = xmin
 
+    # Figure for slider and buttons
     fig, ax = plt.subplots()
     plt.axis("off")
     ax.set_axis_off()
     ax.set_frame_on(False)
 
-    x_ax = fig.add_axes([0.25, 0.1, 0.5, 0.03])
+    # Add axis for slider
+    x_ax = fig.add_axes([0.25, 0.2, 0.5, 0.03])
     x_slider = Slider(
-        ax=ax,
+        ax=x_ax,
         label="x",
         valmin=int(xmin),
         valmax=int(xmax),
@@ -303,6 +358,7 @@ def slider_window(datasets):
         valstep=100,
     )
 
+    # Function to send layer when button pressed
     def change_layer(event, text):
         global current_layer
         if current_layer == text:
@@ -316,8 +372,8 @@ def slider_window(datasets):
     def update(val):
         socket.send_string("x_slice %d" % val)
         fig.canvas.draw_idle()
-        # plt.draw()
 
+    # Create buttons
     contourax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
     contour_button = Button(contourax, "Contour", hovercolor="0.600")
 
@@ -333,130 +389,35 @@ def slider_window(datasets):
     GVG_ax = fig.add_axes([0.20, 0.025, 0.1, 0.04])
     GVG_button = Button(GVG_ax, "GVG", hovercolor="0.600")
 
+    animation_ax = fig.add_axes([0.05, 0.085, 0.1, 0.04])
+    animation_button = Button(animation_ax, "animation", hovercolor="0.600")
+
+    scenario_ax = fig.add_axes([0.05, 0.025, 0.1, 0.04])
+    scenario_button = Button(scenario_ax, "2050", hovercolor="0.600")
+
+    # Call functions when buttons are pressed or slider is slid
     x_slider.on_changed(update)
     contour_button.on_clicked(lambda x: change_layer(x, "conc_contour_top_view"))
     height_map_button.on_clicked(lambda x: change_layer(x, "bodem"))
     ecotoop_button.on_clicked(lambda x: change_layer(x, "ecotoop"))
     GSR_button.on_clicked(lambda x: change_layer(x, "GSR"))
     GVG_button.on_clicked(lambda x: change_layer(x, "GVG"))
+    animation_button.on_clicked(lambda x: change_layer(x, "animation_data"))
+
+    # Slightly different function for scenario button
+    def change_scenario(event):
+        # Get currently shown scenario and change scenario to other scenario when pressed
+        # Update button text when pressed as well
+        next_scenario = scenario_button.label.get_text()
+        if next_scenario == "2023":
+            socket.send_string("scenario 2023")
+            scenario_button.label.set_text("2050")
+            fig.canvas.draw_idle()
+        else:
+            socket.send_string("scenario 2050")
+            scenario_button.label.set_text("2023")
+            fig.canvas.draw_idle()
+
+    scenario_button.on_clicked(change_scenario)
 
     plt.show()
-
-
-def satellite_window2(datasets):
-    print("satellite window")
-    nbpixels_y = datasets["nbpixels_y"]
-    conc_contours_x = datasets["conc_contours_x"]
-    conc_contours_x_n = datasets["conc_contours_x_n"]
-    conc = datasets["conc"]
-    bodem = datasets["bodem"]
-    sat = datasets["sat"]
-
-    diff = np.copy(conc_contours_x_n)
-    # diff[(conc_contours_x_n == 0.0) & (conc_contours_x == 0.0)] = 0
-    diff[(conc_contours_x_n == 0.0) & (conc_contours_x != 0.0)] = 20
-    diff[(conc_contours_x_n != 0.0) & (conc_contours_x == 0.0)] = 20
-    diff[(conc_contours_x_n != 0.0) & (conc_contours_x != 0.0)] = 10
-    diff[(np.isnan(conc_contours_x_n)) & (np.isnan(conc_contours_x))] = np.nan
-
-    # Define initial parameters (index instead of x value)
-    init_x = 100
-    extent_x = (0, nbpixels_y, -140, 25.5)
-    yb0 = np.linspace(0, sat.shape[0], sat.shape[0])
-
-    # Calculate index for bathymetry dataset (due to varying grid size)
-    x_index = init_x
-    if x_index % 2 == 0:
-        xb_index = int(2.5 * x_index)
-    else:
-        xb_index = int(np.ceil(2.5 * x_index))
-
-    matplotlib.use("qtagg")
-    # def key_press(event):
-    #    if event.key == 'x':
-    #        line.set_ydata()
-
-    print("starting matplotlib")
-
-    # print("matplotlib socket", socket)
-    """
-    context = zmq.Context()
-    socket = context.socket(zmq.SUB)
-    socket.connect("tcp://localhost:5556")
-    socket.setsockopt(zmq.SUBSCRIBE, b'')
-    """
-
-    print("constructed subs")
-
-    sockets = make_listen_sockets()
-
-    poller = sockets["poller"]
-    socket1 = sockets["x_slice_c"]
-
-    init_x = 100
-
-    fig, ax = plt.subplots()
-    # Set background color
-    fig.patch.set_facecolor("black")
-    # No margins
-    fig.tight_layout()
-    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-
-    # No axis
-    ax.set_axis_off()
-    ax.set_frame_on(False)
-
-    # fullscreen
-    manager = plt.get_current_fig_manager()
-    try:
-        manager.resize(*manager.window.maxsize())
-    except AttributeError:
-        # no resize available
-        pass
-
-    # interactive
-    plt.ion()
-    print("image shown")
-    plt.show(block=False)
-    print("I am not here")
-
-    # for i in range(10):
-    #     plt.pause(1)
-    ax.fill_between(
-        [extent_x[0], extent_x[1]], y1=-140, y2=0, facecolor="#255070", zorder=0
-    )
-
-    # pcolormesh is faster, but not as smooth as contourf
-    im_x = ax.imshow(
-        conc_contours_x[:, :, init_x],
-        vmin=0,
-        vmax=1.5,
-        extent=extent_x,
-        aspect="auto",
-        cmap=cmap,
-    )
-    plt.pause(10)
-
-    (im_b,) = ax.plot(yb0, bodem[:, xb_index], color="#70543e", linewidth=3)
-
-    plt.axis("off")
-    manager = plt.get_current_fig_manager()
-    # manager.full_screen_toggle()
-    plt.show(block=False)
-    plt.pause(0.1)
-
-    while True:
-        socks = dict(poller.poll(10))
-        if socket1 in socks and socks[socket1] == zmq.POLLIN:
-            # message = json.loads(socket1.recv().decode())
-            topic, message = socket1.recv(zmq.DONTWAIT).split()
-            # if message[0] == 'x_slice':
-            slider_val = int(message)
-            if slider_val % 2 == 0:
-                xb_index = int(2.5 * slider_val)
-            else:
-                xb_index = int(np.ceil(2.5 * slider_val))
-            im_x.set_data(conc_contours_x[:, :, slider_val])
-            im_b.set_ydata(bodem[:, xb_index])
-            plt.pause(0.001)
-        plt.pause(0.001)

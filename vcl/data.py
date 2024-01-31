@@ -5,14 +5,21 @@ import numpy as np
 import scipy
 import cv2
 import matplotlib.pyplot as plt
+import rioxarray as rxr
 from matplotlib.colors import LightSource
 
 
 def compute_rotation_angle(extent):
+    """
+    Function for computing the rotation angle of the geometry extent
+    The angle is the counterclockwise angle between the geometry and the x-axis
+    """
+    # Get vertices of geometry (rectangle)
     coords = list(extent.exterior.coords)
     coords = pd.DataFrame(coords)
     coords.columns = ["x", "y"]
 
+    # Get minimum and maximum x and y values from vertices
     xmin = coords.idxmin(0)["x"]
     ymin = coords.idxmin(0)["y"]
     xmax = coords.idxmax(0)["x"]
@@ -47,7 +54,20 @@ def rotate_and_crop(arr, ang, cval=np.nan):
 
 
 def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
-    """Draws filled contours from contourf or tricontourf cs on output array of size (nbpixels_x, nbpixels_y)"""
+    """
+    Draws filled contours from contourf or tricontourf cs on output array of size (nbpixels_x, nbpixels_y)
+
+    Input:
+        - cs, a contourf or tricontourf object from matplotlib
+        - nbpixles_x, the number of rows for the output arrays
+        - nbpixels_y, the number of columns for the output arrays
+        - scale_x, the x component of the meshgrid for the contours
+        - scale_y, the y component of the meshgrid for the contours
+
+    Output:
+        - images, a dictionary of arrays for each contour level
+        - shapes, a dictionary of polygons from the contour for each contour level
+    """
     image = np.zeros((nbpixels_x, nbpixels_y)) - 10
     images = {}
     shapes = {}
@@ -86,147 +106,66 @@ def contourf_to_array(cs, nbpixels_x, nbpixels_y, scale_x, scale_y):
     return images, shapes
 
 
+# This function was needed, since otherwise a smaller polygon fully inside a bigger polygon could get overwritten
 def combine_polygons(images, shapes):
+    """
+    Function for combining images containing polygons from contour levels
+    into one image in the order of biggest polygons to smallest polygons
+
+    Input:
+        - images, a dictionary of arrays for each contour level
+        - shapes, a dictionary of polygons from the contour for each contour level
+
+    Output:
+        - image, an array combined from images
+    """
+
+    # Sort polygons from big to small
     polygons = sorted(shapes.items(), key=lambda item: item[1].area, reverse=True)
-    # print(len(polygons))
     image = np.full(images[0].shape, np.nan)
+    # Add polygons from images to image
     for i in polygons:
         image[~np.isnan(images[i[0]])] = np.nanmax(images[i[0]])
 
-    # print(image.shape)
     return image
 
 
 def contourf_to_array_3d(
     cs, nbpixels_x, nbpixels_y, nbpixels_z, axis, scale_x, scale_y, levels
 ):
+    """
+    Draws filled contours for 3d array cs along the specified axis
+    on output array of size (nbpixels_x, nbpixels_y, nbpixels_z)
+
+    Input:
+        - cs, 3 dimensional array
+        - nbpixles_x, the number of rows for the output array
+        - nbpixels_y, the number of columns for the output array
+        - nbpixels_z, the number of drawn contours of shape (nbpixels_x, nbpixels_y) in the output array
+        - axis, the axis along which the filled contours need to be created
+        - scale_x, the x component of the meshgrid for the contours
+        - scale_y, the y component of the meshgrid for the contours
+        - levels, the contour levels
+
+    Output:
+        - res, a 3 dimensional array of shape (nbpixels_x, nbpixels_y, nbpixels_z) with nbpixels_z amount of contours
+    """
+
     res = np.zeros((nbpixels_x, nbpixels_y, nbpixels_z)) - 10
     res = np.full((nbpixels_x, nbpixels_y, nbpixels_z), np.nan)
     for i in range(res.shape[-1]):
-        # print(i)
-        s = [slice(None)] * res.ndim  # create a full slice
-        s[axis] = i  # replace the slice on the desired axis
+        # create a full slice
+        s = [slice(None)] * res.ndim
+        # replace the slice on the desired axis
+        s[axis] = i
         indexing = tuple(s)
         cf = plt.contourf(scale_x, scale_y, cs[indexing], levels=levels)
         contourfs, shapes = contourf_to_array(
             cf, nbpixels_x, nbpixels_y, scale_x, scale_y
         )
         res[..., i] = np.flip(combine_polygons(contourfs, shapes), axis=0)
-        # res[..., i] = np.flip(
-        #     contourf_to_array(cf, nbpixels_x, nbpixels_y, scale_x, scale_y), axis=0
-        # )
-        # res[..., i][np.where(res[..., i] < -4)] = np.nan
     plt.close("all")
     return res
-
-
-def create_bounds():
-    bounds_k = {
-        "x": {
-            "min": 137089.2373932857299224,
-            "max": 168249.9520578108495101,
-        },
-        "y": {
-            "min": 589482.3877100050449371,
-            "max": 610702.8749795859912410,
-        },
-    }
-    bounds_g = {
-        "x": {
-            "min": 129971.5049754020292312,
-            "max": 170784.9834783510013949,
-        },
-        "y": {
-            "min": 584191.5390384565107524,
-            "max": 611985.5710535547696054,
-        },
-    }
-    for key, value in bounds_k.items():
-        bounds_k[key]["delta"] = (
-            (bounds_k[key]["max"] - bounds_k[key]["min"]) / (8.94 / 10.22)
-            - (bounds_k[key]["max"] - bounds_k[key]["min"])
-        ) / 2
-        bounds_g[key]["delta"] = (
-            (bounds_g[key]["max"] - bounds_g[key]["min"]) / (8.94 / 10.22)
-            - (bounds_g[key]["max"] - bounds_g[key]["min"])
-        ) / 2
-
-        bounds_k[key]["min"] -= bounds_k[key]["delta"]
-        bounds_k[key]["max"] += bounds_k[key]["delta"]
-        bounds_g[key]["min"] -= bounds_g[key]["delta"]
-        bounds_g[key]["max"] += bounds_g[key]["delta"]
-    return bounds_k, bounds_g
-
-
-def get_bathymetry_extent(ds, bounds):
-    print(np.where(ds.x.values >= bounds["x"]["min"])[0].min())
-    x_index_min = np.where(ds.x.values >= bounds["x"]["min"])[0].min() - 1
-    x_index_max = np.where(ds.x.values >= bounds["x"]["max"])[0].min()
-    y_index_min = np.where(ds.y.values >= bounds["y"]["min"])[0].max() + 1
-    y_index_max = np.where(ds.y.values >= bounds["y"]["max"])[0].max()
-
-    extent = (x_index_min, x_index_max, y_index_min, y_index_max)
-    return extent
-
-
-def prep_bathymetry_data(ds, extent):
-    x_b, y_b = np.array(ds.x[extent[0] : extent[1]]), np.array(
-        ds.y[extent[3] : extent[2]]
-    )
-    bodem = np.array(ds[0, extent[3] : extent[2], extent[0] : extent[1]])
-    bodem[np.where(bodem == -9999)] = -43.8
-    return x_b, y_b, bodem
-
-
-def get_conc_extent(ds, x_b, y_b):
-    x_min = np.where(x_b >= ds.x.values.min())[0].min() - 1
-    x_max = np.where(x_b <= ds.x.values.max())[0].max() + 1
-    y_min = np.where(y_b >= ds.y.values.min())[0].max() + 1
-    y_max = np.where(y_b <= ds.y.values.max())[0].min() - 1
-
-    extent = (x_min, x_max, y_min, y_max)
-    return extent
-
-
-def rescale_and_fit_ds(ds, ds_bounds, rescale_size1, rescale_size2, axis=0):
-    """
-    Rescales dataset ds to fit over the satellite image with size rescale_size2
-    It also fits the dataset values such that the x and y bounds of the dataset are
-    placed on the right positions over the satellite image
-
-    Input:
-        ds - dataset to rescale and fit
-        ds_bounds - indices of the bounds of the bathymetry, corresponding to the ds bounds
-        rescale_size1 - shape of the bathymetry
-        rescale_size2 - shape of the satellite image
-        axis - axis of ds over which we want to rescale and fit
-
-    Output:
-        ds_rescaled - dataset with known values on the right positions over the satellite and
-                      nan's everywhere else
-    """
-    xmin, ymin = ds_bounds[0]
-    xmax, ymax = ds_bounds[1]
-    ds_sub = np.zeros(rescale_size1)
-    ds_sub[:] = np.nan
-    for i in range(ds.shape[axis]):
-        ds_inter = cv2.resize(
-            ds[i, :, :], dsize=(xmax - xmin, ymin - ymax), interpolation=cv2.INTER_CUBIC
-        )
-        ds_sub[ymax:ymin, xmin:xmax] = ds_inter
-        ds_sub2 = np.expand_dims(
-            cv2.resize(
-                ds_sub,
-                dsize=(rescale_size2[1], rescale_size2[0]),
-                interpolation=cv2.INTER_CUBIC,
-            ),
-            axis=axis,
-        )
-        if i == 0:
-            ds_rescaled = ds_sub2
-        else:
-            ds_rescaled = np.concatenate([ds_rescaled, ds_sub2], axis=axis)
-    return ds_rescaled
 
 
 def sat_and_bodem_bounds(sat, bodem):
@@ -315,11 +254,26 @@ def prepare_rasterio_image(src):
 
 
 def get_rotated_vertex(center, point, angle):
+    """
+    Computes new coordinates of a rectangle vertex after rotation
+
+    Input:
+        - center, the center point of the rectangle
+        - point, the original vertex point
+        - angle, the rotation angle of the rectangle
+
+    Output:
+        - rotated_point, the new coordinates of point after rotation
+    """
+    # Translate point such that 'rectangle' has center at (0, 0)
     new_point = np.array(point) - np.array(center)
+    # Create rotation matrix
     rot_matrix = np.array(
         [[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]]
     )
+    # Compute rotated point
     rotated_point = np.matmul(rot_matrix, new_point)
+    # translate point back
     rotated_point = rotated_point + np.array(center)
     return rotated_point
 
@@ -355,6 +309,22 @@ def fit_rot_ds_to_bounds(ds, rot_ds, center, extent, angle):
 
 
 def fit_array_to_bounds(array, array_bounds, center, extent, angle):
+    """
+    Crops the array to the extent. This assumes that array is rotated by angle degrees
+    and extent is the extent after rotation. array bounds are the original bounds before rotation
+
+    Input:
+        - array, a 'rotated' array which we want to crop
+        - array_bounds, the bounds or extent of the original array before rotation
+        - center, the center point of the extent to which we want to crop
+        - extent, the extent to which we want to crop
+        - angle, the rotation angle of the array
+
+    Output:
+        - array, the cropped array
+        - dx, the distance one cell in x direction represents
+        - dy, the distance one cell in y direction represents
+    """
     left, bottom, right, top = array_bounds
 
     # Compute new vertex positions after rotation
@@ -366,6 +336,7 @@ def fit_array_to_bounds(array, array_bounds, center, extent, angle):
     # Get extent of area of interest
     xmin2, ymin2, xmax2, ymax2 = extent
 
+    # Assumes that array dimensions are (y, x) or (z, y, x)
     if len(array.shape) == 2:
         # Compute dx and dy
         dx = np.round((xmax1 - xmin1) / array.shape[1])
@@ -410,3 +381,19 @@ def compute_mid_point_rectangle(rect_bounds):
     y = (rect_bounds[1] + rect_bounds[3]) / 2
 
     return [x, y]
+
+
+def get_frame_data(path):
+    # Read tiff file and transpose bands to last dimension
+    sat_tif = rxr.open_rasterio(path)
+    sat_img = sat_tif.values
+    sat_img = np.transpose(sat_img, (1, 2, 0))
+
+    # Convert CRS to 28992 and get bounds
+    sat_bounds = sat_tif.rio.reproject("EPSG:28992").rio.bounds()
+    sat_extent = (sat_bounds[0], sat_bounds[2], sat_bounds[1], sat_bounds[3])
+
+    # Get year of satellite image
+    sat_text = path.stem[:4]
+
+    return {"image": sat_img, "extent": sat_extent, "text": sat_text}
