@@ -316,10 +316,10 @@ def contour_slice_window(datasets):
             if message == "0":
                 display.change_line_data()
             if message == "1":
-                try:
+                if layer in maps.keys():
                     display.change_line_data(layer)
-                except:
-                    continue
+                else:
+                    display.change_line_data()
             plt.pause(0.01)
 
         # If button for different scenario is pressed, change scenario

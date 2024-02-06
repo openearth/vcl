@@ -54,8 +54,13 @@ class DisplaySlice:
         cax = divider.append_axes("right", size="5%", pad=0.10)
         cbar = plt.colorbar(im, cax=cax)
         cbar.ax.get_yaxis().set_ticks([])
-        for i, label in enumerate(["Zoet water", "Zout water"]):
-            cbar.ax.text(3.5, (3 + i * 6) / 8, label, ha="center", va="center")
+        ymin, ymax = cbar.ax.get_ylim()
+        labels = ["Zoet water", "Zout water"]
+        for i, label in enumerate(labels):
+            pos = (1 / 2 + i) / len(labels)
+            cbar.ax.text(
+                3.5, ymin + pos * (ymax - ymin), label, ha="center", va="center"
+            )
 
         self.ax.set_ylim(-100, 25)
         self.ax.set_xlim(plt_lims[1], plt_lims[3])
@@ -115,10 +120,7 @@ class DisplaySlice:
             self.current_contour = None
             self.current_contour_text = None
 
-    def change_line_data(self, y_data=None, **kwargs):
-        # import ipdb
-
-        # ipdb.set_trace()
+    def change_line_data(self, y_data=None):
         if self.current_line is not None:
             self.current_line.remove()
 
