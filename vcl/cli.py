@@ -1,4 +1,5 @@
 """Console script for vcl."""
+
 import concurrent.futures
 import json
 import sys
@@ -87,8 +88,8 @@ def main(satellite, contour, size, args=None):
         initargs=(os.getpid(),),
     )
 
-    datasets = vcl.load_data.load()
-    datasets = vcl.prep_data.preprocess(datasets, size)
+    common_datasets, unique_datasets = vcl.load_data.load()
+    datasets = vcl.prep_data.preprocess(common_datasets, unique_datasets, size)
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)
 

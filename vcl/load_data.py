@@ -51,26 +51,26 @@ def load():
 
     animation_files = list(Path(data_dir / "Historische_ontwikkeling").glob("*.tiff"))
 
-    datasets = {
+    common_datasets = {
+        "ds_b0": ds_b0,
+        "extent_klein": extent_klein,
+        "sat": sat,
+        "GSR": GSR,
+        "GVG": GVG,
+        "ecotoop": ecotopen,
+        "animation_files": animation_files,
+    }
+
+    unique_datasets = {
         "2023": {
+            "extent_klein": extent_klein,
             "ds": ds,
             "ds_b0": ds_b0,
-            "extent_klein": extent_klein,
-            "sat": sat,
-            "GSR": GSR,
-            "GVG": GVG,
-            "ecotoop": ecotopen,
-            "animation_files": animation_files,
         },
         "2050": {
+            "extent_klein": extent_klein,
             "ds": ds_n,
             "ds_b0": ds_b0_n,
-            "extent_klein": extent_klein,
-            "sat": sat,
-            "GSR": GSR,
-            "GVG": GVG,
-            "ecotoop": ecotopen,
-            "animation_files": animation_files,
         },
     }
-    return datasets
+    return common_datasets, unique_datasets
