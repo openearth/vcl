@@ -79,6 +79,9 @@ class DisplaySlice:
         self.current_y = None
 
     def imshow(self, data, transform=None, **kwargs):
+        self.current_x_contour = np.clip(
+            self.current_x_contour, 0, data.shape[-1] - 1
+        ).astype(np.int32)
         im = self.ax.imshow(data[..., self.current_x_contour], **kwargs)
 
         if transform is not None:
@@ -90,9 +93,10 @@ class DisplaySlice:
         return im
 
     def line_plot(self, x_data, y_data, **kwargs):
-        # import ipdb
+        self.current_x_line = np.clip(
+            self.current_x_line, 0, y_data.shape[-1] - 1
+        ).astype(np.int32)
 
-        # ipdb.set_trace()
         (line,) = self.ax.plot(x_data, y_data[..., self.current_x_line], **kwargs)
         self.current_line = line
         self.current_y = y_data
@@ -141,8 +145,12 @@ class DisplaySlice:
 
     def change_slice(self, x_contour, x_line):
         if self.current_contour is not None:
+            x_contour = np.clip(x_contour, 0, self.current_data.shape[-1] - 1).astype(
+                np.int32
+            )
             self.current_contour.set_data(self.current_data[..., x_contour])
         if self.current_line is not None:
+            x_line = np.clip(x_line, 0, self.current_y.shape[-1] - 1).astype(np.int32)
             self.current_line.set_ydata(self.current_y[..., x_line])
 
         self.current_x_contour = x_contour

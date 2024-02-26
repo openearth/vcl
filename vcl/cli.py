@@ -44,7 +44,7 @@ def make_sockets():
 
 
 def start_thread_to_terminate_when_parent_process_dies(ppid):
-    pid = os.getpid()
+    # pid = os.getpid()
 
     # def f():
     #     while True:
@@ -53,8 +53,8 @@ def start_thread_to_terminate_when_parent_process_dies(ppid):
     #             # for proc in psutil.process_iter():
     #             #     if proc.pid == ppid:
     #             #         proc.terminate()
-    #             #p = psutil.Process(ppid)
-    #             #p.terminate()
+    #             # p = psutil.Process(ppid)
+    #             # p.terminate()
 
     #         except:
     #             os.kill(pid, signal.SIGTERM)
@@ -95,7 +95,8 @@ def main(satellite, contour, size, args=None):
 
     # # executor.submit(mayavi_window)
     # # executor.submit(vcl.display.opencv_window)
-    executor.submit(vcl.display.slider_window, datasets)
+    # executor.submit(vcl.display.slider_window, datasets)
+    executor.submit(vcl.display.midi_board, datasets)
     if satellite:
         executor.submit(vcl.display.satellite_window, datasets)
     if contour:

@@ -11,6 +11,7 @@ import matplotlib.transforms as mtransforms
 import matplotlib.patches as patches
 from matplotlib.widgets import Slider, Button
 import scipy
+import mido
 
 import vcl.data
 import vcl.prep_data
@@ -232,9 +233,9 @@ def satellite_window(datasets):
             topic, message = socket2.recv(zmq.DONTWAIT).split()
             message = message.decode("utf-8")
             layer, message = message.split(",")
-            if message == "0":
+            if message == "0" or layer == "":
                 display.change_layer()
-            if message == "1":
+            elif message == "1":
                 display.change_layer(layer)
 
         # If button for different scenario is pressed, change scenario
@@ -279,7 +280,13 @@ def contour_slice_window(datasets):
     # Define dictionary with plot kwargs for the different layers
     maps = {
         "bodem": {"x": yb0, "color": "#70543e", "linewidth": 3},
-        "conc_contours_x": {"extent": extent_x, "aspect": "auto", "cmap": cmap},
+        "conc_contours_x": {
+            "extent": extent_x,
+            "aspect": "auto",
+            "cmap": cmap,
+            "vmin": 0,
+            "vmax": 1.5,
+        },
     }
 
     # Create display with concentration contours
@@ -421,3 +428,80 @@ def slider_window(datasets):
     scenario_button.on_clicked(change_scenario)
 
     plt.show()
+
+
+def midi_board(datasets):
+    # import ipdb
+
+    # ipdb.set_trace()
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    socket.setsockopt(zmq.CONFLATE, 1)
+    socket.bind("tcp://*:5556")
+
+    xmin, ymin, xmax, ymax = datasets["2023"]["plt_lims"]
+    init_x = xmin
+
+    valmin = int(xmin)
+    valmax = int(xmax)
+
+    n_slider_values = 128
+
+    def slider_update(value):
+        slider_value = valmin + value * (valmax - valmin) / (n_slider_values - 1)
+        socket.send_string(f"x_slice {int(slider_value)}")
+
+    # Slightly different function for scenario button
+    def change_scenario(scenario):
+        # Get currently shown scenario and change scenario to other scenario when pressed
+        # Update button text when pressed as well
+        socket.send_string(scenario)
+
+    # Function to send layer when button pressed
+    def change_layer(text):
+        global current_layer
+        if current_layer == text:
+            socket.send_string(f"top_view {text},{0}")
+            current_layer = ""
+        else:
+            socket.send_string(f"top_view {text},{1}")
+            current_layer = text
+
+    def start_stop_animation(text):
+        if text == "":
+            socket.send_string(f"top_view {text},{0}")
+        else:
+            socket.send_string(f"top_view {text},{1}")
+
+    midi_mapping = {
+        1: {"function": change_scenario, "value": "scenario 2023"},
+        2: {"function": change_scenario, "value": "scenario 2050"},
+        23: {"function": change_layer, "value": "conc_contour_top_view"},
+        24: {"function": change_layer, "value": "GSR"},
+        25: {"function": change_layer, "value": "GVG"},
+        26: {"function": change_layer, "value": "ecotoop"},
+        27: {"function": change_layer, "value": "bodem"},
+        31: {"function": change_layer, "value": ""},
+        45: {"function": start_stop_animation, "value": "animation_data"},
+        46: {"function": start_stop_animation, "value": ""},
+        60: {"function": slider_update},
+    }
+
+    slider_keys = [60]
+
+    inport = mido.open_input()
+    print("Gaat nog goed")
+    for msg in inport:
+        if msg.type == "sysex":
+            inport.close()
+            break
+        else:
+            try:
+                if msg.value == 127 and msg.control not in slider_keys:
+                    midi_mapping[msg.control]["function"](
+                        midi_mapping[msg.control]["value"]
+                    )
+                if msg.control in slider_keys:
+                    midi_mapping[msg.control]["function"](msg.value)
+            except:
+                continue
