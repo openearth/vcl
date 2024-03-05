@@ -15,8 +15,8 @@ import mido
 
 import vcl.data
 import vcl.prep_data
-import vcl.DisplayMap2
-import vcl.DisplaySlice2
+import vcl.DisplayMap
+import vcl.DisplaySlice
 
 cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
@@ -46,26 +46,6 @@ height_map_show = False
 compare = False
 current_layer = ""
 matplotlib.rcParams["toolbar"] = "None"
-
-
-def opencv_window():
-    img = np.zeros([100, 100, 3])
-    cv2.namedWindow("window", cv2.WINDOW_NORMAL)
-    cv2.imshow("window", img)
-
-    while True:
-        k = cv2.waitKey(0)
-        if k == ord("f"):
-            cv2.setWindowProperty(
-                "window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN
-            )
-        elif k == ord("n"):
-            cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
-        elif k == ord("q"):
-            cv2.destroyWindow("window")
-            break
-        else:
-            break
 
 
 def make_listen_sockets():
@@ -431,22 +411,22 @@ def slider_window(datasets):
 
 
 def midi_board(datasets):
-    # import ipdb
-
-    # ipdb.set_trace()
+    # Create publishing socket for sending midi board messages to the windows
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     socket.setsockopt(zmq.CONFLATE, 1)
     socket.bind("tcp://*:5556")
 
     xmin, ymin, xmax, ymax = datasets["2023"]["plt_lims"]
-    init_x = xmin
 
+    # Max and min x values of the extent
     valmin = int(xmin)
     valmax = int(xmax)
 
+    # Number of values for the sliders on midi board (0-127)
     n_slider_values = 128
 
+    # Update slider based on 128 possible values
     def slider_update(value):
         slider_value = valmin + value * (valmax - valmin) / (n_slider_values - 1)
         socket.send_string(f"x_slice {int(slider_value)}")
@@ -473,6 +453,7 @@ def midi_board(datasets):
         else:
             socket.send_string(f"top_view {text},{1}")
 
+    # Mapping from the midi control value to the function to update and the value to update to
     midi_mapping = {
         1: {"function": change_scenario, "value": "scenario 2023"},
         2: {"function": change_scenario, "value": "scenario 2050"},
@@ -487,20 +468,23 @@ def midi_board(datasets):
         60: {"function": slider_update},
     }
 
+    # List of used slider control values
     slider_keys = [60]
 
     inport = mido.open_input()
-    print("Gaat nog goed")
     for msg in inport:
+        # If BANK button is pressed, disconnect midi board (can't reconnect)
         if msg.type == "sysex":
             inport.close()
             break
         else:
             try:
+                # Send update if button is pressed
                 if msg.value == 127 and msg.control not in slider_keys:
                     midi_mapping[msg.control]["function"](
                         midi_mapping[msg.control]["value"]
                     )
+                # Send update if slider value is changed
                 if msg.control in slider_keys:
                     midi_mapping[msg.control]["function"](msg.value)
             except:
