@@ -15,10 +15,6 @@ import matplotlib
 import zmq
 import time
 
-# import pdb
-
-matplotlib.use("qtagg")
-
 
 import vcl.display
 import vcl.data
@@ -78,7 +74,7 @@ def test(datasets):
 @click.command()
 @click.option("--satellite/--no-satellite", default=False)
 @click.option("--contour/--no-contour", default=False)
-@click.option("--midi/--no-midi", default=False)
+@click.option("--midi/--no-midi", default=True)
 def main(satellite, contour, midi, args=None):
     """Console script for vcl."""
 

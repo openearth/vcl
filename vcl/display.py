@@ -171,8 +171,6 @@ def satellite_window(datasets):
         transform,
     )
 
-    matplotlib.use("qtagg")
-
     # Start position for vertical line
     init_x = xmin
 
@@ -227,9 +225,6 @@ def satellite_window(datasets):
 
 
 def contour_slice_window(datasets):
-    print("Ook al gelukt!")
-    matplotlib.use("qtagg")
-
     # Retrieve sockets for communication
     sockets = make_listen_sockets()
     poller = sockets["poller"]

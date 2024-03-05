@@ -7,8 +7,6 @@ import shapely
 
 from matplotlib.colors import LightSource, ListedColormap
 
-matplotlib.use("qtagg")
-
 import vcl.display
 import vcl.data
 import vcl.load_data
