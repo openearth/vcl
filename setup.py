@@ -20,12 +20,13 @@ requirements = [
     "netCDF4",
     "cmocean",
     "scipy",
-    "opencv",
+    "opencv-python",
     "geopandas",
     "rasterio",
     "matplotlib",
     "shapely",
     "pandas",
+    "mido",
 ]
 
 test_requirements = [

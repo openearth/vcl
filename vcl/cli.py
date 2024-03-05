@@ -78,8 +78,8 @@ def test(datasets):
 @click.command()
 @click.option("--satellite/--no-satellite", default=False)
 @click.option("--contour/--no-contour", default=False)
-@click.option("-s", "--size")
-def main(satellite, contour, size, args=None):
+@click.option("--midi/--no-midi", default=False)
+def main(satellite, contour, midi, args=None):
     """Console script for vcl."""
 
     executor = concurrent.futures.ProcessPoolExecutor(
@@ -89,14 +89,14 @@ def main(satellite, contour, size, args=None):
     )
 
     common_datasets, unique_datasets = vcl.load_data.load()
-    datasets = vcl.prep_data.preprocess(common_datasets, unique_datasets, size)
+    datasets = vcl.prep_data.preprocess(common_datasets, unique_datasets)
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)
 
-    # # executor.submit(mayavi_window)
-    # # executor.submit(vcl.display.opencv_window)
-    # executor.submit(vcl.display.slider_window, datasets)
-    executor.submit(vcl.display.midi_board, datasets)
+    if midi:
+        executor.submit(vcl.display.midi_board, datasets)
+    else:
+        executor.submit(vcl.display.slider_window, datasets)
     if satellite:
         executor.submit(vcl.display.satellite_window, datasets)
     if contour:

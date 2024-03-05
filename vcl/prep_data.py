@@ -14,7 +14,7 @@ import vcl.data
 import vcl.load_data
 
 
-def preprocess_common(datasets, size):
+def preprocess_common(datasets):
     # Get bathymetry datasets
     ds_b0 = datasets["ds_b0"]
     ecotoop = datasets["ecotoop"]
@@ -25,7 +25,7 @@ def preprocess_common(datasets, size):
     preprocessed = {}
 
     # Get the extent we want to show
-    preprocessed["extent"] = datasets[f"extent_{size}"]
+    preprocessed["extent"] = datasets[f"extent"]
 
     # Add satellite image
     sat = datasets["sat"]
@@ -70,7 +70,7 @@ def preprocess_common(datasets, size):
     return preprocessed
 
 
-def preprocess_unique(datasets, size):
+def preprocess_unique(datasets):
     preprocessed_datasets = {}
     for scenario in datasets.keys():
         # Get salt concentration datasets
@@ -97,7 +97,7 @@ def preprocess_unique(datasets, size):
         preprocessed = {}
 
         # Get the extent we want to show
-        preprocessed["extent"] = datasets[scenario][f"extent_{size}"]
+        preprocessed["extent"] = datasets[scenario][f"extent"]
 
         # Add bathymetry and its bounds from the dataset
         preprocessed["bodem"] = bodem
@@ -246,9 +246,9 @@ def preprocess_unique(datasets, size):
     return preprocessed_datasets
 
 
-def preprocess(common_datasets, unique_datasets, size):
-    preprocessed_common_datasets = preprocess_common(common_datasets, size)
-    preprocessed_unique_datasets = preprocess_unique(unique_datasets, size)
+def preprocess(common_datasets, unique_datasets):
+    preprocessed_common_datasets = preprocess_common(common_datasets)
+    preprocessed_unique_datasets = preprocess_unique(unique_datasets)
 
     # Combine common and unique preprocessed datasets for each scenario
     preprocessed_datasets = {}

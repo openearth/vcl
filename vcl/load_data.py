@@ -20,29 +20,11 @@ def load():
     ds_b0 = rasterio.open(data_dir / "originele_bodem.tif")
     ds_b0_n = rasterio.open(data_dir / "nieuwe_bodem_v2.tif")
     # Extents of what we want to show
-    extent_klein = (
+    extent = (
         gpd.read_file(data_dir / "bounding_box.shp").to_crs(epsg=28992).iloc[0].geometry
     )
 
-    # extent_klein = (
-    #     gpd.read_file("C:/Users/hemert/data/vcl/dataset/testbeeld-extent.geojson")
-    #     .to_crs(epsg=28992)
-    #     .iloc[0]
-    #     .geometry
-    # )
-
-    extent_groot = (
-        gpd.read_file(data_dir / "afmetingen_box.shp")
-        .to_crs(epsg=28992)
-        .iloc[0]
-        .geometry
-    )
-
-    # Read satellite image with surrounding sea
-    sat = mpimg.imread(data_dir.joinpath("terschelling-sat2.png"))
-    sat_k = mpimg.imread(data_dir.joinpath("terschelling-sat-klein.png"))
-    sat_g = mpimg.imread(data_dir.joinpath("terschelling-sat-groot.png"))
-
+    # Open arial photo of Terschelling (+ surrounding area)
     sat = rasterio.open(data_dir / "test3.tif")
 
     GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
@@ -53,7 +35,7 @@ def load():
 
     common_datasets = {
         "ds_b0": ds_b0,
-        "extent_klein": extent_klein,
+        "extent": extent,
         "sat": sat,
         "GSR": GSR,
         "GVG": GVG,
@@ -63,12 +45,12 @@ def load():
 
     unique_datasets = {
         "2023": {
-            "extent_klein": extent_klein,
+            "extent": extent,
             "ds": ds,
             "ds_b0": ds_b0,
         },
         "2050": {
-            "extent_klein": extent_klein,
+            "extent": extent,
             "ds": ds_n,
             "ds_b0": ds_b0_n,
         },
