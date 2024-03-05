@@ -162,7 +162,7 @@ def satellite_window(datasets):
     datasets["2050"]["animation_data"] = animation_data
 
     # Create display window with satellite image
-    display = vcl.DisplayMap2.DisplayMap(
+    display = vcl.DisplayMap.DisplayMap(
         datasets,
         maps,
         "sat",
@@ -182,7 +182,6 @@ def satellite_window(datasets):
     plt.ion()
     print("image shown")
     plt.show(block=False)
-    print("I am not here")
 
     # Plot vertical lines on display
     (line_blue,) = display.line_plot(
@@ -270,7 +269,7 @@ def contour_slice_window(datasets):
     }
 
     # Create display with concentration contours
-    display = vcl.DisplaySlice2.DisplaySlice(
+    display = vcl.DisplaySlice.DisplaySlice(
         datasets,
         maps,
         "conc_contours_x",
