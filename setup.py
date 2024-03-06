@@ -27,6 +27,7 @@ requirements = [
     "shapely",
     "pandas",
     "mido",
+    "python-rtmidi",
 ]
 
 test_requirements = [
