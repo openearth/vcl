@@ -19,6 +19,7 @@ def preprocess_common(datasets):
     GSR = datasets["GSR"]
     GVG = datasets["GVG"]
 
+    ds_wl = datasets["ds_wl"]
     # Create dictionary to store processed data and values
     preprocessed = {}
 
@@ -59,6 +60,19 @@ def preprocess_common(datasets):
     preprocessed["sat_extent"] = vcl.data.sat_and_bodem_bounds(sat, ds_b0)
 
     preprocessed["animation_data"] = datasets["animation_files"]
+
+    tidal_flows = {}
+    tidal_flows["face_x"] = ds_wl.mesh2d_face_x.values
+    tidal_flows["face_y"] = ds_wl.mesh2d_face_y.values
+    tidal_flows["face_x"], tidal_flows["face_y"] = vcl.data.rotate_1d_array(
+        preprocessed["mid_point"],
+        tidal_flows["face_x"],
+        tidal_flows["face_y"],
+        -np.deg2rad(preprocessed["angle"]),
+    )
+    tidal_flows["ucx"] = ds_wl.mesh2d_ucx.values
+    tidal_flows["ucy"] = ds_wl.mesh2d_ucy.values
+    preprocessed["tidal_flows"] = tidal_flows
 
     sat.close()
     ecotoop.close()

@@ -241,6 +241,10 @@ def create_shaded_image(sat_extent, bodem):
 def get_plot_lims(extent):
     lims = extent.exterior.bounds
     lims = list(lims)
+    lims[0] += 550
+    lims[1] -= 750
+    lims[2] += 550
+    lims[3] -= 750
     return tuple(lims)
 
 
@@ -260,7 +264,7 @@ def get_rotated_vertex(center, point, angle):
     Input:
         - center, the center point of the rectangle
         - point, the original vertex point
-        - angle, the rotation angle of the rectangle
+        - angle, the rotation angle of the rectangle in radians
 
     Output:
         - rotated_point, the new coordinates of point after rotation
@@ -276,6 +280,32 @@ def get_rotated_vertex(center, point, angle):
     # translate point back
     rotated_point = rotated_point + np.array(center)
     return rotated_point
+
+
+def rotate_1d_array(center, x, y, angle):
+    """
+    Computes new coordinates of x and y after rotation
+
+    Input:
+        - center, the center point of the rectangle
+        - x, the original x points
+        - y, the original y points
+        - angle, the rotation angle of the rectangle in radians
+
+    Output:
+        - rotated_x, the new coordinates the x points after rotation
+        - rotated_y, the new coordinates the y points after rotation
+    """
+    x_shift = center[0]
+    y_shift = center[1]
+
+    x_rotated = (x - x_shift) * np.cos(angle) - (y - y_shift) * np.sin(angle)
+    y_rotated = (x - x_shift) * np.sin(angle) + (y - y_shift) * np.cos(angle)
+
+    x_rotated += x_shift
+    y_rotated += y_shift
+
+    return x_rotated, y_rotated
 
 
 def fit_rot_ds_to_bounds(ds, rot_ds, center, extent, angle):

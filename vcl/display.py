@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zmq
 import cmocean
+from matplotlib import colormaps
 from matplotlib.colors import LightSource, ListedColormap, LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -22,6 +23,7 @@ cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
 cmap_n = ListedColormap(["royalblue", "coral", "red"])
 cmap_n = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99), "red"])
+cmap_tidal = colormaps.get_cmap("plasma")
 
 # Define the colors for the blue-green-orange gradient
 colors = [(0, 0, 1), (0, 1, 0), (1, 0.5, 0)]  # Blue -> Green -> Orange
@@ -150,6 +152,12 @@ def satellite_window(datasets):
             "transform": transform,
         },
         "animation_data": {"transform": transform},
+        "tidal_flows": {
+            "transform": transform,
+            "scale": 50,
+            "minshaft": 0.5,
+            "cmap": cmap_tidal,
+        },
     }
 
     # Create animation frames from file paths (ideally in prep_data, but gave errors so for now moved to here)
@@ -456,10 +464,13 @@ def midi_board(datasets):
         25: {"function": change_layer, "value": "GVG"},
         26: {"function": change_layer, "value": "ecotoop"},
         27: {"function": change_layer, "value": "bodem"},
+        28: {"function": change_layer, "value": "tidal_flows:390"},
         31: {"function": change_layer, "value": ""},
         45: {"function": start_stop_animation, "value": "animation_data"},
         46: {"function": start_stop_animation, "value": ""},
         60: {"function": slider_update},
+        64: {"function": change_layer, "value": "tidal_flows:170"},
+        67: {"function": change_layer, "value": "tidal_flows:390"},
     }
 
     # List of used slider control values

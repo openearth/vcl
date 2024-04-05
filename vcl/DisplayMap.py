@@ -91,13 +91,15 @@ class DisplayMap:
             pass
         if self.current_layer is not None:
             self.current_layer.remove()
-
         if layer is not None:
             if layer == "animation_data":
-                # import ipdb
-
-                # ipdb.set_trace()
                 self.show_animation(layer)
+            elif layer.split(":")[0] == "tidal_flows":
+                self.show_tidal_flows(
+                    layer.split(":")[0],
+                    layer.split(":")[1],
+                    **self.kwargs_dict[layer.split(":")[0]]
+                )
             else:
                 self.imshow(
                     self.dataset[self.current_scenario][layer],
@@ -141,6 +143,9 @@ class DisplayMap:
             self.ax_text.set_text(texts[frame])
             return img
 
+        import ipdb
+
+        ipdb.set_trace()
         self.ani = animation.FuncAnimation(
             fig=self.fig, func=update, frames=len(frames), interval=150
         )
@@ -150,4 +155,19 @@ class DisplayMap:
 
         self.current_layer = img
         self.current_layer_text = layer
-        plt.show(block=False)
+        # plt.show(block=False)
+
+    def show_tidal_flows(self, layer, tide, transform=None, **kwargs):
+        dataset = self.dataset[self.current_scenario][layer]
+        im = self.ax.quiver(
+            dataset["face_x"][::2],
+            dataset["face_y"][::2],
+            dataset["ucx"][int(tide), :][::2],
+            dataset["ucy"][int(tide), :][::2],
+            **kwargs
+        )
+
+        if transform is not None:
+            im.set_transform(transform + self.transform)
+
+        self.current_layer = im
