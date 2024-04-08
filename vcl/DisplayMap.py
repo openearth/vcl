@@ -159,12 +159,11 @@ class DisplayMap:
 
     def show_tidal_flows(self, layer, tide, transform=None, **kwargs):
         dataset = self.dataset[self.current_scenario][layer]
+        u = dataset["ucx"][int(tide), :][::4]
+        v = dataset["ucy"][int(tide), :][::4]
+        c = np.sqrt(u**2 + v**2)
         im = self.ax.quiver(
-            dataset["face_x"][::2],
-            dataset["face_y"][::2],
-            dataset["ucx"][int(tide), :][::2],
-            dataset["ucy"][int(tide), :][::2],
-            **kwargs
+            dataset["face_x"][::4], dataset["face_y"][::4], u, v, c, **kwargs
         )
 
         if transform is not None:

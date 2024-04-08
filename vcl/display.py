@@ -154,8 +154,8 @@ def satellite_window(datasets):
         "animation_data": {"transform": transform},
         "tidal_flows": {
             "transform": transform,
-            "scale": 50,
-            "minshaft": 0.5,
+            "scale": 30,
+            "minshaft": 2,
             "cmap": cmap_tidal,
         },
     }
@@ -413,6 +413,9 @@ def slider_window(datasets):
 
 
 def midi_board(datasets):
+    # import ipdb
+
+    # ipdb.set_trace()
     # Create publishing socket for sending midi board messages to the windows
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
@@ -475,7 +478,6 @@ def midi_board(datasets):
 
     # List of used slider control values
     slider_keys = [60]
-
     inport = mido.open_input()
     for msg in inport:
         # If BANK button is pressed, disconnect midi board (can't reconnect)

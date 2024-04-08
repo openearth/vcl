@@ -9,7 +9,7 @@ import rasterio
 
 
 def load():
-    p_drive_dir = Path(r"P:\11209197-virtualclimatelab\01_data\Delft3D")
+    # p_drive_dir = Path(r"P:\11209197-virtualclimatelab\01_data\Delft3D")
     data_dir = Path("~/data/vcl/dataset").expanduser()
 
     # Dataset for ground water model (concentrations)
@@ -22,7 +22,7 @@ def load():
     ds_b0_n = rasterio.open(data_dir / "nieuwe_bodem_v2.tif")
 
     # North sea and Wad sea dataset
-    ds_wl = xr.open_dataset(p_drive_dir / "wadsea_0000_map.nc")
+    ds_wl = xr.open_dataset(data_dir / "wadsea_small.nc")
     # Extents of what we want to show
     extent = (
         gpd.read_file(data_dir / "bounding_box.shp").to_crs(epsg=28992).iloc[0].geometry
