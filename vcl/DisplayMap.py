@@ -57,6 +57,9 @@ class DisplayMap:
 
         self.current_layer = None
         self.current_layer_text = None
+
+        self.current_overlay = None
+        self.current_overlay_text = None
         plt.show(block=False)
 
     def imshow(self, data, transform=None, **kwargs):
@@ -65,7 +68,7 @@ class DisplayMap:
         if transform is not None:
             im.set_transform(transform + self.transform)
 
-        self.current_layer = im
+        # self.current_layer = im
 
         return im
 
@@ -79,7 +82,7 @@ class DisplayMap:
         if transform is not None:
             im.set_transform(transform + self.transform)
 
-        self.current_layer = im
+        # self.current_layer = im
 
         return im
 
@@ -101,10 +104,11 @@ class DisplayMap:
                     **self.kwargs_dict[layer.split(":")[0]]
                 )
             else:
-                self.imshow(
+                im = self.imshow(
                     self.dataset[self.current_scenario][layer],
                     **self.kwargs_dict[layer]
                 )
+                self.current_layer = im
                 self.current_layer_text = layer
         else:
             self.current_layer = None
@@ -113,6 +117,29 @@ class DisplayMap:
     def change_scenario(self, scenario):
         self.current_scenario = scenario
         self.change_layer(self.current_layer_text)
+        self.change_overlay(self.current_overlay_text)
+
+    def change_overlay(self, layer=None, **kwargs):
+        if self.current_overlay is not None:
+            self.current_overlay.remove()
+        if layer is not None:
+            if layer.split(":")[0] == "tidal_flows":
+                self.show_tidal_flows(
+                    layer.split(":")[0],
+                    layer.split(":")[1],
+                    **self.kwargs_dict[layer.split(":")[0]]
+                )
+                self.current_overlay_text = layer
+            else:
+                im = self.imshow(
+                    self.dataset[self.current_scenario][layer],
+                    **self.kwargs_dict[layer]
+                )
+                self.current_overlay = im
+                self.current_overlay_text = layer
+        else:
+            self.current_overlay = None
+            self.current_overlay_text = None
 
     def show_animation(self, layer):
         animation_data = self.dataset[self.current_scenario][layer]
@@ -143,9 +170,6 @@ class DisplayMap:
             self.ax_text.set_text(texts[frame])
             return img
 
-        import ipdb
-
-        ipdb.set_trace()
         self.ani = animation.FuncAnimation(
             fig=self.fig, func=update, frames=len(frames), interval=150
         )
@@ -169,4 +193,4 @@ class DisplayMap:
         if transform is not None:
             im.set_transform(transform + self.transform)
 
-        self.current_layer = im
+        self.current_overlay = im

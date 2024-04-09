@@ -122,16 +122,18 @@ def satellite_window(datasets):
 
     # Define dictionary with plot kwargs for the different layers
     maps = {
-        "sat": {"extent": sat_extent},
+        "sat": {"extent": sat_extent, "zorder": 0},
         "conc_contour_top_view": {
             "extent": (xmin, xmax, ymin, ymax),
             "cmap": cmap,
             "alpha": 0.5,
+            "zorder": 2,
         },
         "GSR": {
             "extent": (xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr),
             "alpha": 0.7,
             "transform": transform,
+            "zorder": 1,
         },
         "bodem": {
             "extent": (xmin_b, xmax_b, ymin_b, ymax_b),
@@ -140,16 +142,19 @@ def satellite_window(datasets):
             "cmap": cmap_bodem,
             "alpha": 1,
             "transform": transform,
+            "zorder": 1,
         },
         "ecotoop": {
             "extent": (xmin_e, xmax_e, ymin_e, ymax_e),
             "alpha": 0.7,
             "transform": transform,
+            "zorder": 1,
         },
         "GVG": {
             "extent": (xmin_gvg, xmax_gvg, ymin_gvg, ymax_gvg),
             "alpha": 0.7,
             "transform": transform,
+            "zorder": 1,
         },
         "animation_data": {"transform": transform},
         "tidal_flows": {
@@ -157,6 +162,7 @@ def satellite_window(datasets):
             "scale": 30,
             "minshaft": 2,
             "cmap": cmap_tidal,
+            "zorder": 2,
         },
     }
 
@@ -217,11 +223,23 @@ def satellite_window(datasets):
         if socket2 in socks and socks[socket2] == zmq.POLLIN:
             topic, message = socket2.recv(zmq.DONTWAIT).split()
             message = message.decode("utf-8")
-            layer, message = message.split(",")
-            if message == "0" or layer == "":
-                display.change_layer()
-            elif message == "1":
-                display.change_layer(layer)
+            layer, view_type, message = message.split(",")
+            if view_type == "layer":
+                if message == "0":
+                    display.change_layer()
+                elif message == "1":
+                    display.change_layer(layer)
+                elif layer == "":
+                    import ipdb
+
+                    ipdb.set_trace()
+                    display.change_layer()
+                    display.change_overlay()
+            elif view_type == "overlay":
+                if message == "0" or layer == "":
+                    display.change_overlay()
+                elif message == "1":
+                    display.change_overlay(layer)
 
         # If button for different scenario is pressed, change scenario
         if socket3 in socks and socks[socket3] == zmq.POLLIN:
@@ -378,20 +396,34 @@ def slider_window(datasets):
     GVG_ax = fig.add_axes([0.20, 0.025, 0.1, 0.04])
     GVG_button = Button(GVG_ax, "GVG", hovercolor="0.600")
 
-    animation_ax = fig.add_axes([0.05, 0.085, 0.1, 0.04])
-    animation_button = Button(animation_ax, "animation", hovercolor="0.600")
-
     scenario_ax = fig.add_axes([0.05, 0.025, 0.1, 0.04])
     scenario_button = Button(scenario_ax, "2050", hovercolor="0.600")
 
+    animation_ax = fig.add_axes([0.05, 0.085, 0.1, 0.04])
+    animation_button = Button(animation_ax, "animation", hovercolor="0.600")
+
+    tidal_flow_eb_ax = fig.add_axes([0.20, 0.085, 0.1, 0.04])
+    tidal_flow_eb_button = Button(tidal_flow_eb_ax, "Eb", hovercolor="0.600")
+
+    tidal_flow_flow_ax = fig.add_axes([0.35, 0.085, 0.1, 0.04])
+    tidal_flow_flow_button = Button(tidal_flow_flow_ax, "Vloed", hovercolor="0.600")
+
     # Call functions when buttons are pressed or slider is slid
     x_slider.on_changed(update)
-    contour_button.on_clicked(lambda x: change_layer(x, "conc_contour_top_view"))
-    height_map_button.on_clicked(lambda x: change_layer(x, "bodem"))
-    ecotoop_button.on_clicked(lambda x: change_layer(x, "ecotoop"))
-    GSR_button.on_clicked(lambda x: change_layer(x, "GSR"))
-    GVG_button.on_clicked(lambda x: change_layer(x, "GVG"))
-    animation_button.on_clicked(lambda x: change_layer(x, "animation_data"))
+    contour_button.on_clicked(
+        lambda x: change_layer(x, "conc_contour_top_view,overlay")
+    )
+    height_map_button.on_clicked(lambda x: change_layer(x, "bodem,layer"))
+    ecotoop_button.on_clicked(lambda x: change_layer(x, "ecotoop,layer"))
+    GSR_button.on_clicked(lambda x: change_layer(x, "GSR,layer"))
+    GVG_button.on_clicked(lambda x: change_layer(x, "GVG,layer"))
+    animation_button.on_clicked(lambda x: change_layer(x, "animation_data,layer"))
+    tidal_flow_eb_button.on_clicked(
+        lambda x: change_layer(x, "tidal_flows:390,overlay")
+    )
+    tidal_flow_flow_button.on_clicked(
+        lambda x: change_layer(x, "tidal_flows:170,overlay")
+    )
 
     # Slightly different function for scenario button
     def change_scenario(event):
@@ -454,7 +486,7 @@ def midi_board(datasets):
 
     def start_stop_animation(text):
         if text == "":
-            socket.send_string(f"top_view {text},{0}")
+            socket.send_string(f"top_view {text},layer,{0}")
         else:
             socket.send_string(f"top_view {text},{1}")
 
@@ -462,18 +494,18 @@ def midi_board(datasets):
     midi_mapping = {
         1: {"function": change_scenario, "value": "scenario 2023"},
         2: {"function": change_scenario, "value": "scenario 2050"},
-        23: {"function": change_layer, "value": "conc_contour_top_view"},
-        24: {"function": change_layer, "value": "GSR"},
-        25: {"function": change_layer, "value": "GVG"},
-        26: {"function": change_layer, "value": "ecotoop"},
-        27: {"function": change_layer, "value": "bodem"},
-        28: {"function": change_layer, "value": "tidal_flows:390"},
-        31: {"function": change_layer, "value": ""},
-        45: {"function": start_stop_animation, "value": "animation_data"},
+        23: {"function": change_layer, "value": "conc_contour_top_view,overlay"},
+        24: {"function": change_layer, "value": "GSR,layer"},
+        25: {"function": change_layer, "value": "GVG,layer"},
+        26: {"function": change_layer, "value": "ecotoop,layer"},
+        27: {"function": change_layer, "value": "bodem,layer"},
+        28: {"function": change_layer, "value": "tidal_flows:390,overlay"},
+        31: {"function": change_layer, "value": ",layer"},
+        45: {"function": start_stop_animation, "value": "animation_data,layer"},
         46: {"function": start_stop_animation, "value": ""},
         60: {"function": slider_update},
-        64: {"function": change_layer, "value": "tidal_flows:170"},
-        67: {"function": change_layer, "value": "tidal_flows:390"},
+        64: {"function": change_layer, "value": "tidal_flows:170,overlay"},
+        67: {"function": change_layer, "value": "tidal_flows:390,overlay"},
     }
 
     # List of used slider control values
