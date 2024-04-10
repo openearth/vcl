@@ -110,6 +110,7 @@ def satellite_window(datasets):
     xmin_gsr, ymin_gsr, xmax_gsr, ymax_gsr = datasets["2023"]["GSR_extent"]
     xmin_gvg, ymin_gvg, xmax_gvg, ymax_gvg = datasets["2023"]["GVG_extent"]
     xmin_gxg, ymin_gxg, xmax_gxg, ymax_gxg = datasets["2023"]["GXG_extent"]
+    xmin_f, ymin_f, xmax_f, ymax_f = datasets["2023"]["floodmap_extent"]
 
     # Get mid point and rotation angle for transform
     angle = datasets["2023"]["angle"]
@@ -174,6 +175,13 @@ def satellite_window(datasets):
             "vmax": np.nanpercentile(datasets["2023"]["GXG"], 90),
             "transform": transform,
             "zorder": 1,
+        },
+        "floodmap": {
+            "extent": (xmin_f, xmax_f, ymin_f, ymax_f),
+            "alpha": 0.7,
+            "transform": transform,
+            "zorder": 1,
+            "cmap": "RdBu",
         },
         "animation_data": {"transform": transform},
         "tidal_flows": {
@@ -430,6 +438,9 @@ def slider_window(datasets):
     GXG_ax = fig.add_axes([0.5, 0.085, 0.1, 0.04])
     GXG_button = Button(GXG_ax, "GXG", hovercolor="0.600")
 
+    floodmap_ax = fig.add_axes([0.65, 0.085, 0.1, 0.04])
+    floodmap_button = Button(floodmap_ax, "floodmap", hovercolor="0.600")
+
     # Call functions when buttons are pressed or slider is slid
     x_slider.on_changed(update)
     contour_button.on_clicked(
@@ -447,6 +458,7 @@ def slider_window(datasets):
         lambda x: change_layer(x, "tidal_flows:170,overlay")
     )
     GXG_button.on_clicked(lambda x: change_layer(x, "GXG,layer"))
+    floodmap_button.on_clicked(lambda x: change_layer(x, "floodmap,layer"))
 
     # Slightly different function for scenario button
     def change_scenario(event):
@@ -523,6 +535,7 @@ def midi_board(datasets):
         26: {"function": change_layer, "value": "ecotoop,layer"},
         27: {"function": change_layer, "value": "bodem,layer"},
         28: {"function": change_layer, "value": "GXG,layer"},
+        29: {"function": change_layer, "value": "floodmap,layer"},
         31: {"function": change_layer, "value": ",layer"},
         45: {"function": start_stop_animation, "value": "animation_data,layer"},
         46: {"function": start_stop_animation, "value": ""},

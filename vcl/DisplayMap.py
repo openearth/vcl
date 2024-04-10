@@ -103,7 +103,7 @@ class DisplayMap:
         if layer is not None:
             if layer == "animation_data":
                 self.show_animation(layer)
-            elif layer == "GXG":
+            elif layer == "GXG" or layer == "floodmap":
                 im = self.imshow(
                     self.dataset[self.current_scenario][layer],
                     **self.kwargs_dict[self.current_scenario][layer]

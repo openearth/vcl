@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import shapely
+from pyproj import Transformer
 
 from matplotlib.colors import LightSource, ListedColormap
 
@@ -18,6 +19,7 @@ def preprocess_common(datasets):
     ecotoop = datasets["ecotoop"]
     GSR = datasets["GSR"]
     GVG = datasets["GVG"]
+    floodmap = datasets["floodmap"]
 
     ds_wl = datasets["ds_wl"]
     # Create dictionary to store processed data and values
@@ -42,6 +44,10 @@ def preprocess_common(datasets):
         preprocessed["GVG"],
         preprocessed["GVG_extent"],
     ) = vcl.data.prepare_rasterio_image(GVG)
+
+    preprocessed["floodmap"], preprocessed["floodmap_extent"] = (
+        vcl.data.prepare_rasterio_image(floodmap, Transformer.from_crs(32631, 28992))
+    )
 
     # Compute rotation angle of the extent as well as centre point of the extent
     preprocessed["angle"] = vcl.data.compute_rotation_angle(preprocessed["extent"])

@@ -41,6 +41,7 @@ def load():
     GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
     GVG = rasterio.open(data_dir / "GVGzonderrotatie.png")
     ecotopen = rasterio.open(data_dir / "Ecotopen zonder rotatie en legend.png")
+    floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
 
     animation_files = list(Path(data_dir / "Historische_ontwikkeling").glob("*.tiff"))
 
@@ -51,6 +52,7 @@ def load():
         "GSR": GSR,
         "GVG": GVG,
         "ecotoop": ecotopen,
+        "floodmap": floodmap,
         "animation_files": animation_files,
         "ds_wl": ds_wl,
     }

@@ -248,11 +248,16 @@ def get_plot_lims(extent):
     return tuple(lims)
 
 
-def prepare_rasterio_image(src):
+def prepare_rasterio_image(src, transform=None):
     image = src.read()
     image = np.transpose(image, (1, 2, 0))
 
     bounds = src.bounds
+
+    if transform is not None:
+        xmin, ymin = transform.transform(bounds[0], bounds[1])
+        xmax, ymax = transform.transform(bounds[2], bounds[3])
+        bounds = (xmin, ymin, xmax, ymax)
 
     return image, bounds
 
