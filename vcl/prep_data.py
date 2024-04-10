@@ -105,6 +105,8 @@ def preprocess_unique(datasets):
         bodem = ds_b0.read(1)
         bodem[np.where(bodem == -9999)] = -43.8
 
+        GXG = datasets[scenario]["GXG"]
+
         # Create dictionary to store processed data and values
         preprocessed = {}
 
@@ -246,6 +248,10 @@ def preprocess_unique(datasets):
             levels=[-1, 1.5, 16],
         )
 
+        preprocessed["GXG"], preprocessed["GXG_extent"] = (
+            vcl.data.prepare_rasterio_image(GXG)
+        )
+
         preprocessed_datasets[scenario] = preprocessed
 
         # animation_data = {}
@@ -254,6 +260,7 @@ def preprocess_unique(datasets):
 
     # Close opened files
     ds_b0.close()
+    GXG.close()
 
     return preprocessed_datasets
 

@@ -33,6 +33,7 @@ class DisplayMap:
         self.current_scenario = start_scenario
 
         self.fig, self.ax = plt.subplots()
+        self.cbar = None
         # Set background color
         self.fig.patch.set_facecolor("black")
         # No margins
@@ -45,7 +46,8 @@ class DisplayMap:
         self.transform = self.ax.transData
 
         im = self.ax.imshow(
-            self.dataset[self.current_scenario][start_layer], **kwargs_dict[start_layer]
+            self.dataset[self.current_scenario][start_layer],
+            **kwargs_dict[self.current_scenario][start_layer]
         )
 
         if transform is not None:
@@ -94,19 +96,31 @@ class DisplayMap:
             pass
         if self.current_layer is not None:
             self.current_layer.remove()
+            try:
+                self.cbar.remove()
+            except:
+                pass
         if layer is not None:
             if layer == "animation_data":
                 self.show_animation(layer)
-            elif layer.split(":")[0] == "tidal_flows":
-                self.show_tidal_flows(
-                    layer.split(":")[0],
-                    layer.split(":")[1],
-                    **self.kwargs_dict[layer.split(":")[0]]
+            elif layer == "GXG":
+                im = self.imshow(
+                    self.dataset[self.current_scenario][layer],
+                    **self.kwargs_dict[self.current_scenario][layer]
+                )
+                self.current_layer = im
+                self.current_layer_text = layer
+
+                self.cbar = self.fig.colorbar(
+                    im,
+                    cax=self.fig.add_axes([0.6, 0.20, 0.38, 0.05]),
+                    orientation="horizontal",
+                    shrink=1,
                 )
             else:
                 im = self.imshow(
                     self.dataset[self.current_scenario][layer],
-                    **self.kwargs_dict[layer]
+                    **self.kwargs_dict[self.current_scenario][layer]
                 )
                 self.current_layer = im
                 self.current_layer_text = layer
@@ -124,16 +138,17 @@ class DisplayMap:
             self.current_overlay.remove()
         if layer is not None:
             if layer.split(":")[0] == "tidal_flows":
-                self.show_tidal_flows(
+                im = self.show_tidal_flows(
                     layer.split(":")[0],
                     layer.split(":")[1],
-                    **self.kwargs_dict[layer.split(":")[0]]
+                    **self.kwargs_dict[self.current_scenario][layer.split(":")[0]]
                 )
+                self.current_overlay = im
                 self.current_overlay_text = layer
             else:
                 im = self.imshow(
                     self.dataset[self.current_scenario][layer],
-                    **self.kwargs_dict[layer]
+                    **self.kwargs_dict[self.current_scenario][layer]
                 )
                 self.current_overlay = im
                 self.current_overlay_text = layer
@@ -148,7 +163,9 @@ class DisplayMap:
         extents = [animation_data[frame]["extent"] for frame in animation_data.keys()]
         texts = [animation_data[frame]["text"] for frame in animation_data.keys()]
 
-        kwargs_dict = {"extent": extents[0]} | self.kwargs_dict[layer]
+        kwargs_dict = {"extent": extents[0]} | self.kwargs_dict[self.current_scenario][
+            layer
+        ]
 
         img = self.imshow(frames[0], **kwargs_dict)
         self.ax_text = self.ax.text(
@@ -193,4 +210,4 @@ class DisplayMap:
         if transform is not None:
             im.set_transform(transform + self.transform)
 
-        self.current_overlay = im
+        return im

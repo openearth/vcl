@@ -109,6 +109,7 @@ def satellite_window(datasets):
     xmin_e, ymin_e, xmax_e, ymax_e = datasets["2023"]["ecotoop_extent"]
     xmin_gsr, ymin_gsr, xmax_gsr, ymax_gsr = datasets["2023"]["GSR_extent"]
     xmin_gvg, ymin_gvg, xmax_gvg, ymax_gvg = datasets["2023"]["GVG_extent"]
+    xmin_gxg, ymin_gxg, xmax_gxg, ymax_gxg = datasets["2023"]["GXG_extent"]
 
     # Get mid point and rotation angle for transform
     angle = datasets["2023"]["angle"]
@@ -120,8 +121,18 @@ def satellite_window(datasets):
 
     print("satellite window")
 
+    # Create animation frames from file paths (ideally in prep_data, but gave errors so for now moved to here)
+    animation_files = datasets["2023"]["animation_data"]
+    animation_data = {}
+    for i, frame in enumerate(animation_files):
+        animation_data[i] = vcl.data.get_frame_data(frame)
+
+    datasets["2023"]["animation_data"] = animation_data
+    datasets["2050"]["animation_data"] = animation_data
+    datasets["2050"]["GXG"] = datasets["2050"]["GXG"] - datasets["2023"]["GXG"]
+
     # Define dictionary with plot kwargs for the different layers
-    maps = {
+    maps_2023 = {
         "sat": {"extent": sat_extent, "zorder": 0},
         "conc_contour_top_view": {
             "extent": (xmin, xmax, ymin, ymax),
@@ -156,6 +167,14 @@ def satellite_window(datasets):
             "transform": transform,
             "zorder": 1,
         },
+        "GXG": {
+            "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+            "alpha": 0.7,
+            "vmin": np.nanpercentile(datasets["2023"]["GXG"], 10),
+            "vmax": np.nanpercentile(datasets["2023"]["GXG"], 90),
+            "transform": transform,
+            "zorder": 1,
+        },
         "animation_data": {"transform": transform},
         "tidal_flows": {
             "transform": transform,
@@ -166,14 +185,17 @@ def satellite_window(datasets):
         },
     }
 
-    # Create animation frames from file paths (ideally in prep_data, but gave errors so for now moved to here)
-    animation_files = datasets["2023"]["animation_data"]
-    animation_data = {}
-    for i, frame in enumerate(animation_files):
-        animation_data[i] = vcl.data.get_frame_data(frame)
+    maps_2100 = maps_2023.copy()
+    maps_2100["GXG"] = {
+        "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+        "alpha": 0.7,
+        "vmin": np.nanpercentile(datasets["2050"]["GXG"], 10),
+        "vmax": np.nanpercentile(datasets["2050"]["GXG"], 90),
+        "transform": transform,
+        "zorder": 1,
+    }
 
-    datasets["2023"]["animation_data"] = animation_data
-    datasets["2050"]["animation_data"] = animation_data
+    maps = {"2023": maps_2023, "2050": maps_2100}
 
     # Create display window with satellite image
     display = vcl.DisplayMap.DisplayMap(
@@ -230,9 +252,6 @@ def satellite_window(datasets):
                 elif message == "1":
                     display.change_layer(layer)
                 elif layer == "":
-                    import ipdb
-
-                    ipdb.set_trace()
                     display.change_layer()
                     display.change_overlay()
             elif view_type == "overlay":
@@ -408,6 +427,9 @@ def slider_window(datasets):
     tidal_flow_flow_ax = fig.add_axes([0.35, 0.085, 0.1, 0.04])
     tidal_flow_flow_button = Button(tidal_flow_flow_ax, "Vloed", hovercolor="0.600")
 
+    GXG_ax = fig.add_axes([0.5, 0.085, 0.1, 0.04])
+    GXG_button = Button(GXG_ax, "GXG", hovercolor="0.600")
+
     # Call functions when buttons are pressed or slider is slid
     x_slider.on_changed(update)
     contour_button.on_clicked(
@@ -424,6 +446,7 @@ def slider_window(datasets):
     tidal_flow_flow_button.on_clicked(
         lambda x: change_layer(x, "tidal_flows:170,overlay")
     )
+    GXG_button.on_clicked(lambda x: change_layer(x, "GXG,layer"))
 
     # Slightly different function for scenario button
     def change_scenario(event):
@@ -499,7 +522,7 @@ def midi_board(datasets):
         25: {"function": change_layer, "value": "GVG,layer"},
         26: {"function": change_layer, "value": "ecotoop,layer"},
         27: {"function": change_layer, "value": "bodem,layer"},
-        28: {"function": change_layer, "value": "tidal_flows:390,overlay"},
+        28: {"function": change_layer, "value": "GXG,layer"},
         31: {"function": change_layer, "value": ",layer"},
         45: {"function": start_stop_animation, "value": "animation_data,layer"},
         46: {"function": start_stop_animation, "value": ""},

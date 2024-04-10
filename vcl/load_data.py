@@ -31,6 +31,13 @@ def load():
     # Open arial photo of Terschelling (+ surrounding area)
     sat = rasterio.open(data_dir / "test3.tif")
 
+    GXG = rasterio.open(
+        data_dir / "Freatische GXG/Referentie/Zomer_grondwaterstand_m_mv.tif"
+    )
+    GXG_n = rasterio.open(
+        data_dir / "Freatische GXG/2100/Zomer_grondwaterstand_m_mv.tif"
+    )
+
     GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
     GVG = rasterio.open(data_dir / "GVGzonderrotatie.png")
     ecotopen = rasterio.open(data_dir / "Ecotopen zonder rotatie en legend.png")
@@ -49,15 +56,12 @@ def load():
     }
 
     unique_datasets = {
-        "2023": {
-            "extent": extent,
-            "ds": ds,
-            "ds_b0": ds_b0,
-        },
+        "2023": {"extent": extent, "ds": ds, "ds_b0": ds_b0, "GXG": GXG},
         "2050": {
             "extent": extent,
             "ds": ds_n,
             "ds_b0": ds_b0_n,
+            "GXG": GXG_n,
         },
     }
     return common_datasets, unique_datasets
