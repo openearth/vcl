@@ -346,7 +346,7 @@ def contour_slice_window(datasets):
         if socket2 in socks and socks[socket2] == zmq.POLLIN:
             topic, message = socket2.recv(zmq.DONTWAIT).split()
             message = message.decode("utf-8")
-            layer, message = message.split(",")
+            layer, view_type, message = message.split(",")
             if message == "0":
                 display.change_line_data()
             if message == "1":
