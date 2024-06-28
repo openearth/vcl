@@ -65,5 +65,11 @@ def load():
             "ds_b0": ds_b0_n,
             "GXG": GXG_n,
         },
+        "2100": {
+            "extent": extent,
+            "ds": ds_n + 2,
+            "ds_b0": ds_b0,
+            "GXG": GXG,
+        },
     }
     return common_datasets, unique_datasets

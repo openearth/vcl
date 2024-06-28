@@ -111,6 +111,39 @@ class DisplaySlice:
         else:
             self.current_layer = None
 
+    def change_overlay(self, layer=None, **kwargs):
+        if self.current_overlay is not None:
+            self.current_overlay.remove()
+        if layer is not None:
+            if layer.split(":")[0] == "tidal_flows":
+                im = self.show_tidal_flows(
+                    layer.split(":")[0],
+                    layer.split(":")[1],
+                    **self.kwargs_dict[self.current_scenario][layer.split(":")[0]]
+                )
+                self.current_overlay = im
+                self.current_overlay_text = layer
+            else:
+                im = self.imshow(
+                    self.dataset[self.current_scenario][layer],
+                    **self.kwargs_dict[self.current_scenario][layer]
+                )
+                self.current_overlay = im
+                self.current_overlay_text = layer
+        else:
+            self.current_overlay = None
+            self.current_overlay_text = None
+
+    def show_difference(self, ref, **kwargs):
+        diff = (
+            self.dataset[ref][self.current_layer]
+            - self.dataset[self.current_scenario][self.current_scenario]
+        )
+        alpha = np.where(diff == 0, 0, 1)
+
+        self.change_overlay()
+        # TODO: Incorporate change_overlay in here, to be able to deal with slider updates, maybe not needed actually
+
     def change_contour_data(self, layer, **kwargs):
         if self.current_contour is not None:
             self.current_contour.remove()
@@ -152,6 +185,7 @@ class DisplaySlice:
         if self.current_line is not None:
             x_line = np.clip(x_line, 0, self.current_y.shape[-1] - 1).astype(np.int32)
             self.current_line.set_ydata(self.current_y[..., x_line])
+        # TODO: add overlay and alpah in here
 
         self.current_x_contour = x_contour
         self.current_x_line = x_line

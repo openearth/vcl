@@ -47,6 +47,7 @@ contour_show = False
 height_map_show = False
 compare = False
 current_layer = ""
+current_overlay = ""
 matplotlib.rcParams["toolbar"] = "None"
 
 
@@ -68,6 +69,7 @@ def make_listen_sockets():
     socket3.subscribe("x_slice")
 
     socket4 = context.socket(zmq.SUB)
+    socket4.setsockopt(zmq.CONFLATE, 1)
     socket4.connect("tcp://localhost:5556")
     socket4.subscribe("scenario")
 
@@ -193,6 +195,7 @@ def satellite_window(datasets):
         },
     }
 
+    maps_2050 = maps_2023.copy()
     maps_2100 = maps_2023.copy()
     maps_2100["GXG"] = {
         "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
@@ -203,7 +206,7 @@ def satellite_window(datasets):
         "zorder": 1,
     }
 
-    maps = {"2023": maps_2023, "2050": maps_2100}
+    maps = {"2023": maps_2023, "2050": maps_2050, "2100": maps_2100}
 
     # Create display window with satellite image
     display = vcl.DisplayMap.DisplayMap(
@@ -255,13 +258,13 @@ def satellite_window(datasets):
             message = message.decode("utf-8")
             layer, view_type, message = message.split(",")
             if view_type == "layer":
-                if message == "0":
+                if layer == "":
+                    display.change_layer()
+                    display.change_overlay()
+                elif message == "0":
                     display.change_layer()
                 elif message == "1":
                     display.change_layer(layer)
-                elif layer == "":
-                    display.change_layer()
-                    display.change_overlay()
             elif view_type == "overlay":
                 if message == "0" or layer == "":
                     display.change_overlay()
@@ -509,15 +512,37 @@ def midi_board(datasets):
         # Update button text when pressed as well
         socket.send_string(scenario)
 
+    years = ["2023", "2050", "2100"]
+
+    def change_year(value):
+        index = int(value * 3 / n_slider_values)
+        year = years[index]
+        socket.send_string(f"scenario {year}")
+
     # Function to send layer when button pressed
     def change_layer(text):
-        global current_layer
-        if current_layer == text:
+        layer_type = text.split(",")[1]
+        global current_layer, current_overlay
+        if text.split(",")[0] == "":
             socket.send_string(f"top_view {text},{0}")
             current_layer = ""
+            current_overlay = ""
+        if current_layer == text or current_overlay == text:
+            socket.send_string(f"top_view {text},{0}")
+            if layer_type == "layer":
+                current_layer = ""
+            elif layer_type == "overlay":
+                current_overlay = ""
         else:
             socket.send_string(f"top_view {text},{1}")
-            current_layer = text
+            if layer_type == "layer":
+                current_layer = text
+            elif layer_type == "overlay":
+                current_overlay = text
+
+    # def change_overlay(text):
+    #     global current_overlay
+    #     if current_overlay
 
     def start_stop_animation(text):
         if text == "":
@@ -529,6 +554,7 @@ def midi_board(datasets):
     midi_mapping = {
         1: {"function": change_scenario, "value": "scenario 2023"},
         2: {"function": change_scenario, "value": "scenario 2050"},
+        3: {"function": change_year},
         23: {"function": change_layer, "value": "conc_contour_top_view,overlay"},
         24: {"function": change_layer, "value": "GSR,layer"},
         25: {"function": change_layer, "value": "GVG,layer"},
@@ -545,7 +571,7 @@ def midi_board(datasets):
     }
 
     # List of used slider control values
-    slider_keys = [60]
+    slider_keys = [3, 60]
     inport = mido.open_input()
     for msg in inport:
         # If BANK button is pressed, disconnect midi board (can't reconnect)
