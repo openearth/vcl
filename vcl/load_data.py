@@ -18,6 +18,7 @@ def load():
     ds_n = xr.open_dataset(data_dir.joinpath("conc_nieuw.nc"))
 
     # Dataset of bathymetry
+    # ds_b0 = rasterio.open(data_dir / "terschelling_maquette_def.tif")
     ds_b0 = rasterio.open(data_dir / "originele_bodem.tif")
     ds_b0_n = rasterio.open(data_dir / "nieuwe_bodem_v2.tif")
 
@@ -27,6 +28,12 @@ def load():
     extent = (
         gpd.read_file(data_dir / "bounding_box.shp").to_crs(epsg=28992).iloc[0].geometry
     )
+    # extent = (
+    #     gpd.read_file(data_dir / "vaklodingen_outline.shp")
+    #     .to_crs(epsg=28992)
+    #     .iloc[0]
+    #     .geometry
+    # )
 
     # Open arial photo of Terschelling (+ surrounding area)
     sat = rasterio.open(data_dir / "test3.tif")
@@ -64,12 +71,14 @@ def load():
             "ds": ds_n,
             "ds_b0": ds_b0_n,
             "GXG": GXG_n,
+            "ssp": {"laag": ds - 1, "hoog": ds * 2},
         },
         "2100": {
             "extent": extent,
             "ds": ds_n + 2,
             "ds_b0": ds_b0,
             "GXG": GXG,
+            "ssp": {"laag": ds_n - 1, "hoog": ds_n * 2},
         },
     }
     return common_datasets, unique_datasets

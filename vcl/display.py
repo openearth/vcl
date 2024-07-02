@@ -357,6 +357,11 @@ def contour_slice_window(datasets):
                     display.change_line_data(layer)
                 else:
                     display.change_line_data()
+                    # if view_type == "overlay":
+                    #     import ipdb
+
+                    #     ipdb.set_trace()
+                    #     display.show_difference("2023")
             plt.pause(0.01)
 
         # If button for different scenario is pressed, change scenario
@@ -562,7 +567,8 @@ def midi_board(datasets):
         27: {"function": change_layer, "value": "bodem,layer"},
         28: {"function": change_layer, "value": "GXG,layer"},
         29: {"function": change_layer, "value": "floodmap,layer"},
-        31: {"function": change_layer, "value": ",layer"},
+        # 31: {"function": change_layer, "value": ",layer"},
+        31: {"function": change_layer, "value": "difference,overlay"},
         45: {"function": start_stop_animation, "value": "animation_data,layer"},
         46: {"function": start_stop_animation, "value": ""},
         60: {"function": slider_update},

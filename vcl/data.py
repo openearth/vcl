@@ -241,10 +241,6 @@ def create_shaded_image(sat_extent, bodem):
 def get_plot_lims(extent):
     lims = extent.exterior.bounds
     lims = list(lims)
-    lims[0] += 750
-    lims[1] -= 900
-    lims[2] += 750
-    lims[3] -= 900
     return tuple(lims)
 
 
