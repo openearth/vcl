@@ -1,23 +1,22 @@
+import cmocean
 import cv2
 import matplotlib
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+import matplotlib.transforms as mtransforms
+import mido
 import numpy as np
+import scipy
 import zmq
-import cmocean
 from matplotlib import colormaps
-from matplotlib.colors import LightSource, ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import LightSource, LinearSegmentedColormap, ListedColormap
+from matplotlib.widgets import Button, Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-import matplotlib.transforms as mtransforms
-import matplotlib.patches as patches
-from matplotlib.widgets import Slider, Button
-import scipy
-import mido
-
 import vcl.data
-import vcl.prep_data
 import vcl.DisplayMap
 import vcl.DisplaySlice
+import vcl.prep_data
 
 cmap = ListedColormap(["royalblue", "coral"])
 cmap = ListedColormap([cmocean.cm.haline(0), cmocean.cm.haline(0.99)])
@@ -71,20 +70,27 @@ def make_listen_sockets():
     socket4 = context.socket(zmq.SUB)
     socket4.setsockopt(zmq.CONFLATE, 1)
     socket4.connect("tcp://localhost:5556")
-    socket4.subscribe("scenario")
+    socket4.subscribe("year")
+
+    socket5 = context.socket(zmq.SUB)
+    socket5.setsockopt(zmq.CONFLATE, 1)
+    socket5.connect("tcp://localhost:5556")
+    socket5.subscribe("scenario")
 
     poller = zmq.Poller()
     poller.register(socket1, zmq.POLLIN)
     poller.register(socket2, zmq.POLLIN)
     poller.register(socket3, zmq.POLLIN)
     poller.register(socket4, zmq.POLLIN)
+    poller.register(socket5, zmq.POLLIN)
 
     sockets = {
         "context": context,
         "x_slice": socket1,
         "top_view": socket2,
         "x_slice_c": socket3,
-        "scenario": socket4,
+        "year": socket4,
+        "scenario": socket5,
         "poller": poller,
     }
     return sockets
@@ -100,7 +106,8 @@ def satellite_window(datasets):
     # Socket for changing layer
     socket2 = sockets["top_view"]
     # Socket for changing scenario
-    socket3 = sockets["scenario"]
+    socket3 = sockets["year"]
+    socket4 = sockets["scenario"]
 
     # Get plot lims
     xmin, ymin, xmax, ymax = datasets["2023"]["plt_lims"]
@@ -207,6 +214,8 @@ def satellite_window(datasets):
     }
 
     maps = {"2023": maps_2023, "2050": maps_2050, "2100": maps_2100}
+    start_scenario = "ssp_laag"
+    scenario_layers = ["conc_contour_top_view"]
 
     # Create display window with satellite image
     display = vcl.DisplayMap.DisplayMap(
@@ -215,7 +224,9 @@ def satellite_window(datasets):
         "sat",
         datasets["2023"]["plt_lims"],
         "2023",
-        transform,
+        start_scenario=start_scenario,
+        scenario_layers=scenario_layers,
+        transform=transform,
     )
 
     # Start position for vertical line
@@ -274,6 +285,11 @@ def satellite_window(datasets):
         # If button for different scenario is pressed, change scenario
         if socket3 in socks and socks[socket3] == zmq.POLLIN:
             topic, message = socket3.recv(zmq.DONTWAIT).split()
+            year = message.decode("utf-8")
+            display.change_year(year)
+
+        if socket4 in socks and socks[socket4] == zmq.POLLIN:
+            topic, message = socket4.recv(zmq.DONTWAIT).split()
             scenario = message.decode("utf-8")
             display.change_scenario(scenario)
 
@@ -290,7 +306,8 @@ def contour_slice_window(datasets):
     # Socket for changing layer
     socket2 = sockets["top_view"]
     # Socket for changing scenario
-    socket3 = sockets["scenario"]
+    socket3 = sockets["year"]
+    socket4 = sockets["scenario"]
 
     print("starting matplotlib")
 
@@ -318,15 +335,18 @@ def contour_slice_window(datasets):
             "vmax": 1.5,
         },
     }
-
+    start_scenario = "ssp_laag"
+    scenario_layers = ["conc_contours_x"]
     # Create display with concentration contours
     display = vcl.DisplaySlice.DisplaySlice(
         datasets,
         maps,
         "conc_contours_x",
         "2023",
+        start_scenario,
         extent_x,
         datasets["2023"]["plt_lims"],
+        scenario_layers=scenario_layers,
     )
 
     # Pause so you can move window around
@@ -340,7 +360,9 @@ def contour_slice_window(datasets):
             topic, message = socket1.recv(zmq.DONTWAIT).split()
             slider_val = int(message)
             bodem_val = int((slider_val - xmin) / datasets["2023"]["dx_bodem"])
-            conc_val = int((slider_val - xmin) / datasets["2023"]["dx_conc"])
+            conc_val = int(
+                (slider_val - xmin) / datasets["2023"]["ssp_laag"]["dx_conc"]
+            )
             display.change_slice(conc_val, bodem_val)
             plt.pause(0.01)
             # fig.canvas.draw_idle()
@@ -367,8 +389,14 @@ def contour_slice_window(datasets):
         # If button for different scenario is pressed, change scenario
         if socket3 in socks and socks[socket3] == zmq.POLLIN:
             topic, message = socket3.recv(zmq.DONTWAIT).split()
+            year = message.decode("utf-8")
+            display.change_year(year)
+
+        if socket4 in socks and socks[socket4] == zmq.POLLIN:
+            topic, message = socket4.recv(zmq.DONTWAIT).split()
             scenario = message.decode("utf-8")
             display.change_scenario(scenario)
+
         plt.pause(0.01)
 
 
@@ -522,7 +550,7 @@ def midi_board(datasets):
     def change_year(value):
         index = int(value * 3 / n_slider_values)
         year = years[index]
-        socket.send_string(f"scenario {year}")
+        socket.send_string(f"year {year}")
 
     # Function to send layer when button pressed
     def change_layer(text):
@@ -557,8 +585,8 @@ def midi_board(datasets):
 
     # Mapping from the midi control value to the function to update and the value to update to
     midi_mapping = {
-        1: {"function": change_scenario, "value": "scenario 2023"},
-        2: {"function": change_scenario, "value": "scenario 2050"},
+        1: {"function": change_scenario, "value": "scenario ssp_laag"},
+        2: {"function": change_scenario, "value": "scenario ssp_hoog"},
         3: {"function": change_year},
         23: {"function": change_layer, "value": "conc_contour_top_view,overlay"},
         24: {"function": change_layer, "value": "GSR,layer"},

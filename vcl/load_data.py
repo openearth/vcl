@@ -1,11 +1,11 @@
 from pathlib import Path
+
+import geopandas as gpd
 import matplotlib.image as mpimg
 import numpy as np
-
+import rasterio
 import rioxarray as rxr
 import xarray as xr
-import geopandas as gpd
-import rasterio
 
 
 def load():
@@ -65,20 +65,32 @@ def load():
     }
 
     unique_datasets = {
-        "2023": {"extent": extent, "ds": ds, "ds_b0": ds_b0, "GXG": GXG},
+        "2023": {
+            "extent": extent,
+            "ds": ds,
+            "ds_b0": ds_b0,
+            "GXG": GXG,
+            "ssp": {"laag": ds, "hoog": ds},
+        },
         "2050": {
             "extent": extent,
             "ds": ds_n,
             "ds_b0": ds_b0_n,
             "GXG": GXG_n,
-            "ssp": {"laag": ds - 1, "hoog": ds * 2},
+            "ssp": {"laag": ds_n - 1, "hoog": ds_n * 2},
         },
         "2100": {
             "extent": extent,
             "ds": ds_n + 2,
             "ds_b0": ds_b0,
             "GXG": GXG,
-            "ssp": {"laag": ds_n - 1, "hoog": ds_n * 2},
+            "ssp": {"laag": ds_n * -1, "hoog": ds_n * 0.5},
         },
     }
     return common_datasets, unique_datasets
+
+
+def load_preprocessed():
+    data_dir = Path("~/data/vcl/dataset").expanduser()
+    datasets = np.load(data_dir / "preprocessed-data.npy", allow_pickle=True).item()
+    return datasets

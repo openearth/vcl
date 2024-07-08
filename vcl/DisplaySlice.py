@@ -21,16 +21,21 @@ class DisplaySlice:
         dataset,
         kwargs_dict,
         start_layer,
+        start_year,
         start_scenario,
         slice_extent,
         plt_lims,
+        scenario_layers=[],
         init_x=0,
         transform=None,
     ) -> None:
         super(DisplaySlice, self).__init__()
+
         self.dataset = dataset
         self.kwargs_dict = kwargs_dict
+        self.current_year = start_year
         self.current_scenario = start_scenario
+        self.scenario_layers = scenario_layers
 
         self.fig, self.ax = plt.subplots()
         self.ax.fill_between(
@@ -41,10 +46,18 @@ class DisplaySlice:
             zorder=0,
         )
 
-        im = self.ax.imshow(
-            self.dataset[self.current_scenario][start_layer][..., init_x],
-            **self.kwargs_dict[start_layer]
-        )
+        if start_layer in scenario_layers:
+            im = self.ax.imshow(
+                self.dataset[self.current_year][self.current_scenario][start_layer][
+                    ..., init_x
+                ],
+                **self.kwargs_dict[start_layer]
+            )
+        else:
+            im = self.ax.imshow(
+                self.dataset[self.current_year][start_layer][..., init_x],
+                **self.kwargs_dict[start_layer]
+            )
 
         divider = make_axes_locatable(self.ax)
         cax = divider.append_axes("right", size="5%", pad=0.10)
@@ -69,7 +82,12 @@ class DisplaySlice:
         self.current_x_line = init_x
         self.current_contour = im
         self.current_contour_text = start_layer
-        self.current_data = self.dataset[self.current_scenario][start_layer]
+        if start_layer in scenario_layers:
+            self.current_data = self.dataset[self.current_year][self.current_scenario][
+                start_layer
+            ]
+        else:
+            self.current_data = self.dataset[self.current_year][start_layer]
         self.current_line = None
         self.current_line_text = None
         self.current_y = None
@@ -136,10 +154,17 @@ class DisplaySlice:
             self.current_contour.remove()
 
         if layer is not None:
-            self.imshow(
-                self.dataset[self.current_scenario][layer], **self.kwargs_dict[layer]
-            )
-            self.current_contour_text = layer
+            if layer in self.scenario_layers:
+                self.imshow(
+                    self.dataset[self.current_year][self.current_scenario][layer],
+                    **self.kwargs_dict[layer]
+                )
+                self.current_contour_text = layer
+            else:
+                self.imshow(
+                    self.dataset[self.current_year][layer], **self.kwargs_dict[layer]
+                )
+                self.current_contour_text = layer
         else:
             self.current_contour = None
             self.current_contour_text = None
@@ -149,16 +174,28 @@ class DisplaySlice:
             self.current_line.remove()
 
         if y_data is not None:
-            self.line_plot(
-                self.kwargs_dict[y_data]["x"],
-                self.dataset[self.current_scenario][y_data],
-                **{
-                    key: val
-                    for key, val in self.kwargs_dict[y_data].items()
-                    if key != "x"
-                }
-            )
-            self.current_line_text = y_data
+            if y_data in self.scenario_layers:
+                self.line_plot(
+                    self.kwargs_dict[y_data]["x"],
+                    self.dataset[self.current_year][self.current_scenario][y_data],
+                    **{
+                        key: val
+                        for key, val in self.kwargs_dict[y_data].items()
+                        if key != "x"
+                    }
+                )
+                self.current_line_text = y_data
+            else:
+                self.line_plot(
+                    self.kwargs_dict[y_data]["x"],
+                    self.dataset[self.current_year][y_data],
+                    **{
+                        key: val
+                        for key, val in self.kwargs_dict[y_data].items()
+                        if key != "x"
+                    }
+                )
+                self.current_line_text = y_data
         else:
             self.current_line = None
             self.current_line_text = None
@@ -187,5 +224,10 @@ class DisplaySlice:
 
     def change_scenario(self, scenario):
         self.current_scenario = scenario
+        self.change_line_data(self.current_line_text)
+        self.change_contour_data(self.current_contour_text)
+
+    def change_year(self, year):
+        self.current_year = year
         self.change_line_data(self.current_line_text)
         self.change_contour_data(self.current_contour_text)

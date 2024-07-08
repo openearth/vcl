@@ -24,13 +24,17 @@ class DisplayMap:
         kwargs_dict,
         start_layer,
         plt_lims,
+        start_year,
         start_scenario,
+        scenario_layers=[],
         transform=None,
     ) -> None:
         super(DisplayMap, self).__init__()
         self.dataset = dataset
         self.kwargs_dict = kwargs_dict
+        self.current_year = start_year
         self.current_scenario = start_scenario
+        self.scenario_layers = scenario_layers
 
         self.fig, self.ax = plt.subplots()
         self.cbar = None
@@ -46,8 +50,20 @@ class DisplayMap:
         self.transform = self.ax.transData
 
         im = self.ax.imshow(
-            self.dataset[self.current_scenario][start_layer],
-            **kwargs_dict[self.current_scenario][start_layer]
+            self.dataset[self.current_year][start_layer],
+            **kwargs_dict[self.current_year][start_layer],
+        )
+
+        self.ax_text = self.ax.text(
+            1,
+            0,
+            f"{self.current_scenario}, {self.current_year}",
+            transform=self.ax.transAxes,
+            fontsize=60,
+            verticalalignment="bottom",
+            horizontalalignment="right",
+            color="white",
+            bbox=dict(facecolor="none", edgecolor="none"),
         )
 
         if transform is not None:
@@ -89,6 +105,9 @@ class DisplayMap:
         return im
 
     def change_layer(self, layer=None, transform=None, **kwargs):
+        # import ipdb
+
+        # ipdb.set_trace()
         try:
             self.ani.pause()
             self.ax_text.remove()
@@ -105,8 +124,8 @@ class DisplayMap:
                 self.show_animation(layer)
             elif layer == "GXG" or layer == "floodmap":
                 im = self.imshow(
-                    self.dataset[self.current_scenario][layer],
-                    **self.kwargs_dict[self.current_scenario][layer]
+                    self.dataset[self.current_year][layer],
+                    **self.kwargs_dict[self.current_year][layer],
                 )
                 self.current_layer = im
                 self.current_layer_text = layer
@@ -118,20 +137,33 @@ class DisplayMap:
                     shrink=1,
                 )
             else:
-                im = self.imshow(
-                    self.dataset[self.current_scenario][layer],
-                    **self.kwargs_dict[self.current_scenario][layer]
-                )
+                if layer in self.scenario_layers:
+                    im = self.imshow(
+                        self.dataset[self.current_year][self.current_scenario][layer],
+                        **self.kwargs_dict[self.current_year][layer],
+                    )
+                else:
+                    im = self.imshow(
+                        self.dataset[self.current_year][layer],
+                        **self.kwargs_dict[self.current_year][layer],
+                    )
                 self.current_layer = im
                 self.current_layer_text = layer
         else:
             self.current_layer = None
             self.current_layer_text = None
 
+    def change_year(self, year):
+        self.current_year = year
+        self.change_layer(self.current_layer_text)
+        self.change_overlay(self.current_overlay_text)
+        self.ax_text.set_text(f"{self.current_scenario}, {self.current_year}")
+
     def change_scenario(self, scenario):
         self.current_scenario = scenario
         self.change_layer(self.current_layer_text)
         self.change_overlay(self.current_overlay_text)
+        self.ax_text.set_text(f"{self.current_scenario}, {self.current_year}")
 
     def change_overlay(self, layer=None, **kwargs):
         if self.current_overlay is not None:
@@ -141,15 +173,21 @@ class DisplayMap:
                 im = self.show_tidal_flows(
                     layer.split(":")[0],
                     layer.split(":")[1],
-                    **self.kwargs_dict[self.current_scenario][layer.split(":")[0]]
+                    **self.kwargs_dict[self.current_year][layer.split(":")[0]],
                 )
                 self.current_overlay = im
                 self.current_overlay_text = layer
             else:
-                im = self.imshow(
-                    self.dataset[self.current_scenario][layer],
-                    **self.kwargs_dict[self.current_scenario][layer]
-                )
+                if layer in self.scenario_layers:
+                    im = self.imshow(
+                        self.dataset[self.current_year][self.current_scenario][layer],
+                        **self.kwargs_dict[self.current_year][layer],
+                    )
+                else:
+                    im = self.imshow(
+                        self.dataset[self.current_year][layer],
+                        **self.kwargs_dict[self.current_year][layer],
+                    )
                 self.current_overlay = im
                 self.current_overlay_text = layer
         else:
@@ -157,13 +195,13 @@ class DisplayMap:
             self.current_overlay_text = None
 
     def show_animation(self, layer):
-        animation_data = self.dataset[self.current_scenario][layer]
+        animation_data = self.dataset[self.current_year][layer]
 
         frames = [animation_data[frame]["image"] for frame in animation_data.keys()]
         extents = [animation_data[frame]["extent"] for frame in animation_data.keys()]
         texts = [animation_data[frame]["text"] for frame in animation_data.keys()]
 
-        kwargs_dict = {"extent": extents[0]} | self.kwargs_dict[self.current_scenario][
+        kwargs_dict = {"extent": extents[0]} | self.kwargs_dict[self.current_year][
             layer
         ]
 
@@ -199,7 +237,7 @@ class DisplayMap:
         # plt.show(block=False)
 
     def show_tidal_flows(self, layer, tide, transform=None, **kwargs):
-        dataset = self.dataset[self.current_scenario][layer]
+        dataset = self.dataset[self.current_year][layer]
         u = dataset["ucx"][int(tide), :][::4]
         v = dataset["ucy"][int(tide), :][::4]
         c = np.sqrt(u**2 + v**2)

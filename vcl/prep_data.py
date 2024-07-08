@@ -1,16 +1,20 @@
+from pathlib import Path
+
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import shapely
+from matplotlib.colors import LightSource, ListedColormap
 from pyproj import Transformer
 
-from matplotlib.colors import LightSource, ListedColormap
-
-import vcl.display
 import vcl.data
+import vcl.display
 import vcl.load_data
+
+
+data_dir = data_dir = Path("~/data/vcl/dataset").expanduser()
 
 
 def preprocess_common(datasets):
@@ -90,34 +94,21 @@ def preprocess_common(datasets):
 
 def preprocess_unique(datasets):
     preprocessed_datasets = {}
-    for scenario in datasets.keys():
-        # Get salt concentration datasets
-        ds = datasets[scenario]["ds"]
-
-        # Replace negative concentrations (due to model errors) with 0
-        ds = ds.where((ds.conc >= 0) | ds.isnull(), other=0)
-        # ds_n = ds_n.where((ds_n.conc >= 0) | ds_n.isnull(), other=0)
-        conc_bounds = (
-            ds.conc.x.values[0],
-            ds.conc.y.values[-1],
-            ds.conc.x.values[-1],
-            ds.conc.y.values[0],
-        )
-
+    for year in datasets.keys():
         # Get bathymetry datasets
-        ds_b0 = datasets[scenario]["ds_b0"]
+        ds_b0 = datasets[year]["ds_b0"]
 
         # Replace -9999 with second lowest value
         bodem = ds_b0.read(1)
         bodem[np.where(bodem == -9999)] = -43.8
 
-        GXG = datasets[scenario]["GXG"]
+        GXG = datasets[year]["GXG"]
 
         # Create dictionary to store processed data and values
         preprocessed = {}
 
         # Get the extent we want to show
-        preprocessed["extent"] = datasets[scenario][f"extent"]
+        preprocessed["extent"] = datasets[year][f"extent"]
 
         # Add bathymetry and its bounds from the dataset
         preprocessed["bodem"] = bodem
@@ -168,100 +159,138 @@ def preprocess_unique(datasets):
         # Each z layer of concentration dataset needs to be rotated and cropped seperately to account for the slices in x and y direction
         # Create dummy array of one layer and apply the function to it to obtain its shape
         # Note that the first dimension of ds_n is time instead of z
-        if scenario == "2023":
-            conc = ds.conc.values
-        else:
-            conc = ds.conc.values[0, ...]
+        for scenario in datasets[year]["ssp"].keys():
+            print(year, scenario)
+            preprocessed[f"ssp_{scenario}"] = {}
+            # Get salt concentration datasets
+            ds = datasets[year]["ssp"][scenario]
+            datasets[year]["ssp"][scenario] = None
 
-        dummy = vcl.data.rotate_and_crop(conc[0, :, :], -preprocessed["angle"])
+            # Replace negative concentrations (due to model errors) with 0
+            ds = ds.where((ds.conc >= 0) | ds.isnull(), other=0)
+            # ds_n = ds_n.where((ds_n.conc >= 0) | ds_n.isnull(), other=0)
+            conc_bounds = (
+                ds.conc.x.values[0],
+                ds.conc.y.values[-1],
+                ds.conc.x.values[-1],
+                ds.conc.y.values[0],
+            )
+            if year == "2023":
+                conc = ds.conc.values
+            else:
+                conc = ds.conc.values[0, ...]
 
-        rot_ds = np.zeros((conc.shape[0], dummy.shape[0], dummy.shape[1]))
-        preprocessed["conc"] = np.zeros((conc.shape[0], dummy.shape[0], dummy.shape[1]))
+            dummy = vcl.data.rotate_and_crop(conc[0, :, :], -preprocessed["angle"])
 
-        for i in range(rot_ds.shape[0]):
-            preprocessed["conc"][i, ...] = vcl.data.rotate_and_crop(
-                conc[i, ...], -preprocessed["angle"]
+            rot_ds = np.zeros((conc.shape[0], dummy.shape[0], dummy.shape[1]))
+            preprocessed[f"ssp_{scenario}"]["conc"] = np.zeros(
+                (conc.shape[0], dummy.shape[0], dummy.shape[1])
             )
 
-        (
-            preprocessed["conc"],
-            preprocessed["dx_conc"],
-            preprocessed["dy_conc"],
-        ) = vcl.data.fit_array_to_bounds(
-            preprocessed["conc"],
-            conc_bounds,
-            preprocessed["mid_point"],
-            preprocessed["plt_lims"],
-            -preprocessed["angle"],
-        )
+            for i in range(rot_ds.shape[0]):
+                preprocessed[f"ssp_{scenario}"]["conc"][i, ...] = (
+                    vcl.data.rotate_and_crop(conc[i, ...], -preprocessed["angle"])
+                )
 
-        # Set new extent
-        preprocessed["top_contour_extent"] = vcl.data.contour_bounds(ds)
+            (
+                preprocessed[f"ssp_{scenario}"]["conc"],
+                preprocessed[f"ssp_{scenario}"]["dx_conc"],
+                preprocessed[f"ssp_{scenario}"]["dy_conc"],
+            ) = vcl.data.fit_array_to_bounds(
+                preprocessed[f"ssp_{scenario}"]["conc"],
+                conc_bounds,
+                preprocessed["mid_point"],
+                preprocessed["plt_lims"],
+                -preprocessed["angle"],
+            )
 
-        # Make meshgrid for contour plots
-        preprocessed["Y1"], preprocessed["Z1"] = np.meshgrid(
-            np.linspace(
-                preprocessed["plt_lims"][3],
-                preprocessed["plt_lims"][1],
-                preprocessed["conc"].shape[1],
-            ),
-            ds.z,
-        )
+            # Set new extent
+            preprocessed[f"ssp_{scenario}"]["top_contour_extent"] = (
+                vcl.data.contour_bounds(ds)
+            )
 
-        preprocessed["X2"], preprocessed["Y2"] = np.meshgrid(
-            np.linspace(
-                preprocessed["plt_lims"][0],
-                preprocessed["plt_lims"][2],
-                preprocessed["conc"].shape[2],
-            ),
-            np.linspace(
-                preprocessed["plt_lims"][3],
-                preprocessed["plt_lims"][1],
-                preprocessed["conc"].shape[1],
-            ),
-        )
+            # Make meshgrid for contour plots
+            preprocessed["Y1"], preprocessed["Z1"] = np.meshgrid(
+                np.linspace(
+                    preprocessed["plt_lims"][3],
+                    preprocessed["plt_lims"][1],
+                    preprocessed[f"ssp_{scenario}"]["conc"].shape[1],
+                ),
+                ds.z,
+            )
 
-        # Set contour cmap
-        cmap = ListedColormap(["royalblue", "coral"])
-        contour_show = False
+            preprocessed["X2"], preprocessed["Y2"] = np.meshgrid(
+                np.linspace(
+                    preprocessed["plt_lims"][0],
+                    preprocessed["plt_lims"][2],
+                    preprocessed[f"ssp_{scenario}"]["conc"].shape[2],
+                ),
+                np.linspace(
+                    preprocessed["plt_lims"][3],
+                    preprocessed["plt_lims"][1],
+                    preprocessed[f"ssp_{scenario}"]["conc"].shape[1],
+                ),
+            )
 
-        # Initialize an array to store the intersections
-        # Note that we choose an array filled with -2 instead of 0, since we have a contour level of 0. So in this case a value of -2
-        # indicates a nan value
-        preprocessed["nbpixels_x"] = 320
-        preprocessed["nbpixels_y"] = preprocessed["conc"].shape[1]
+            # Set contour cmap
+            cmap = ListedColormap(["royalblue", "coral"])
+            contour_show = False
 
-        # Compute filled contours
-        preprocessed["conc_contour_top_view"] = vcl.data.contourf_to_array_3d(
-            np.expand_dims(preprocessed["conc"][-10, ...], axis=0),
-            preprocessed["conc"].shape[1],
-            preprocessed["conc"].shape[2],
-            1,
-            0,
-            preprocessed["X2"],
-            preprocessed["Y2"],
-            levels=[-1, 1.5, 16],
-        )[..., 0]
+            # Initialize an array to store the intersections
+            # Note that we choose an array filled with -2 instead of 0, since we have a contour level of 0. So in this case a value of -2
+            # indicates a nan value
+            preprocessed["nbpixels_x"] = 320
+            preprocessed["nbpixels_y"] = preprocessed[f"ssp_{scenario}"]["conc"].shape[
+                1
+            ]
 
-        preprocessed["conc_contours_x"] = vcl.data.contourf_to_array_3d(
-            preprocessed["conc"],
-            preprocessed["nbpixels_x"],
-            preprocessed["nbpixels_y"],
-            preprocessed["conc"].shape[-1],
-            2,
-            preprocessed["Y1"],
-            preprocessed["Z1"],
-            levels=[-1, 1.5, 16],
-        )
+            # Compute filled contours
+            preprocessed[f"ssp_{scenario}"]["conc_contour_top_view"] = (
+                vcl.data.contourf_to_array_3d(
+                    np.expand_dims(
+                        preprocessed[f"ssp_{scenario}"]["conc"][-10, ...], axis=0
+                    ),
+                    preprocessed[f"ssp_{scenario}"]["conc"].shape[1],
+                    preprocessed[f"ssp_{scenario}"]["conc"].shape[2],
+                    1,
+                    0,
+                    preprocessed["X2"],
+                    preprocessed["Y2"],
+                    levels=[-1, 1.5, 16],
+                )[..., 0]
+            )
+
+            preprocessed[f"ssp_{scenario}"]["conc_contours_x"] = (
+                vcl.data.contourf_to_array_3d(
+                    preprocessed[f"ssp_{scenario}"]["conc"],
+                    preprocessed["nbpixels_x"],
+                    preprocessed["nbpixels_y"],
+                    preprocessed[f"ssp_{scenario}"]["conc"].shape[-1],
+                    2,
+                    preprocessed["Y1"],
+                    preprocessed["Z1"],
+                    levels=[-1, 1.5, 16],
+                )
+            )
+            preprocessed[f"ssp_{scenario}"]["conc_contours_x"] = preprocessed[
+                f"ssp_{scenario}"
+            ]["conc_contours_x"].astype(np.float16)
+            del preprocessed[f"ssp_{scenario}"]["conc"]
+            np.save(
+                data_dir / f"preprocessed-{year}-ssp-{scenario}.npy",
+                preprocessed[f"ssp_{scenario}"],
+            )
+            del ds
+            del preprocessed[f"ssp_{scenario}"]
 
         preprocessed["GXG"], preprocessed["GXG_extent"] = (
             vcl.data.prepare_rasterio_image(GXG)
         )
 
-        preprocessed_datasets[scenario] = preprocessed
+        preprocessed_datasets[year] = preprocessed
 
         # animation_data = {}
-        # for i, frame in enumerate(datasets[scenario]["animation_files"]):
+        # for i, frame in enumerate(datasets[year]["animation_files"]):
         #     animation_data[i] = vcl.data.get_frame_data(frame)
 
     # Close opened files
@@ -275,12 +304,15 @@ def preprocess(common_datasets, unique_datasets):
     preprocessed_common_datasets = preprocess_common(common_datasets)
     preprocessed_unique_datasets = preprocess_unique(unique_datasets)
 
-    # Combine common and unique preprocessed datasets for each scenario
+    # Combine common and unique preprocessed datasets for each year
     preprocessed_datasets = {}
-    for scenario in unique_datasets.keys():
-        preprocessed_datasets[scenario] = {
+    for year in unique_datasets.keys():
+        preprocessed_datasets[year] = {
             **preprocessed_common_datasets,
-            **preprocessed_unique_datasets[scenario],
+            **preprocessed_unique_datasets[year],
         }
-
+        for scenario in unique_datasets[year]["ssp"].keys():
+            preprocessed_datasets[year][f"ssp_{scenario}"] = np.load(
+                data_dir / f"preprocessed-{year}-ssp-{scenario}.npy", allow_pickle=True
+            ).item()
     return preprocessed_datasets

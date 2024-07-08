@@ -2,22 +2,22 @@
 
 import concurrent.futures
 import json
-import sys
 import os
-import psutil
-import threading
 import signal
+import sys
+import threading
+import time
+from pathlib import Path
 
 import click
-
 import matplotlib
-
+import numpy as np
+import psutil
 import zmq
-import time
 
-
-import vcl.display
 import vcl.data
+import vcl.display
+import vcl.load_data
 import vcl.prep_data
 
 
@@ -75,7 +75,9 @@ def test(datasets):
 @click.option("--satellite/--no-satellite", default=False)
 @click.option("--contour/--no-contour", default=False)
 @click.option("--midi/--no-midi", default=True)
-def main(satellite, contour, midi, args=None):
+@click.option("--preprocess/--no-preprocess", default=False)
+@click.option("--save/--no-save", default=False)
+def main(satellite, contour, midi, preprocess, save, args=None):
     """Console script for vcl."""
 
     executor = concurrent.futures.ProcessPoolExecutor(
@@ -83,9 +85,15 @@ def main(satellite, contour, midi, args=None):
         initializer=start_thread_to_terminate_when_parent_process_dies,
         initargs=(os.getpid(),),
     )
+    if preprocess:
+        common_datasets, unique_datasets = vcl.load_data.load()
+        datasets = vcl.prep_data.preprocess(common_datasets, unique_datasets)
+        if save:
+            data_dir = Path("~/data/vcl/dataset").expanduser()
+            np.save(data_dir / "preprocessed-data.npy", datasets)
+    else:
+        datasets = vcl.load_data.load_preprocessed()
 
-    common_datasets, unique_datasets = vcl.load_data.load()
-    datasets = vcl.prep_data.preprocess(common_datasets, unique_datasets)
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)
 
