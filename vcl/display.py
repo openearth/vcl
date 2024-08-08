@@ -139,6 +139,7 @@ def satellite_window(datasets):
 
     datasets["2023"]["animation_data"] = animation_data
     datasets["2050"]["animation_data"] = animation_data
+    datasets["2100"]["animation_data"] = animation_data
     datasets["2050"]["GXG"] = datasets["2050"]["GXG"] - datasets["2023"]["GXG"]
 
     # Define dictionary with plot kwargs for the different layers
@@ -547,8 +548,8 @@ def midi_board(datasets):
 
     years = ["2023", "2050", "2100"]
 
-    def change_year(value):
-        index = int(value * 3 / n_slider_values)
+    def change_year(value, years=years):
+        index = int(value * len(years) / n_slider_values)
         year = years[index]
         socket.send_string(f"year {year}")
 
@@ -587,7 +588,8 @@ def midi_board(datasets):
     midi_mapping = {
         1: {"function": change_scenario, "value": "scenario ssp_laag"},
         2: {"function": change_scenario, "value": "scenario ssp_hoog"},
-        3: {"function": change_year},
+        3: {"function": change_year, "value": ["2023", "2050", "2100"]},
+        7: {"function": change_year, "value": ["2023", "2100"]},
         23: {"function": change_layer, "value": "conc_contour_top_view,overlay"},
         24: {"function": change_layer, "value": "GSR,layer"},
         25: {"function": change_layer, "value": "GVG,layer"},
@@ -605,7 +607,7 @@ def midi_board(datasets):
     }
 
     # List of used slider control values
-    slider_keys = [3, 60]
+    slider_keys = [3, 7, 60]
     inport = mido.open_input()
     for msg in inport:
         # If BANK button is pressed, disconnect midi board (can't reconnect)
@@ -621,6 +623,13 @@ def midi_board(datasets):
                     )
                 # Send update if slider value is changed
                 if msg.control in slider_keys:
-                    midi_mapping[msg.control]["function"](msg.value)
+                    # Some functions have another optional value, try that first
+                    try:
+                        midi_mapping[msg.control]["function"](
+                            msg.value, midi_mapping[msg.control]["value"]
+                        )
+                    # Otherwise, function only needs slider value
+                    except:
+                        midi_mapping[msg.control]["function"](msg.value)
             except:
                 continue

@@ -75,14 +75,14 @@ def load():
         "2050": {
             "extent": extent,
             "ds": ds_n,
-            "ds_b0": ds_b0_n,
+            "ds_b0": ds_b0,
             "GXG": GXG_n,
             "ssp": {"laag": ds_n - 1, "hoog": ds_n * 2},
         },
         "2100": {
             "extent": extent,
             "ds": ds_n + 2,
-            "ds_b0": ds_b0,
+            "ds_b0": ds_b0_n,
             "GXG": GXG,
             "ssp": {"laag": ds_n * -1, "hoog": ds_n * 0.5},
         },
