@@ -167,7 +167,7 @@ def preprocess_unique(datasets):
             datasets[year]["ssp"][scenario] = None
 
             # Replace negative concentrations (due to model errors) with 0
-            ds = ds.where((ds.conc >= 0) | ds.isnull(), other=0)
+            # ds = ds.where((ds.conc >= 0) | ds.isnull(), other=0)
             # ds_n = ds_n.where((ds_n.conc >= 0) | ds_n.isnull(), other=0)
             conc_bounds = (
                 ds.conc.x.values[0],
@@ -177,8 +177,12 @@ def preprocess_unique(datasets):
             )
             if year == "2023":
                 conc = ds.conc.values
+
             else:
                 conc = ds.conc.values[0, ...]
+
+            # Replace negative concentrations (due to model errors) with 0
+            conc[np.where(conc < 0)] = 0
 
             dummy = vcl.data.rotate_and_crop(conc[0, :, :], -preprocessed["angle"])
 

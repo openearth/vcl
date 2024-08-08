@@ -140,22 +140,24 @@ def satellite_window(datasets):
     datasets["2023"]["animation_data"] = animation_data
     datasets["2050"]["animation_data"] = animation_data
     datasets["2100"]["animation_data"] = animation_data
-    datasets["2050"]["GXG"] = datasets["2050"]["GXG"] - datasets["2023"]["GXG"]
+    datasets["2100"]["GXG"] = datasets["2100"]["GXG"] - datasets["2023"]["GXG"]
 
     # Define dictionary with plot kwargs for the different layers
     maps_2023 = {
-        "sat": {"extent": sat_extent, "zorder": 0},
+        "sat": {"extent": sat_extent, "zorder": 0, "label": ""},
         "conc_contour_top_view": {
             "extent": (xmin, xmax, ymin, ymax),
             "cmap": cmap,
             "alpha": 0.5,
             "zorder": 2,
+            "label": "Concentratie zout in grondwater",
         },
         "GSR": {
             "extent": (xmin_gsr, xmax_gsr, ymin_gsr, ymax_gsr),
             "alpha": 0.7,
             "transform": transform,
             "zorder": 1,
+            "label": "GSR",
         },
         "bodem": {
             "extent": (xmin_b, xmax_b, ymin_b, ymax_b),
@@ -165,18 +167,21 @@ def satellite_window(datasets):
             "alpha": 1,
             "transform": transform,
             "zorder": 1,
+            "label": "Hoogtekaart",
         },
         "ecotoop": {
             "extent": (xmin_e, xmax_e, ymin_e, ymax_e),
             "alpha": 0.7,
             "transform": transform,
             "zorder": 1,
+            "label": "Ecotopen",
         },
         "GVG": {
             "extent": (xmin_gvg, xmax_gvg, ymin_gvg, ymax_gvg),
             "alpha": 0.7,
             "transform": transform,
             "zorder": 1,
+            "label": "GVG",
         },
         "GXG": {
             "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
@@ -185,6 +190,7 @@ def satellite_window(datasets):
             "vmax": np.nanpercentile(datasets["2023"]["GXG"], 90),
             "transform": transform,
             "zorder": 1,
+            "label": "GXG",
         },
         "floodmap": {
             "extent": (xmin_f, xmax_f, ymin_f, ymax_f),
@@ -192,6 +198,7 @@ def satellite_window(datasets):
             "transform": transform,
             "zorder": 1,
             "cmap": "RdBu",
+            "label": "Floodmap",
         },
         "animation_data": {"transform": transform},
         "tidal_flows": {
@@ -200,6 +207,7 @@ def satellite_window(datasets):
             "minshaft": 2,
             "cmap": cmap_tidal,
             "zorder": 2,
+            "label": "Getijdenstroom",
         },
     }
 
@@ -208,10 +216,11 @@ def satellite_window(datasets):
     maps_2100["GXG"] = {
         "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
         "alpha": 0.7,
-        "vmin": np.nanpercentile(datasets["2050"]["GXG"], 10),
-        "vmax": np.nanpercentile(datasets["2050"]["GXG"], 90),
+        "vmin": np.nanpercentile(datasets["2100"]["GXG"], 10),
+        "vmax": np.nanpercentile(datasets["2100"]["GXG"], 90),
         "transform": transform,
         "zorder": 1,
+        "label": "Verschil GXG met nu",
     }
 
     maps = {"2023": maps_2023, "2050": maps_2050, "2100": maps_2100}

@@ -83,7 +83,7 @@ def load():
             "extent": extent,
             "ds": ds_n + 2,
             "ds_b0": ds_b0_n,
-            "GXG": GXG,
+            "GXG": GXG_n,
             "ssp": {"laag": ds_n * -1, "hoog": ds_n * 0.5},
         },
     }

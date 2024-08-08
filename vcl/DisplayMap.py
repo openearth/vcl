@@ -55,6 +55,7 @@ class DisplayMap:
         # No axis
         self.ax.set_axis_off()
         self.ax.set_frame_on(False)
+
         # Store transform of the axis
         self.transform = self.ax.transData
 
@@ -64,16 +65,32 @@ class DisplayMap:
             **kwargs_dict[self.current_year][start_layer],
         )
 
+        # Split scenario text
+        scen = self.current_scenario.split("_")
+        scen = f"{scen[0]} {scen[1]}"
         # Plot text on figure
         self.ax_text = self.ax.text(
             1,
             0,
-            f"{self.current_scenario}, {self.current_year}",
+            f"{scen}, {self.current_year}",
             transform=self.ax.transAxes,
             fontsize=60,
             verticalalignment="bottom",
             horizontalalignment="right",
             color="white",
+            bbox=dict(facecolor="none", edgecolor="none"),
+        )
+
+        # Plot layer name on figure
+        self.title = self.ax.text(
+            0,
+            1,
+            kwargs_dict[self.current_year][start_layer]["label"],
+            transform=self.ax.transAxes,
+            fontsize=60,
+            verticalalignment="top",
+            horizontalalignment="left",
+            color="black",
             bbox=dict(facecolor="none", edgecolor="none"),
         )
 
@@ -123,7 +140,10 @@ class DisplayMap:
         # If animation is running, pause the animation and remove the displayed text
         try:
             self.ani.pause()
-            self.ax_text.remove()
+            scen = self.current_scenario.split("_")
+            scen = f"{scen[0]} {scen[1]}"
+            self.ax_text.set_text(f"{scen}, {self.current_year}")
+            # self.ax_text.remove()
         except:
             pass
         # If a layer is already plotted on the axis, remove it
@@ -169,10 +189,16 @@ class DisplayMap:
                 # Set current layer and current layer name
                 self.current_layer = im
                 self.current_layer_text = layer
+                self.title.set_text(
+                    self.kwargs_dict[self.current_year][self.current_layer_text][
+                        "label"
+                    ]
+                )
         # If we pass no new layer, set current layer and current layer name to None
         else:
             self.current_layer = None
             self.current_layer_text = None
+            self.title.set_text("")
 
     def change_year(self, year):
         # Set current year to year
@@ -181,7 +207,9 @@ class DisplayMap:
         self.change_layer(self.current_layer_text)
         self.change_overlay(self.current_overlay_text)
         # Update displayed text
-        self.ax_text.set_text(f"{self.current_scenario}, {self.current_year}")
+        scen = self.current_scenario.split("_")
+        scen = f"{scen[0]} {scen[1]}"
+        self.ax_text.set_text(f"{scen}, {self.current_year}")
 
     def change_scenario(self, scenario):
         # Set current scenario to scenario
@@ -190,7 +218,9 @@ class DisplayMap:
         self.change_layer(self.current_layer_text)
         self.change_overlay(self.current_overlay_text)
         # Update displayed text
-        self.ax_text.set_text(f"{self.current_scenario}, {self.current_year}")
+        scen = self.current_scenario.split("_")
+        scen = f"{scen[0]} {scen[1]}"
+        self.ax_text.set_text(f"{scen}, {self.current_year}")
 
     def change_overlay(self, layer=None, **kwargs):
         # Separate function for 'overlay', which can be plotted on top of layer
