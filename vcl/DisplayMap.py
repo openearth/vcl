@@ -12,6 +12,7 @@ import matplotlib.patches as patches
 import matplotlib.animation as animation
 from matplotlib.widgets import Slider, Button
 import scipy
+import ipdb
 
 import vcl.prep_data
 import vcl.data
@@ -82,17 +83,17 @@ class DisplayMap:
         )
 
         # Plot layer name on figure
-        self.title = self.ax.text(
-            0,
-            1,
-            kwargs_dict[self.current_year][start_layer]["label"],
-            transform=self.ax.transAxes,
-            fontsize=60,
-            verticalalignment="top",
-            horizontalalignment="left",
-            color="black",
-            bbox=dict(facecolor="none", edgecolor="none"),
-        )
+        # self.title = self.ax.text(
+        #     0,
+        #     1,
+        #     kwargs_dict[self.current_year][start_layer]["label"],
+        #     transform=self.ax.transAxes,
+        #     fontsize=60,
+        #     verticalalignment="top",
+        #     horizontalalignment="left",
+        #     color="black",
+        #     bbox=dict(facecolor="none", edgecolor="none"),
+        # )
 
         # Transform the plot if needed
         if transform is not None:
@@ -110,6 +111,8 @@ class DisplayMap:
         # Current overlay (plot) and current overlay name
         self.current_overlay = None
         self.current_overlay_text = None
+
+        self.comparing = False
         plt.show(block=False)
 
     def imshow(self, data, transform=None, **kwargs):
@@ -136,76 +139,133 @@ class DisplayMap:
 
         return im
 
+    def update_layer(self, layer=None, layer_type="layer"):
+        if (
+            self.comparing
+            and layer in ["conc_contour_top_view", "bodem"]
+            and layer_type == "layer"
+        ):
+            self.compare_results(layer)
+            return
+        # ipdb.set_trace()
+        if self.current_overlay is not None and layer_type == "overlay":
+            self.current_overlay.remove()
+        # If a layer is already plotted on the axis, remove it
+        if self.current_layer is not None and layer_type == "layer":
+            self.current_layer.remove()
+        try:
+            self.cbar.remove()
+        except:
+            pass
+        # If layer is "animation_data", create and show animation
+        if layer is None:
+            if self.current_overlay is not None and layer_type == "overlay":
+                try:
+                    self.current_overlay.remove()
+                except:
+                    pass
+            # If a layer is already plotted on the axis, remove it
+            if self.current_layer is not None and layer_type == "layer":
+                try:
+                    self.current_layer.remove()
+                except:
+                    pass
+            try:
+                self.cbar.remove()
+            except:
+                pass
+
+            return
+
+        try:
+            self.ani.pause()
+
+            scen = self.current_scenario.split("_")
+            scen = f"{scen[0]} {scen[1]}"
+            # self.ax_text.set_text(f"{scen}, {self.current_year}")
+            # self.ax_text.remove()
+        except:
+            pass
+
+        if layer == "animation_data":
+            self.show_animation(layer)
+            return
+        # Layers which require a colorbar
+        elif layer == "GXG" or layer == "floodmap":
+            im = self.imshow(
+                self.dataset[self.current_year][layer],
+                **self.kwargs_dict[self.current_year][layer],
+            )
+
+            self.cbar = self.fig.colorbar(
+                im,
+                cax=self.fig.add_axes([0.6, 0.20, 0.38, 0.05]),
+                orientation="horizontal",
+                shrink=1,
+            )
+        elif layer.split(":")[0] == "tidal_flows":
+            im = self.show_tidal_flows(
+                layer.split(":")[0],
+                layer.split(":")[1],
+                **self.kwargs_dict[self.current_year][layer.split(":")[0]],
+            )
+
+        else:
+            # If layer has scenarios, select layer corresponding to the current scenario and current year
+            if layer in self.scenario_layers:
+                im = self.imshow(
+                    self.dataset[self.current_year][self.current_scenario][layer],
+                    **self.kwargs_dict[self.current_year][layer],
+                )
+            # Else select layer only corresponding to current year
+            else:
+                im = self.imshow(
+                    self.dataset[self.current_year][layer],
+                    **self.kwargs_dict[self.current_year][layer],
+                )
+
+        return im
+
     def change_layer(self, layer=None, transform=None, **kwargs):
         # If animation is running, pause the animation and remove the displayed text
         try:
             self.ani.pause()
+
+            # Remove the last frame from the axis
+            # for artist in self.ani._drawn_artists:
+            #     artist.remove()
+            self.ani._drawn_artists.remove()
             scen = self.current_scenario.split("_")
             scen = f"{scen[0]} {scen[1]}"
             self.ax_text.set_text(f"{scen}, {self.current_year}")
             # self.ax_text.remove()
         except:
             pass
-        # If a layer is already plotted on the axis, remove it
-        if self.current_layer is not None:
-            self.current_layer.remove()
-            try:
-                self.cbar.remove()
-            except:
-                pass
-        # If we pass a new layer name, plot it on the axis
-        if layer is not None:
-            # If layer is "animation_data", create and show animation
-            if layer == "animation_data":
-                self.show_animation(layer)
-            # Layers which require a colorbar
-            elif layer == "GXG" or layer == "floodmap":
-                im = self.imshow(
-                    self.dataset[self.current_year][layer],
-                    **self.kwargs_dict[self.current_year][layer],
-                )
-                self.current_layer = im
-                self.current_layer_text = layer
 
-                self.cbar = self.fig.colorbar(
-                    im,
-                    cax=self.fig.add_axes([0.6, 0.20, 0.38, 0.05]),
-                    orientation="horizontal",
-                    shrink=1,
-                )
-            else:
-                # If layer has scenarios, select layer corresponding to the current scenario and current year
-                if layer in self.scenario_layers:
-                    im = self.imshow(
-                        self.dataset[self.current_year][self.current_scenario][layer],
-                        **self.kwargs_dict[self.current_year][layer],
-                    )
-                # Else select layer only corresponding to current year
-                else:
-                    im = self.imshow(
-                        self.dataset[self.current_year][layer],
-                        **self.kwargs_dict[self.current_year][layer],
-                    )
-                # Set current layer and current layer name
-                self.current_layer = im
-                self.current_layer_text = layer
-                self.title.set_text(
-                    self.kwargs_dict[self.current_year][self.current_layer_text][
-                        "label"
-                    ]
-                )
-        # If we pass no new layer, set current layer and current layer name to None
+        # If we pass a new layer name, plot it on the axis
+        if layer is not None and layer != self.current_layer_text:
+            im = self.update_layer(layer, layer_type="layer")
+
+            self.current_layer = im
+            self.current_layer_text = layer
+
         else:
+            self.update_layer(layer_type="layer")
+
             self.current_layer = None
             self.current_layer_text = None
-            self.title.set_text("")
+            # self.title.set_text("")
 
     def change_year(self, year):
         # Set current year to year
         self.current_year = year
         # Change layer and overlay with new year
-        self.change_layer(self.current_layer_text)
-        self.change_overlay(self.current_overlay_text)
+        im_l = self.update_layer(self.current_layer_text, layer_type="layer")
+        im_o = self.update_layer(self.current_overlay_text, layer_type="overlay")
+
+        self.current_layer = im_l
+        self.current_overlay = im_o
+
         # Update displayed text
         scen = self.current_scenario.split("_")
         scen = f"{scen[0]} {scen[1]}"
@@ -215,8 +275,11 @@ class DisplayMap:
         # Set current scenario to scenario
         self.current_scenario = scenario
         # Change layer and overlay with new scenario
-        self.change_layer(self.current_layer_text)
-        self.change_overlay(self.current_overlay_text)
+        im_l = self.update_layer(self.current_layer_text, layer_type="layer")
+        im_o = self.update_layer(self.current_overlay_text, layer_type="overlay")
+
+        self.current_layer = im_l
+        self.current_overlay = im_o
         # Update displayed text
         scen = self.current_scenario.split("_")
         scen = f"{scen[0]} {scen[1]}"
@@ -224,38 +287,16 @@ class DisplayMap:
 
     def change_overlay(self, layer=None, **kwargs):
         # Separate function for 'overlay', which can be plotted on top of layer
-        # If an overlay is already plotted on the axis, remove it
-        if self.current_overlay is not None:
-            self.current_overlay.remove()
         # If we pass a new layer name, plot it on the axis
-        if layer is not None:
-            # If the layer is 'tidal_flows', use separate function to plot quivers
-            if layer.split(":")[0] == "tidal_flows":
-                im = self.show_tidal_flows(
-                    layer.split(":")[0],
-                    layer.split(":")[1],
-                    **self.kwargs_dict[self.current_year][layer.split(":")[0]],
-                )
-                self.current_overlay = im
-                self.current_overlay_text = layer
-            else:
-                # If layer has scenarios, select layer corresponding to the current scenario and current year
-                if layer in self.scenario_layers:
-                    im = self.imshow(
-                        self.dataset[self.current_year][self.current_scenario][layer],
-                        **self.kwargs_dict[self.current_year][layer],
-                    )
-                # Else select layer only corresponding to current year
-                else:
-                    im = self.imshow(
-                        self.dataset[self.current_year][layer],
-                        **self.kwargs_dict[self.current_year][layer],
-                    )
-                # Set current overlay and current overlay name
-                self.current_overlay = im
-                self.current_overlay_text = layer
+        if layer is not None and layer != self.current_overlay_text:
+            im = self.update_layer(layer, layer_type="overlay")
+            self.current_overlay = im
+            self.current_overlay_text = layer
+
         # If we pass no new layer, set current layer and current layer name to None
         else:
+            self.update_layer(layer_type="overlay")
+
             self.current_overlay = None
             self.current_overlay_text = None
 
@@ -331,3 +372,84 @@ class DisplayMap:
             im.set_transform(transform + self.transform)
 
         return im
+
+    def start_comparing(self, ref_year, ref_scenario):
+        if self.comparing:
+            self.comparing = False
+            self.change_layer(self.current_layer_text)
+            self.change_overlay(self.current_overlay_text)
+        else:
+            self.comparing = True
+            self.ref_year = ref_year
+            self.ref_scenario = ref_scenario
+
+            # if self.current_overlay_text is not None:
+            self.change_overlay(self.current_overlay_text)
+            # self.compare_results(self.current_overlay_text)
+            # if self.current_layer_text is not None:
+            self.change_layer(self.current_layer_text)
+            # self.compare_results(self.current_layer_text)
+        print(self.comparing)
+
+    def compare_results(self, layer, **kwargs):
+        if self.current_layer is not None:
+            self.current_layer.remove()
+        if self.current_overlay is not None:
+            self.current_overlay.remove()
+
+            self.current_overlay = None
+            self.current_overlay_text = None
+
+        if layer == self.current_layer:
+            self.current_layer = None
+            return
+
+        try:
+            self.cbar.remove()
+        except:
+            pass
+
+        if layer in self.scenario_layers:
+            ref = self.dataset[self.ref_year][self.ref_scenario][layer]
+            diff = ref - self.dataset[self.current_year][self.current_scenario][layer]
+        else:
+            ref = self.dataset[self.ref_year][layer]
+            diff = ref - self.dataset[self.current_year][layer]
+
+        kwargs = {
+            key: val for key, val in self.kwargs_dict[self.current_year][layer].items()
+        }
+        cmaps = {
+            "conc_contour_top_view": ListedColormap(
+                ["firebrick", "white", "royalblue"]
+            ),
+            "bodem": "PuOr",
+        }
+        cmap = ListedColormap(["firebrick", "white", "royalblue"])
+        kwargs["cmap"] = cmaps[layer]
+        if layer == "bodem":
+            kwargs["vmin"] = -10
+            kwargs["vmax"] = 10
+            kwargs["alpha"] = 0.7
+
+        im = self.imshow(diff, **kwargs)
+
+        self.current_layer = im
+        self.current_layer_text = layer
+
+        self.cbar = self.fig.colorbar(
+            im,
+            cax=self.fig.add_axes([0.6, 0.20, 0.38, 0.05]),
+            orientation="horizontal",
+            shrink=1,
+        )
+
+        if layer == "conc_contour_top_view":
+            self.cbar.ax.get_xaxis().set_ticks([])
+            xmin, xmax = self.cbar.ax.get_xlim()
+            labels = ["Zoet naar zout", "Geen verandering", "Zout naar zoet"]
+            for i, label in enumerate(labels):
+                pos = (1 / 2 + i) / len(labels)
+                self.cbar.ax.text(
+                    xmin + pos * (xmax - xmin), 1.3, label, ha="center", va="top"
+                )

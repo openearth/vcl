@@ -285,7 +285,10 @@ def satellite_window(datasets):
                 elif message == "0":
                     display.change_layer()
                 elif message == "1":
-                    display.change_layer(layer)
+                    if layer == "difference":
+                        display.start_comparing("2023", "ssp_laag")
+                    else:
+                        display.change_layer(layer)
             elif view_type == "overlay":
                 if message == "0" or layer == "":
                     display.change_overlay()
@@ -570,12 +573,12 @@ def midi_board(datasets):
             socket.send_string(f"top_view {text},{0}")
             current_layer = ""
             current_overlay = ""
-        if current_layer == text or current_overlay == text:
-            socket.send_string(f"top_view {text},{0}")
-            if layer_type == "layer":
-                current_layer = ""
-            elif layer_type == "overlay":
-                current_overlay = ""
+        # if current_layer == text or current_overlay == text:
+        #     socket.send_string(f"top_view {text},{0}")
+        #     if layer_type == "layer":
+        #         current_layer = ""
+        #     elif layer_type == "overlay":
+        #         current_overlay = ""
         else:
             socket.send_string(f"top_view {text},{1}")
             if layer_type == "layer":
@@ -607,7 +610,7 @@ def midi_board(datasets):
         28: {"function": change_layer, "value": "GXG,layer"},
         29: {"function": change_layer, "value": "floodmap,layer"},
         # 31: {"function": change_layer, "value": ",layer"},
-        31: {"function": change_layer, "value": "difference,overlay"},
+        31: {"function": change_layer, "value": "difference,layer"},
         45: {"function": start_stop_animation, "value": "animation_data,layer"},
         46: {"function": start_stop_animation, "value": ""},
         60: {"function": slider_update},
