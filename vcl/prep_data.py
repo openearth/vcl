@@ -23,7 +23,7 @@ def preprocess_common(datasets):
     ecotoop = datasets["ecotoop"]
     GSR = datasets["GSR"]
     GVG = datasets["GVG"]
-    floodmap = datasets["floodmap"]
+    # floodmap = datasets["floodmap"]
 
     ds_wl = datasets["ds_wl"]
     # Create dictionary to store processed data and values
@@ -49,9 +49,9 @@ def preprocess_common(datasets):
         preprocessed["GVG_extent"],
     ) = vcl.data.prepare_rasterio_image(GVG)
 
-    preprocessed["floodmap"], preprocessed["floodmap_extent"] = (
-        vcl.data.prepare_rasterio_image(floodmap, Transformer.from_crs(32631, 28992))
-    )
+    # preprocessed["floodmap"], preprocessed["floodmap_extent"] = (
+    #     vcl.data.prepare_rasterio_image(floodmap, Transformer.from_crs(32631, 28992))
+    # )
 
     # Compute rotation angle of the extent as well as centre point of the extent
     preprocessed["angle"] = vcl.data.compute_rotation_angle(preprocessed["extent"])
@@ -179,12 +179,12 @@ def preprocess_unique(datasets):
                 conc = ds.conc.values
 
             else:
-                conc = ds.conc.values[0, ...]
+                conc = ds.conc.values
 
             # Replace negative concentrations (due to model errors) with 0
             conc[np.where(conc < 0)] = 0
 
-            dummy = vcl.data.rotate_and_crop(conc[0, :, :], -preprocessed["angle"])
+            dummy = vcl.data.rotate_and_crop(conc[0,:,:], -preprocessed["angle"])
 
             rot_ds = np.zeros((conc.shape[0], dummy.shape[0], dummy.shape[1]))
             preprocessed[f"ssp_{scenario}"]["conc"] = np.zeros(

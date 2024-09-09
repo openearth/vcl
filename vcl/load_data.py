@@ -22,6 +22,13 @@ def load():
     ds_b0 = rasterio.open(data_dir / "originele_bodem.tif")
     ds_b0_n = rasterio.open(data_dir / "nieuwe_bodem_v2.tif")
 
+    ds_hd_2023 = xr.open_dataset(data_dir.joinpath('concentratie_data_gw_model.nc'))
+    ds_hd_2050 = xr.open_dataset(data_dir.joinpath('conc_Hd_2050_av.nc'))
+    ds_hd_2100 = xr.open_dataset(data_dir.joinpath('conc_Hd_2100_av.nc'))
+    ds_hn_2023 = xr.open_dataset(data_dir.joinpath('concentratie_data_gw_model.nc'))
+    ds_hn_2050 = xr.open_dataset(data_dir.joinpath('conc_Hn_2050_av.nc'))
+    ds_hn_2100 = xr.open_dataset(data_dir.joinpath('conc_Hn_2100_av.nc'))
+
     # North sea and Wad sea dataset
     ds_wl = xr.open_dataset(data_dir / "wadsea_small.nc")
     # Extents of what we want to show
@@ -39,16 +46,16 @@ def load():
     sat = rasterio.open(data_dir / "test3.tif")
 
     GXG = rasterio.open(
-        data_dir / "Freatische GXG/Referentie/Zomer_grondwaterstand_m_mv.tif"
+        data_dir / "head summer 2016-2023.tif"
     )
     GXG_n = rasterio.open(
-        data_dir / "Freatische GXG/2100/Zomer_grondwaterstand_m_mv.tif"
+        data_dir / "head summer 2016-2023.tif"
     )
 
     GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
     GVG = rasterio.open(data_dir / "GVGzonderrotatie.png")
     ecotopen = rasterio.open(data_dir / "Ecotopen zonder rotatie en legend.png")
-    floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
+    # floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
 
     animation_files = list(Path(data_dir / "Historische_ontwikkeling").glob("*.tiff"))
 
@@ -59,7 +66,7 @@ def load():
         "GSR": GSR,
         "GVG": GVG,
         "ecotoop": ecotopen,
-        "floodmap": floodmap,
+        # "floodmap": floodmap,
         "animation_files": animation_files,
         "ds_wl": ds_wl,
     }
@@ -67,24 +74,24 @@ def load():
     unique_datasets = {
         "2023": {
             "extent": extent,
-            "ds": ds,
+            "ds": ds_hd_2023,
             "ds_b0": ds_b0,
             "GXG": GXG,
-            "ssp": {"laag": ds, "hoog": ds},
+            "ssp": {"nat": ds_hn_2023, "droog": ds_hd_2023},
         },
         "2050": {
             "extent": extent,
-            "ds": ds_n,
+            "ds": ds_hd_2050,
             "ds_b0": ds_b0,
             "GXG": GXG_n,
-            "ssp": {"laag": ds_n - 1, "hoog": ds_n * 2},
+            "ssp": {"nat": ds_hn_2050, "droog": ds_hd_2050},
         },
         "2100": {
             "extent": extent,
-            "ds": ds_n + 2,
+            "ds": ds_hd_2100,
             "ds_b0": ds_b0_n,
             "GXG": GXG_n,
-            "ssp": {"laag": ds_n * -1, "hoog": ds_n * 0.5},
+            "ssp": {"nat": ds_hn_2100, "droog": ds_hd_2100},
         },
     }
     return common_datasets, unique_datasets
