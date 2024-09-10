@@ -224,7 +224,7 @@ def satellite_window(datasets):
     }
 
     maps = {"2023": maps_2023, "2050": maps_2050, "2100": maps_2100}
-    start_scenario = "ssp_laag"
+    start_scenario = "ssp_nat"
     scenario_layers = ["conc_contour_top_view"]
 
     # Create display window with satellite image
@@ -345,7 +345,7 @@ def contour_slice_window(datasets):
             "vmax": 1.5,
         },
     }
-    start_scenario = "ssp_laag"
+    start_scenario = "ssp_nat"
     scenario_layers = ["conc_contours_x"]
     # Create display with concentration contours
     display = vcl.DisplaySlice.DisplaySlice(
@@ -370,9 +370,7 @@ def contour_slice_window(datasets):
             topic, message = socket1.recv(zmq.DONTWAIT).split()
             slider_val = int(message)
             bodem_val = int((slider_val - xmin) / datasets["2023"]["dx_bodem"])
-            conc_val = int(
-                (slider_val - xmin) / datasets["2023"]["ssp_laag"]["dx_conc"]
-            )
+            conc_val = int((slider_val - xmin) / datasets["2023"]["ssp_nat"]["dx_conc"])
             display.change_slice(conc_val, bodem_val)
             plt.pause(0.01)
             # fig.canvas.draw_idle()
@@ -595,8 +593,8 @@ def midi_board(datasets):
 
     # Mapping from the midi control value to the function to update and the value to update to
     midi_mapping = {
-        1: {"function": change_scenario, "value": "scenario ssp_laag"},
-        2: {"function": change_scenario, "value": "scenario ssp_hoog"},
+        1: {"function": change_scenario, "value": "scenario ssp_nat"},
+        2: {"function": change_scenario, "value": "scenario ssp_droog"},
         3: {"function": change_year, "value": ["2023", "2050", "2100"]},
         7: {"function": change_year, "value": ["2023", "2100"]},
         23: {"function": change_layer, "value": "conc_contour_top_view,overlay"},

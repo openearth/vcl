@@ -223,6 +223,9 @@ class DisplayMap:
         self.ax_text.set_text(f"{scen}, {self.current_year}")
 
     def change_overlay(self, layer=None, **kwargs):
+        import ipdb
+
+        ipdb.set_trace()
         # Separate function for 'overlay', which can be plotted on top of layer
         # If an overlay is already plotted on the axis, remove it
         if self.current_overlay is not None:

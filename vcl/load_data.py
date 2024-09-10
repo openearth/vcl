@@ -22,12 +22,12 @@ def load():
     ds_b0 = rasterio.open(data_dir / "originele_bodem.tif")
     ds_b0_n = rasterio.open(data_dir / "nieuwe_bodem_v2.tif")
 
-    ds_hd_2023 = xr.open_dataset(data_dir.joinpath('concentratie_data_gw_model.nc'))
-    ds_hd_2050 = xr.open_dataset(data_dir.joinpath('conc_Hd_2050_av.nc'))
-    ds_hd_2100 = xr.open_dataset(data_dir.joinpath('conc_Hd_2100_av.nc'))
-    ds_hn_2023 = xr.open_dataset(data_dir.joinpath('concentratie_data_gw_model.nc'))
-    ds_hn_2050 = xr.open_dataset(data_dir.joinpath('conc_Hn_2050_av.nc'))
-    ds_hn_2100 = xr.open_dataset(data_dir.joinpath('conc_Hn_2100_av.nc'))
+    ds_hd_2023 = xr.open_dataset(data_dir.joinpath("concentratie_data_gw_model.nc"))
+    ds_hd_2050 = xr.open_dataset(data_dir.joinpath("conc_Hd_2050_av.nc"))
+    ds_hd_2100 = xr.open_dataset(data_dir.joinpath("conc_Hd_2100_av.nc"))
+    ds_hn_2023 = xr.open_dataset(data_dir.joinpath("concentratie_data_gw_model.nc"))
+    ds_hn_2050 = xr.open_dataset(data_dir.joinpath("conc_Hn_2050_av.nc"))
+    ds_hn_2100 = xr.open_dataset(data_dir.joinpath("conc_Hn_2100_av.nc"))
 
     # North sea and Wad sea dataset
     ds_wl = xr.open_dataset(data_dir / "wadsea_small.nc")
@@ -46,16 +46,16 @@ def load():
     sat = rasterio.open(data_dir / "test3.tif")
 
     GXG = rasterio.open(
-        data_dir / "head summer 2016-2023.tif"
+        data_dir / "Freatische GXG/Referentie/Zomer_grondwaterstand_m_mv.tif"
     )
     GXG_n = rasterio.open(
-        data_dir / "head summer 2016-2023.tif"
+        data_dir / "Freatische GXG/2100/Zomer_grondwaterstand_m_mv.tif"
     )
 
     GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
     GVG = rasterio.open(data_dir / "GVGzonderrotatie.png")
     ecotopen = rasterio.open(data_dir / "Ecotopen zonder rotatie en legend.png")
-    # floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
+    floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
 
     animation_files = list(Path(data_dir / "Historische_ontwikkeling").glob("*.tiff"))
 
@@ -66,7 +66,7 @@ def load():
         "GSR": GSR,
         "GVG": GVG,
         "ecotoop": ecotopen,
-        # "floodmap": floodmap,
+        "floodmap": floodmap,
         "animation_files": animation_files,
         "ds_wl": ds_wl,
     }
