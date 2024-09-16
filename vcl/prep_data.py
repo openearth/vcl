@@ -22,8 +22,7 @@ def preprocess_common(datasets):
     ds_b0 = datasets["ds_b0"]
     ecotoop = datasets["ecotoop"]
     GSR = datasets["GSR"]
-    GVG = datasets["GVG"]
-    # floodmap = datasets["floodmap"]
+    floodmap = datasets["floodmap"]
 
     ds_wl = datasets["ds_wl"]
     # Create dictionary to store processed data and values
@@ -44,14 +43,10 @@ def preprocess_common(datasets):
         preprocessed["GSR"],
         preprocessed["GSR_extent"],
     ) = vcl.data.prepare_rasterio_image(GSR)
-    (
-        preprocessed["GVG"],
-        preprocessed["GVG_extent"],
-    ) = vcl.data.prepare_rasterio_image(GVG)
 
-    # preprocessed["floodmap"], preprocessed["floodmap_extent"] = (
-    #     vcl.data.prepare_rasterio_image(floodmap, Transformer.from_crs(32631, 28992))
-    # )
+    preprocessed["floodmap"], preprocessed["floodmap_extent"] = (
+        vcl.data.prepare_rasterio_image(floodmap, Transformer.from_crs(32631, 28992))
+    )
 
     # Compute rotation angle of the extent as well as centre point of the extent
     preprocessed["angle"] = vcl.data.compute_rotation_angle(preprocessed["extent"])
@@ -87,7 +82,6 @@ def preprocess_common(datasets):
     sat.close()
     ecotoop.close()
     GSR.close()
-    GVG.close()
 
     return preprocessed
 
@@ -102,7 +96,7 @@ def preprocess_unique(datasets):
         bodem = ds_b0.read(1)
         bodem[np.where(bodem == -9999)] = -43.8
 
-        GXG = datasets[year]["GXG"]
+        gxg_extent = datasets[year]["aoi"]
 
         # Create dictionary to store processed data and values
         preprocessed = {}
@@ -159,6 +153,7 @@ def preprocess_unique(datasets):
         # Each z layer of concentration dataset needs to be rotated and cropped seperately to account for the slices in x and y direction
         # Create dummy array of one layer and apply the function to it to obtain its shape
         # Note that the first dimension of ds_n is time instead of z
+
         for scenario in datasets[year]["ssp"].keys():
             print(year, scenario)
             preprocessed[f"ssp_{scenario}"] = {}
@@ -182,9 +177,10 @@ def preprocess_unique(datasets):
                 conc = ds.conc.values
 
             # Replace negative concentrations (due to model errors) with 0
+            conc[np.where(conc == -9999)] = np.nan
             conc[np.where(conc < 0)] = 0
 
-            dummy = vcl.data.rotate_and_crop(conc[0,:,:], -preprocessed["angle"])
+            dummy = vcl.data.rotate_and_crop(conc[0, :, :], -preprocessed["angle"])
 
             rot_ds = np.zeros((conc.shape[0], dummy.shape[0], dummy.shape[1]))
             preprocessed[f"ssp_{scenario}"]["conc"] = np.zeros(
@@ -279,6 +275,14 @@ def preprocess_unique(datasets):
             preprocessed[f"ssp_{scenario}"]["conc_contours_x"] = preprocessed[
                 f"ssp_{scenario}"
             ]["conc_contours_x"].astype(np.float16)
+
+            for gxg in ["GLG", "GVG", "GHG"]:
+                gxg_ds = datasets[year][gxg][scenario]
+                (
+                    preprocessed[f"ssp_{scenario}"][gxg],
+                    preprocessed[f"ssp_{scenario}"]["GXG_extent"],
+                ) = vcl.data.clip_gxg(gxg_ds, gxg_extent)
+
             del preprocessed[f"ssp_{scenario}"]["conc"]
             np.save(
                 data_dir / f"preprocessed-{year}-ssp-{scenario}.npy",
@@ -287,9 +291,9 @@ def preprocess_unique(datasets):
             del ds
             del preprocessed[f"ssp_{scenario}"]
 
-        preprocessed["GXG"], preprocessed["GXG_extent"] = (
-            vcl.data.prepare_rasterio_image(GXG)
-        )
+        # preprocessed["GXG"], preprocessed["GXG_extent"] = (
+        #     vcl.data.prepare_rasterio_image(GXG)
+        # )
 
         preprocessed_datasets[year] = preprocessed
 
@@ -299,7 +303,7 @@ def preprocess_unique(datasets):
 
     # Close opened files
     ds_b0.close()
-    GXG.close()
+    # GXG.close()
 
     return preprocessed_datasets
 

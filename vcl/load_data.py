@@ -22,12 +22,54 @@ def load():
     ds_b0 = rasterio.open(data_dir / "originele_bodem.tif")
     ds_b0_n = rasterio.open(data_dir / "nieuwe_bodem_v2.tif")
 
-    ds_hd_2023 = xr.open_dataset(data_dir.joinpath("concentratie_data_gw_model.nc"))
+    ds_ref_2023 = xr.open_dataset(data_dir.joinpath("conc_reference_2021_av.nc"))
+    ds_ref_2050 = xr.open_dataset(data_dir.joinpath("conc_reference_2050_av.nc"))
+    ds_ref_2100 = xr.open_dataset(data_dir.joinpath("conc_reference_2100_av.nc"))
+
+    ds_hd_2023 = xr.open_dataset(data_dir.joinpath("conc_Hd_2021_av.nc"))
     ds_hd_2050 = xr.open_dataset(data_dir.joinpath("conc_Hd_2050_av.nc"))
     ds_hd_2100 = xr.open_dataset(data_dir.joinpath("conc_Hd_2100_av.nc"))
-    ds_hn_2023 = xr.open_dataset(data_dir.joinpath("concentratie_data_gw_model.nc"))
+
+    ds_hn_2023 = xr.open_dataset(data_dir.joinpath("conc_Hn_2021_av.nc"))
     ds_hn_2050 = xr.open_dataset(data_dir.joinpath("conc_Hn_2050_av.nc"))
     ds_hn_2100 = xr.open_dataset(data_dir.joinpath("conc_Hn_2100_av.nc"))
+
+    gxgs = ["glg", "gvg", "ghg"]
+    gxg_ds = {}
+
+    for gxg in gxgs:
+        gxg_ref_2023 = xr.open_dataset(
+            data_dir / f"Freatische GXG/{gxg}_reference_2016_2023.tif"
+        )
+        gxg_ref_2050 = xr.open_dataset(
+            data_dir / f"Freatische GXG/{gxg}_reference_2047_2054.tif"
+        )
+        gxg_ref_2100 = xr.open_dataset(
+            data_dir / f"Freatische GXG/{gxg}_reference_2097_2104.tif"
+        )
+
+        gxg_ds[f"{gxg}_ref_2023"] = gxg_ref_2023
+        gxg_ds[f"{gxg}_ref_2050"] = gxg_ref_2050
+        gxg_ds[f"{gxg}_ref_2100"] = gxg_ref_2100
+
+        gxg_ds[f"{gxg}_hn_2023"] = gxg_ref_2023
+        gxg_ds[f"{gxg}_hd_2023"] = gxg_ref_2023
+
+        gxg_ds[f"{gxg}_hn_2050"] = gxg_ref_2050 - xr.open_dataset(
+            data_dir / f"Freatische GXG/{gxg}_Hn_2047_2054.tif"
+        )
+        gxg_ds[f"{gxg}_hd_2050"] = gxg_ref_2050 - xr.open_dataset(
+            data_dir / f"Freatische GXG/{gxg}_Hd_2047_2054.tif"
+        )
+
+        gxg_ds[f"{gxg}_hn_2100"] = gxg_ref_2100 - xr.open_dataset(
+            data_dir / f"Freatische GXG/{gxg}_Hn_2097_2104.tif"
+        )
+        gxg_ds[f"{gxg}_hd_2100"] = gxg_ref_2100 - xr.open_dataset(
+            data_dir / f"Freatische GXG/{gxg}_Hd_2097_2104.tif"
+        )
+
+    aoi = gpd.read_file(data_dir / "Freatische GXG/aoi.shp")
 
     # North sea and Wad sea dataset
     ds_wl = xr.open_dataset(data_dir / "wadsea_small.nc")
@@ -45,15 +87,7 @@ def load():
     # Open arial photo of Terschelling (+ surrounding area)
     sat = rasterio.open(data_dir / "test3.tif")
 
-    GXG = rasterio.open(
-        data_dir / "Freatische GXG/Referentie/Zomer_grondwaterstand_m_mv.tif"
-    )
-    GXG_n = rasterio.open(
-        data_dir / "Freatische GXG/2100/Zomer_grondwaterstand_m_mv.tif"
-    )
-
     GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
-    GVG = rasterio.open(data_dir / "GVGzonderrotatie.png")
     ecotopen = rasterio.open(data_dir / "Ecotopen zonder rotatie en legend.png")
     floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
 
@@ -64,7 +98,6 @@ def load():
         "extent": extent,
         "sat": sat,
         "GSR": GSR,
-        "GVG": GVG,
         "ecotoop": ecotopen,
         "floodmap": floodmap,
         "animation_files": animation_files,
@@ -76,22 +109,67 @@ def load():
             "extent": extent,
             "ds": ds_hd_2023,
             "ds_b0": ds_b0,
-            "GXG": GXG,
-            "ssp": {"nat": ds_hn_2023, "droog": ds_hd_2023},
+            "GLG": {
+                "ref": gxg_ds["glg_ref_2023"],
+                "nat": gxg_ds["glg_hn_2023"],
+                "droog": gxg_ds["glg_hd_2023"],
+            },
+            "GVG": {
+                "ref": gxg_ds["gvg_ref_2023"],
+                "nat": gxg_ds["gvg_hn_2023"],
+                "droog": gxg_ds["gvg_hd_2023"],
+            },
+            "GHG": {
+                "ref": gxg_ds["ghg_ref_2023"],
+                "nat": gxg_ds["ghg_hn_2023"],
+                "droog": gxg_ds["ghg_hd_2023"],
+            },
+            "ssp": {"ref": ds_ref_2023, "nat": ds_hn_2023, "droog": ds_hd_2023},
+            "aoi": aoi,
         },
         "2050": {
             "extent": extent,
             "ds": ds_hd_2050,
             "ds_b0": ds_b0,
-            "GXG": GXG_n,
-            "ssp": {"nat": ds_hn_2050, "droog": ds_hd_2050},
+            "GLG": {
+                "ref": gxg_ds["glg_ref_2050"],
+                "nat": gxg_ds["glg_hn_2050"],
+                "droog": gxg_ds["glg_hd_2050"],
+            },
+            "GVG": {
+                "ref": gxg_ds["gvg_ref_2050"],
+                "nat": gxg_ds["gvg_hn_2050"],
+                "droog": gxg_ds["gvg_hd_2050"],
+            },
+            "GHG": {
+                "ref": gxg_ds["ghg_ref_2050"],
+                "nat": gxg_ds["ghg_hn_2050"],
+                "droog": gxg_ds["ghg_hd_2050"],
+            },
+            "ssp": {"ref": ds_ref_2050, "nat": ds_hn_2050, "droog": ds_hd_2050},
+            "aoi": aoi,
         },
         "2100": {
             "extent": extent,
             "ds": ds_hd_2100,
             "ds_b0": ds_b0_n,
-            "GXG": GXG_n,
-            "ssp": {"nat": ds_hn_2100, "droog": ds_hd_2100},
+            "GLG": {
+                "ref": gxg_ds["glg_ref_2100"],
+                "nat": gxg_ds["glg_hn_2100"],
+                "droog": gxg_ds["glg_hd_2100"],
+            },
+            "GVG": {
+                "ref": gxg_ds["gvg_ref_2100"],
+                "nat": gxg_ds["gvg_hn_2100"],
+                "droog": gxg_ds["gvg_hd_2100"],
+            },
+            "GHG": {
+                "ref": gxg_ds["ghg_ref_2100"],
+                "nat": gxg_ds["ghg_hn_2100"],
+                "droog": gxg_ds["ghg_hd_2100"],
+            },
+            "ssp": {"ref": ds_ref_2100, "nat": ds_hn_2100, "droog": ds_hd_2100},
+            "aoi": aoi,
         },
     }
     return common_datasets, unique_datasets

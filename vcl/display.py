@@ -1,5 +1,10 @@
+import collections
+import itertools
+import pathlib
+
 import cmocean
 import cv2
+import imod
 import matplotlib
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -9,7 +14,12 @@ import numpy as np
 import scipy
 import zmq
 from matplotlib import colormaps
-from matplotlib.colors import LightSource, LinearSegmentedColormap, ListedColormap
+from matplotlib.colors import (
+    LightSource,
+    LinearSegmentedColormap,
+    ListedColormap,
+    from_levels_and_colors,
+)
 from matplotlib.widgets import Button, Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -41,6 +51,13 @@ n_bins = [20]  # Number of bins for each color
 # Create the colormap
 cmap_bodem = "custom_blue_green_orange"
 cmap_bodem = LinearSegmentedColormap.from_list(cmap_bodem, cmap_colors, N=sum(n_bins))
+
+src_dir = pathlib.Path(
+    r"P:\11210262-001-stakeholders-tools\Virtual_Climate_Lab\01_data\dataset\new\Freatische GXG"
+)
+colors, levels = imod.visualize.read_imod_legend(src_dir / "residu_detail.leg")
+cmap_GXG, norm_GXG = from_levels_and_colors(levels, colors, extend="both")
+
 
 contour_show = False
 height_map_show = False
@@ -117,8 +134,8 @@ def satellite_window(datasets):
     xmin_b, ymin_b, xmax_b, ymax_b = datasets["2023"]["bodem_bounds"]
     xmin_e, ymin_e, xmax_e, ymax_e = datasets["2023"]["ecotoop_extent"]
     xmin_gsr, ymin_gsr, xmax_gsr, ymax_gsr = datasets["2023"]["GSR_extent"]
-    xmin_gvg, ymin_gvg, xmax_gvg, ymax_gvg = datasets["2023"]["GVG_extent"]
-    xmin_gxg, ymin_gxg, xmax_gxg, ymax_gxg = datasets["2023"]["GXG_extent"]
+    # xmin_gxg, ymin_gxg, xmax_gxg, ymax_gxg = datasets["2023"]["GXG_extent"]
+    xmin_gxg, ymin_gxg, xmax_gxg, ymax_gxg = datasets["2023"]["ssp_nat"]["GXG_extent"]
     xmin_f, ymin_f, xmax_f, ymax_f = datasets["2023"]["floodmap_extent"]
 
     # Get mid point and rotation angle for transform
@@ -140,7 +157,7 @@ def satellite_window(datasets):
     datasets["2023"]["animation_data"] = animation_data
     datasets["2050"]["animation_data"] = animation_data
     datasets["2100"]["animation_data"] = animation_data
-    datasets["2100"]["GXG"] = datasets["2100"]["GXG"] - datasets["2023"]["GXG"]
+    # datasets["2100"]["GXG"] = datasets["2100"]["GXG"] - datasets["2023"]["GXG"]
 
     # Define dictionary with plot kwargs for the different layers
     maps_2023 = {
@@ -177,20 +194,40 @@ def satellite_window(datasets):
             "label": "Ecotopen",
         },
         "GVG": {
-            "extent": (xmin_gvg, xmax_gvg, ymin_gvg, ymax_gvg),
+            "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
             "alpha": 0.7,
             "transform": transform,
             "zorder": 1,
             "label": "GVG",
+            "cmap": cmap_GXG,
+            "norm": norm_GXG,
+        },
+        "GLG": {
+            "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+            "alpha": 0.7,
+            "transform": transform,
+            "zorder": 1,
+            "label": "GLG",
+            "cmap": cmap_GXG,
+            "norm": norm_GXG,
+        },
+        "GHG": {
+            "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+            "alpha": 0.7,
+            "transform": transform,
+            "zorder": 1,
+            "label": "GHG",
+            "cmap": cmap_GXG,
+            "norm": norm_GXG,
         },
         "GXG": {
             "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
             "alpha": 0.7,
-            "vmin": np.nanpercentile(datasets["2023"]["GXG"], 10),
-            "vmax": np.nanpercentile(datasets["2023"]["GXG"], 90),
             "transform": transform,
             "zorder": 1,
             "label": "GXG",
+            "cmap": cmap_GXG,
+            "norm": norm_GXG,
         },
         "floodmap": {
             "extent": (xmin_f, xmax_f, ymin_f, ymax_f),
@@ -213,19 +250,19 @@ def satellite_window(datasets):
 
     maps_2050 = maps_2023.copy()
     maps_2100 = maps_2023.copy()
-    maps_2100["GXG"] = {
-        "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
-        "alpha": 0.7,
-        "vmin": np.nanpercentile(datasets["2100"]["GXG"], 10),
-        "vmax": np.nanpercentile(datasets["2100"]["GXG"], 90),
-        "transform": transform,
-        "zorder": 1,
-        "label": "Verschil GXG met nu",
-    }
+    # maps_2100["GXG"] = {
+    #     "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+    #     "alpha": 0.7,
+    #     "vmin": np.nanpercentile(datasets["2100"]["GXG"], 10),
+    #     "vmax": np.nanpercentile(datasets["2100"]["GXG"], 90),
+    #     "transform": transform,
+    #     "zorder": 1,
+    #     "label": "Verschil GXG met nu",
+    # }
 
     maps = {"2023": maps_2023, "2050": maps_2050, "2100": maps_2100}
-    start_scenario = "ssp_nat"
-    scenario_layers = ["conc_contour_top_view"]
+    start_scenario = "ssp_ref"
+    scenario_layers = ["conc_contour_top_view", "GXG", "GVG", "GLG"]
 
     # Create display window with satellite image
     display = vcl.DisplayMap.DisplayMap(
@@ -345,7 +382,7 @@ def contour_slice_window(datasets):
             "vmax": 1.5,
         },
     }
-    start_scenario = "ssp_nat"
+    start_scenario = "ssp_ref"
     scenario_layers = ["conc_contours_x"]
     # Create display with concentration contours
     display = vcl.DisplaySlice.DisplaySlice(
@@ -547,11 +584,39 @@ def midi_board(datasets):
         slider_value = valmin + value * (valmax - valmin) / (n_slider_values - 1)
         socket.send_string(f"x_slice {int(slider_value)}")
 
+    scenarios = collections.deque(["ref", "nat", "droog"])
+    # scenarios = collections.deque(["nat", "droog"])
+
     # Slightly different function for scenario button
     def change_scenario(scenario):
         # Get currently shown scenario and change scenario to other scenario when pressed
         # Update button text when pressed as well
-        socket.send_string(scenario)
+
+        if scenario == "next":
+            scenarios.rotate(-1)
+            next_scenario = scenarios[0]
+        elif scenario == "prev":
+            scenarios.rotate(1)
+            next_scenario = scenarios[0]
+
+        socket.send_string(f"scenario ssp_{next_scenario}")
+
+    gxgs = collections.deque(["GLG", "GVG", "GHG"])
+
+    def change_gxg(gxg):
+        global current_layer
+
+        if gxg == "next":
+            gxgs.rotate(-1)
+            next_gxg = gxgs[0]
+        elif gxg == "prev":
+            gxgs.rotate(1)
+            next_gxg = gxgs[0]
+
+        layer = f"{next_gxg},layer"
+
+        if current_layer in [f"{gxg},layer" for gxg in gxgs]:
+            change_layer(layer)
 
     years = ["2023", "2050", "2100"]
 
@@ -592,26 +657,30 @@ def midi_board(datasets):
             socket.send_string(f"top_view {text},{1}")
 
     # Mapping from the midi control value to the function to update and the value to update to
-    midi_mapping = {
-        1: {"function": change_scenario, "value": "scenario ssp_nat"},
-        2: {"function": change_scenario, "value": "scenario ssp_droog"},
-        3: {"function": change_year, "value": ["2023", "2050", "2100"]},
-        7: {"function": change_year, "value": ["2023", "2100"]},
-        23: {"function": change_layer, "value": "conc_contour_top_view,overlay"},
-        24: {"function": change_layer, "value": "GSR,layer"},
-        25: {"function": change_layer, "value": "GVG,layer"},
-        26: {"function": change_layer, "value": "ecotoop,layer"},
-        27: {"function": change_layer, "value": "bodem,layer"},
-        28: {"function": change_layer, "value": "GXG,layer"},
-        29: {"function": change_layer, "value": "floodmap,layer"},
-        # 31: {"function": change_layer, "value": ",layer"},
-        31: {"function": change_layer, "value": "difference,overlay"},
-        45: {"function": start_stop_animation, "value": "animation_data,layer"},
-        46: {"function": start_stop_animation, "value": ""},
-        60: {"function": slider_update},
-        64: {"function": change_layer, "value": "tidal_flows:170,overlay"},
-        67: {"function": change_layer, "value": "tidal_flows:390,overlay"},
-    }
+    def get_midi_mapping():
+        midi_mapping = {
+            1: {"function": change_scenario, "value": "prev"},
+            2: {"function": change_scenario, "value": "next"},
+            3: {"function": change_year, "value": ["2023", "2050", "2100"]},
+            7: {"function": change_year, "value": ["2023", "2100"]},
+            23: {"function": change_layer, "value": "conc_contour_top_view,layer"},
+            24: {"function": change_layer, "value": "GSR,layer"},
+            25: {"function": change_layer, "value": f"{gxgs[0]},layer"},
+            26: {"function": change_layer, "value": "ecotoop,layer"},
+            27: {"function": change_layer, "value": "bodem,layer"},
+            28: {"function": change_layer, "value": "GLG,layer"},
+            29: {"function": change_layer, "value": "floodmap,layer"},
+            # 31: {"function": change_layer, "value": ",layer"},
+            31: {"function": change_layer, "value": "difference,layer"},
+            45: {"function": start_stop_animation, "value": "animation_data,layer"},
+            46: {"function": start_stop_animation, "value": ""},
+            47: {"function": change_gxg, "value": "prev"},
+            48: {"function": change_gxg, "value": "next"},
+            60: {"function": slider_update},
+            64: {"function": change_layer, "value": "tidal_flows:170,overlay"},
+            67: {"function": change_layer, "value": "tidal_flows:390,overlay"},
+        }
+        return midi_mapping
 
     # List of used slider control values
     slider_keys = [3, 7, 60]
@@ -623,6 +692,7 @@ def midi_board(datasets):
             break
         else:
             try:
+                midi_mapping = get_midi_mapping()
                 # Send update if button is pressed
                 if msg.value == 127 and msg.control not in slider_keys:
                     midi_mapping[msg.control]["function"](

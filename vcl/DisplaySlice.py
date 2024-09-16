@@ -71,7 +71,7 @@ class DisplaySlice:
                 3.5, ymin + pos * (ymax - ymin), label, ha="center", va="center"
             )
 
-        self.ax.set_ylim(-100, 25)
+        self.ax.set_ylim(-140, 30)
         self.ax.set_xlim(plt_lims[1], plt_lims[3])
 
         self.fig.tight_layout()

@@ -1,11 +1,12 @@
-import shapely
-import rasterio
-import pandas as pd
-import numpy as np
-import scipy
 import cv2
+import geopandas as gpd
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import rasterio
 import rioxarray as rxr
+import scipy
+import shapely
 from matplotlib.colors import LightSource
 
 
@@ -428,3 +429,15 @@ def get_frame_data(path):
     sat_text = path.stem[:4]
 
     return {"image": sat_img, "extent": sat_extent, "text": sat_text}
+
+
+def clip_gxg(ds, extent):
+    extent["crs"] = "EPSG:28992"
+
+    ds = ds.rio.write_crs("EPSG:28992")
+    ds = ds.rio.clip(extent.geometry)
+    ds = ds["band_data"].values[0, ...]
+
+    extent = extent.geometry.iloc[0].bounds
+
+    return ds, extent

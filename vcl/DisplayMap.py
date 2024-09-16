@@ -1,20 +1,33 @@
-import cv2
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-import zmq
+import pathlib
+
 import cmocean
-from matplotlib.colors import LightSource, ListedColormap, LinearSegmentedColormap
+import cv2
+import imod
+import matplotlib
+import matplotlib.animation as animation
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import matplotlib.transforms as mtransforms
+import numpy as np
+import scipy
+import zmq
+from matplotlib.colors import (
+    LightSource,
+    LinearSegmentedColormap,
+    ListedColormap,
+    from_levels_and_colors,
+)
+from matplotlib.widgets import Button, Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-import matplotlib.transforms as mtransforms
-import matplotlib.patches as patches
-import matplotlib.animation as animation
-from matplotlib.widgets import Slider, Button
-import scipy
-
-import vcl.prep_data
 import vcl.data
+import vcl.prep_data
+
+src_dir = pathlib.Path(
+    r"P:\11210262-001-stakeholders-tools\Virtual_Climate_Lab\01_data\dataset\new\Freatische GXG"
+)
+colors, levels = imod.visualize.read_imod_legend(src_dir / "grondwaterstand_tov_mv.leg")
+cmap_GXG_ref, norm_GXG_ref = from_levels_and_colors(levels, colors, extend="both")
 
 
 class DisplayMap:
@@ -67,7 +80,7 @@ class DisplayMap:
 
         # Split scenario text
         scen = self.current_scenario.split("_")
-        scen = f"{scen[0]} {scen[1]}"
+        scen = f"Scenario {scen[1]}"
         # Plot text on figure
         self.ax_text = self.ax.text(
             1,
@@ -141,7 +154,7 @@ class DisplayMap:
         try:
             self.ani.pause()
             scen = self.current_scenario.split("_")
-            scen = f"{scen[0]} {scen[1]}"
+            scen = f"Scenario {scen[1]}"
             self.ax_text.set_text(f"{scen}, {self.current_year}")
             # self.ax_text.remove()
         except:
@@ -159,7 +172,7 @@ class DisplayMap:
             if layer == "animation_data":
                 self.show_animation(layer)
             # Layers which require a colorbar
-            elif layer == "GXG" or layer == "floodmap":
+            elif layer == "floodmap":
                 im = self.imshow(
                     self.dataset[self.current_year][layer],
                     **self.kwargs_dict[self.current_year][layer],
@@ -172,6 +185,42 @@ class DisplayMap:
                     cax=self.fig.add_axes([0.6, 0.20, 0.38, 0.05]),
                     orientation="horizontal",
                     shrink=1,
+                )
+            elif layer in ["GLG", "GVG", "GHG", "GXG"]:
+                if self.current_scenario == "ssp_ref" or self.current_year == "2023":
+                    kwargs = {
+                        key: val
+                        for key, val in self.kwargs_dict[self.current_year][
+                            layer
+                        ].items()
+                        if key != "cmap" or key != "norm"
+                    }
+                    kwargs["cmap"] = cmap_GXG_ref
+                    kwargs["norm"] = norm_GXG_ref
+
+                    im = self.imshow(
+                        self.dataset[self.current_year][self.current_scenario][layer],
+                        **kwargs,
+                    )
+                else:
+                    im = self.imshow(
+                        self.dataset[self.current_year][self.current_scenario][layer],
+                        **self.kwargs_dict[self.current_year][layer],
+                    )
+                self.current_layer = im
+                self.current_layer_text = layer
+
+                self.cbar = self.fig.colorbar(
+                    im,
+                    cax=self.fig.add_axes([0.6, 0.20, 0.38, 0.05]),
+                    orientation="horizontal",
+                    shrink=1,
+                )
+
+                self.title.set_text(
+                    self.kwargs_dict[self.current_year][self.current_layer_text][
+                        "label"
+                    ]
                 )
             else:
                 # If layer has scenarios, select layer corresponding to the current scenario and current year
@@ -208,7 +257,7 @@ class DisplayMap:
         self.change_overlay(self.current_overlay_text)
         # Update displayed text
         scen = self.current_scenario.split("_")
-        scen = f"{scen[0]} {scen[1]}"
+        scen = f"Scenario {scen[1]}"
         self.ax_text.set_text(f"{scen}, {self.current_year}")
 
     def change_scenario(self, scenario):
@@ -219,13 +268,10 @@ class DisplayMap:
         self.change_overlay(self.current_overlay_text)
         # Update displayed text
         scen = self.current_scenario.split("_")
-        scen = f"{scen[0]} {scen[1]}"
+        scen = f"Scenario {scen[1]}"
         self.ax_text.set_text(f"{scen}, {self.current_year}")
 
     def change_overlay(self, layer=None, **kwargs):
-        import ipdb
-
-        ipdb.set_trace()
         # Separate function for 'overlay', which can be plotted on top of layer
         # If an overlay is already plotted on the axis, remove it
         if self.current_overlay is not None:
@@ -263,6 +309,10 @@ class DisplayMap:
             self.current_overlay_text = None
 
     def show_animation(self, layer):
+        try:
+            self.title.remove()
+        except:
+            pass
         # Data necessary for creating animation
         animation_data = self.dataset[self.current_year][layer]
 
