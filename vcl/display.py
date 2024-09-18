@@ -174,7 +174,7 @@ def satellite_window(datasets):
             "alpha": 0.7,
             "transform": transform,
             "zorder": 1,
-            "label": "GSR",
+            "label": "Recreatieterreinen",
         },
         "bodem": {
             "extent": (xmin_b, xmax_b, ymin_b, ymax_b),
@@ -191,7 +191,7 @@ def satellite_window(datasets):
             "alpha": 0.7,
             "transform": transform,
             "zorder": 1,
-            "label": "Ecotopen",
+            "label": "",
         },
         "GVG": {
             "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
@@ -412,24 +412,26 @@ def contour_slice_window(datasets):
             plt.pause(0.01)
             # fig.canvas.draw_idle()
 
-        # If button for new layer is pressed, display new layer (if they are 3D)
-        if socket2 in socks and socks[socket2] == zmq.POLLIN:
-            topic, message = socket2.recv(zmq.DONTWAIT).split()
-            message = message.decode("utf-8")
-            layer, view_type, message = message.split(",")
-            if message == "0":
-                display.change_line_data()
-            if message == "1":
-                if layer in maps.keys():
-                    display.change_line_data(layer)
-                else:
-                    display.change_line_data()
-                    # if view_type == "overlay":
-                    #     import ipdb
+        # This part is for line (bathymetry) data on the slice, no longer works for all scenarios and years, so disabled for now
 
-                    #     ipdb.set_trace()
-                    #     display.show_difference("2023")
-            plt.pause(0.01)
+        # If button for new layer is pressed, display new layer (if they are 3D)
+        # if socket2 in socks and socks[socket2] == zmq.POLLIN:
+        #     topic, message = socket2.recv(zmq.DONTWAIT).split()
+        #     message = message.decode("utf-8")
+        #     layer, view_type, message = message.split(",")
+        #     if message == "0":
+        #         display.change_line_data()
+        #     if message == "1":
+        #         if layer in maps.keys():
+        #             display.change_line_data(layer)
+        #         else:
+        #             display.change_line_data()
+        #             # if view_type == "overlay":
+        #             #     import ipdb
+
+        #             #     ipdb.set_trace()
+        #             #     display.show_difference("2023")
+        #  plt.pause(0.01)
 
         # If button for different scenario is pressed, change scenario
         if socket3 in socks and socks[socket3] == zmq.POLLIN:
@@ -668,10 +670,10 @@ def midi_board(datasets):
             25: {"function": change_layer, "value": f"{gxgs[0]},layer"},
             26: {"function": change_layer, "value": "ecotoop,layer"},
             27: {"function": change_layer, "value": "bodem,layer"},
-            28: {"function": change_layer, "value": "GLG,layer"},
-            29: {"function": change_layer, "value": "floodmap,layer"},
+            28: {"function": change_layer, "value": "floodmap,layer"},
+            # 28: {"function": change_layer, "value": "GLG,layer"},
             # 31: {"function": change_layer, "value": ",layer"},
-            31: {"function": change_layer, "value": "difference,layer"},
+            # 31: {"function": change_layer, "value": "difference,layer"},
             45: {"function": start_stop_animation, "value": "animation_data,layer"},
             46: {"function": start_stop_animation, "value": ""},
             47: {"function": change_gxg, "value": "prev"},

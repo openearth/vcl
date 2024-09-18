@@ -186,6 +186,12 @@ class DisplayMap:
                     orientation="horizontal",
                     shrink=1,
                 )
+
+                self.title.set_text(
+                    self.kwargs_dict[self.current_year][self.current_layer_text][
+                        "label"
+                    ]
+                )
             elif layer in ["GLG", "GVG", "GHG", "GXG"]:
                 if self.current_scenario == "ssp_ref" or self.current_year == "2023":
                     kwargs = {
@@ -310,7 +316,8 @@ class DisplayMap:
 
     def show_animation(self, layer):
         try:
-            self.title.remove()
+            # self.title.remove()
+            self.title.set_text("")
         except:
             pass
         # Data necessary for creating animation
