@@ -89,6 +89,11 @@ def load():
 
     GSR = rasterio.open(data_dir / "RecreatiezonderRot.png")
     ecotopen = rasterio.open(data_dir / "Ecotopen zonder rotatie en legend.png")
+
+    GSR_2023 = rasterio.open(data_dir / "terrein-2023.png")
+    GSR_2050 = rasterio.open(data_dir / "terrein-2050.png")
+    GSR_2100 = rasterio.open(data_dir / "terrein-2100.png")
+
     floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
 
     animation_files = list(Path(data_dir / "Historische_ontwikkeling").glob("*.tiff"))
@@ -97,7 +102,7 @@ def load():
         "ds_b0": ds_b0,
         "extent": extent,
         "sat": sat,
-        "GSR": GSR,
+        "GSR": GSR_2023,
         "ecotoop": ecotopen,
         "floodmap": floodmap,
         "animation_files": animation_files,
@@ -109,6 +114,7 @@ def load():
             "extent": extent,
             "ds": ds_hd_2023,
             "ds_b0": ds_b0,
+            "GSR": GSR_2023,
             "GLG": {
                 "ref": gxg_ds["glg_ref_2023"],
                 "nat": gxg_ds["glg_hn_2023"],
@@ -131,6 +137,7 @@ def load():
             "extent": extent,
             "ds": ds_hd_2050,
             "ds_b0": ds_b0,
+            "GSR": GSR_2050,
             "GLG": {
                 "ref": gxg_ds["glg_ref_2050"],
                 "nat": gxg_ds["glg_hn_2050"],
@@ -153,6 +160,7 @@ def load():
             "extent": extent,
             "ds": ds_hd_2100,
             "ds_b0": ds_b0_n,
+            "GSR": GSR_2100,
             "GLG": {
                 "ref": gxg_ds["glg_ref_2100"],
                 "nat": gxg_ds["glg_hn_2100"],

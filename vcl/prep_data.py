@@ -21,7 +21,7 @@ def preprocess_common(datasets):
     # Get bathymetry datasets
     ds_b0 = datasets["ds_b0"]
     ecotoop = datasets["ecotoop"]
-    GSR = datasets["GSR"]
+    # GSR = datasets["GSR"]
     floodmap = datasets["floodmap"]
 
     ds_wl = datasets["ds_wl"]
@@ -39,10 +39,10 @@ def preprocess_common(datasets):
         preprocessed["ecotoop"],
         preprocessed["ecotoop_extent"],
     ) = vcl.data.prepare_rasterio_image(ecotoop)
-    (
-        preprocessed["GSR"],
-        preprocessed["GSR_extent"],
-    ) = vcl.data.prepare_rasterio_image(GSR)
+    # (
+    #     preprocessed["GSR"],
+    #     preprocessed["GSR_extent"],
+    # ) = vcl.data.prepare_rasterio_image(GSR)
 
     preprocessed["floodmap"], preprocessed["floodmap_extent"] = (
         vcl.data.prepare_rasterio_image(floodmap, Transformer.from_crs(32631, 28992))
@@ -81,7 +81,7 @@ def preprocess_common(datasets):
 
     sat.close()
     ecotoop.close()
-    GSR.close()
+    # GSR.close()
 
     return preprocessed
 
@@ -153,6 +153,13 @@ def preprocess_unique(datasets):
         # Each z layer of concentration dataset needs to be rotated and cropped seperately to account for the slices in x and y direction
         # Create dummy array of one layer and apply the function to it to obtain its shape
         # Note that the first dimension of ds_n is time instead of z
+
+        GSR = datasets[year]["GSR"]
+
+        preprocessed["GSR"], preprocessed["GSR_extent"] = (
+            vcl.data.prepare_rasterio_image(GSR)
+        )
+        GSR.close()
 
         for scenario in datasets[year]["ssp"].keys():
             print(year, scenario)
