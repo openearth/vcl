@@ -134,6 +134,9 @@ def satellite_window(datasets):
     xmin_b, ymin_b, xmax_b, ymax_b = datasets["2023"]["bodem_bounds"]
     xmin_e, ymin_e, xmax_e, ymax_e = datasets["2023"]["ecotoop_extent"]
     xmin_gsr, ymin_gsr, xmax_gsr, ymax_gsr = datasets["2023"]["GSR_extent"]
+    xmin_vogels, ymin_vogels, xmax_vogels, ymax_vogels = datasets["2023"][
+        "vogels_extent"
+    ]
     # xmin_gxg, ymin_gxg, xmax_gxg, ymax_gxg = datasets["2023"]["GXG_extent"]
     xmin_gxg, ymin_gxg, xmax_gxg, ymax_gxg = datasets["2023"]["ssp_nat"]["GXG_extent"]
     xmin_f, ymin_f, xmax_f, ymax_f = datasets["2023"]["floodmap_extent"]
@@ -175,6 +178,13 @@ def satellite_window(datasets):
             "transform": transform,
             "zorder": 1,
             "label": "Recreatieterreinen",
+        },
+        "vogels": {
+            "extent": (xmin_vogels, xmax_vogels, ymin_vogels, ymax_vogels),
+            "alpha": 0.7,
+            "transform": transform,
+            "zorder": 1,
+            "label": "Weidevogels gebieden",
         },
         "bodem": {
             "extent": (xmin_b, xmax_b, ymin_b, ymax_b),
@@ -671,6 +681,7 @@ def midi_board(datasets):
             26: {"function": change_layer, "value": "ecotoop,layer"},
             27: {"function": change_layer, "value": "bodem,layer"},
             28: {"function": change_layer, "value": "floodmap,layer"},
+            29: {"function": change_layer, "value": "vogels,layer"},
             # 28: {"function": change_layer, "value": "GLG,layer"},
             # 31: {"function": change_layer, "value": ",layer"},
             # 31: {"function": change_layer, "value": "difference,layer"},

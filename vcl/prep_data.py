@@ -159,7 +159,15 @@ def preprocess_unique(datasets):
         preprocessed["GSR"], preprocessed["GSR_extent"] = (
             vcl.data.prepare_rasterio_image(GSR)
         )
+
+        vogels = datasets[year]["vogels"]
+
+        preprocessed["vogels"], preprocessed["vogels_extent"] = (
+            vcl.data.prepare_rasterio_image(vogels)
+        )
+
         GSR.close()
+        vogels.close()
 
         for scenario in datasets[year]["ssp"].keys():
             print(year, scenario)

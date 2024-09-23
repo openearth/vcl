@@ -94,6 +94,10 @@ def load():
     GSR_2050 = rasterio.open(data_dir / "terrein-2050.png")
     GSR_2100 = rasterio.open(data_dir / "terrein-2100.png")
 
+    vogels_2023 = rasterio.open(data_dir / "weidevogels-2023.png")
+    vogels_2050 = rasterio.open(data_dir / "weidevogels-2050.png")
+    vogels_2100 = rasterio.open(data_dir / "weidevogels-2100.png")
+
     floodmap = rasterio.open(data_dir / "Water_mask_difference_20230915_20240309.tif")
 
     animation_files = list(Path(data_dir / "Historische_ontwikkeling").glob("*.tiff"))
@@ -115,6 +119,7 @@ def load():
             "ds": ds_hd_2023,
             "ds_b0": ds_b0,
             "GSR": GSR_2023,
+            "vogels": vogels_2023,
             "GLG": {
                 "ref": gxg_ds["glg_ref_2023"],
                 "nat": gxg_ds["glg_hn_2023"],
@@ -138,6 +143,7 @@ def load():
             "ds": ds_hd_2050,
             "ds_b0": ds_b0,
             "GSR": GSR_2050,
+            "vogels": vogels_2050,
             "GLG": {
                 "ref": gxg_ds["glg_ref_2050"],
                 "nat": gxg_ds["glg_hn_2050"],
@@ -161,6 +167,7 @@ def load():
             "ds": ds_hd_2100,
             "ds_b0": ds_b0_n,
             "GSR": GSR_2100,
+            "vogels": vogels_2100,
             "GLG": {
                 "ref": gxg_ds["glg_ref_2100"],
                 "nat": gxg_ds["glg_hn_2100"],
