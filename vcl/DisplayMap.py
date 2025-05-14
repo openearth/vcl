@@ -23,9 +23,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import vcl.data
 import vcl.prep_data
 
-src_dir = pathlib.Path(
-    r"P:\11210262-001-stakeholders-tools\Virtual_Climate_Lab\01_data\dataset\new\Freatische GXG"
-)
+src_dir = pathlib.Path('~').expanduser().expanduser() / 'data/vcl/dataset/Freatische GXG'
 colors, levels = imod.visualize.read_imod_legend(src_dir / "grondwaterstand_tov_mv.leg")
 cmap_GXG_ref, norm_GXG_ref = from_levels_and_colors(levels, colors, extend="both")
 

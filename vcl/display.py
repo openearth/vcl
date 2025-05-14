@@ -52,9 +52,7 @@ n_bins = [20]  # Number of bins for each color
 cmap_bodem = "custom_blue_green_orange"
 cmap_bodem = LinearSegmentedColormap.from_list(cmap_bodem, cmap_colors, N=sum(n_bins))
 
-src_dir = pathlib.Path(
-    r"P:\11210262-001-stakeholders-tools\Virtual_Climate_Lab\01_data\dataset\new\Freatische GXG"
-)
+src_dir = pathlib.Path('~').expanduser().expanduser() / 'data/vcl/dataset/Freatische GXG'
 colors, levels = imod.visualize.read_imod_legend(src_dir / "residu_detail.leg")
 cmap_GXG, norm_GXG = from_levels_and_colors(levels, colors, extend="both")
 
