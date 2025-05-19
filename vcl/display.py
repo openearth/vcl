@@ -641,15 +641,14 @@ def midi_board(datasets):
         socket.send_string(f"scenario ssp_{next_scenario}")
 
     gxgs = collections.deque(["GLG", "GVG", "GHG"])
-    gvg_maatregelen = collections.deque(
-        ["GVGmaatregel_2", "GVGmaatregel_3", "GVGmaatregel_4"]
-    )
+    gvg_maatregelen = collections.deque(["GVGmaatregel_2", "GVGmaatregel_4"])
 
     layer_type_mapping = {
         "GLG": "gxg",
         "GVG": "gxg",
         "GHG": "gxg",
         "GVGmaatregel_2": "gvg_maatregel",
+        "GVGmaatregel_3": "gvg_maatregel",
         "GVGmaatregel_4": "gvg_maatregel",
     }
     cycles = {"gxg": gxgs, "gvg_maatregel": gvg_maatregelen}
