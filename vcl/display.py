@@ -55,6 +55,7 @@ cmap_bodem = LinearSegmentedColormap.from_list(cmap_bodem, cmap_colors, N=sum(n_
 src_dir = pathlib.Path(
     r"P:\11210262-001-stakeholders-tools\Virtual_Climate_Lab\01_data\dataset\new\Freatische GXG"
 )
+src_dir = pathlib.Path('~').expanduser().resolve() / 'data/vcl/dataset/Freatische GXG'
 colors, levels = imod.visualize.read_imod_legend(src_dir / "residu_detail.leg")
 cmap_GXG, norm_GXG = from_levels_and_colors(levels, colors, extend="both")
 
@@ -153,6 +154,9 @@ def satellite_window(datasets):
 
     # Create animation frames from file paths (ideally in prep_data, but gave errors so for now moved to here)
     animation_files = datasets["2023"]["animation_data"]
+    animation_files.sort()
+    print(animation_files)
+    print(type(animation_files))
     animation_data = {}
     for i, frame in enumerate(animation_files):
         animation_data[i] = vcl.data.get_frame_data(frame)

@@ -23,7 +23,7 @@ requirements = [
     "opencv-python",
     "geopandas",
     "rasterio",
-    "matplotlib",
+    "matplotlib<=3.9.2",
     "shapely",
     "pandas",
     "mido",
