@@ -23,6 +23,7 @@ def preprocess_common(datasets):
     ecotoop = datasets["ecotoop"]
     # GSR = datasets["GSR"]
     floodmap = datasets["floodmap"]
+    gvg_extent = datasets["aoi"]
 
     ds_wl = datasets["ds_wl"]
     # Create dictionary to store processed data and values
@@ -78,6 +79,13 @@ def preprocess_common(datasets):
     tidal_flows["ucx"] = ds_wl.mesh2d_ucx.values
     tidal_flows["ucy"] = ds_wl.mesh2d_ucy.values
     preprocessed["tidal_flows"] = tidal_flows
+
+    for maatregel in ["maatregel_2", "maatregel_3", "maatregel_4"]:
+        gvg_ds = datasets["GVG_maatregel"][maatregel]
+        (
+            preprocessed[f"GVG{maatregel}"],
+            preprocessed[f"GVG_maatregel_extent"],
+        ) = vcl.data.clip_gxg(gvg_ds, gvg_extent)
 
     sat.close()
     ecotoop.close()

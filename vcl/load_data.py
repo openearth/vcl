@@ -71,6 +71,16 @@ def load():
 
     aoi = gpd.read_file(data_dir / "Freatische GXG/aoi.shp")
 
+    gvg_maatregel2_diff = xr.open_dataset(
+        data_dir / "gvg_maatregel2_diff_ref_2016_2023_Heel Terschelling.tif"
+    )
+    gvg_maatregel3_diff = xr.open_dataset(
+        data_dir / "gvg_maatregel3_diff_ref_2016_2023_Heel Terschelling.tif"
+    )
+    gvg_maatregel4_diff = xr.open_dataset(
+        data_dir / "gvg_maatregel4_diff_ref_2016_2023_Heel Terschelling.tif"
+    )
+
     # North sea and Wad sea dataset
     ds_wl = xr.open_dataset(data_dir / "wadsea_small.nc")
     # Extents of what we want to show
@@ -111,6 +121,12 @@ def load():
         "floodmap": floodmap,
         "animation_files": animation_files,
         "ds_wl": ds_wl,
+        "GVG_maatregel": {
+            "maatregel_2": gvg_maatregel2_diff,
+            "maatregel_3": gvg_maatregel3_diff,
+            "maatregel_4": gvg_maatregel4_diff,
+        },
+        "aoi": aoi,
     }
 
     unique_datasets = {

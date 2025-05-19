@@ -23,7 +23,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import vcl.data
 import vcl.prep_data
 
-src_dir = pathlib.Path('~').expanduser().expanduser() / 'data/vcl/dataset/Freatische GXG'
+src_dir = (
+    pathlib.Path("~").expanduser().expanduser() / "data/vcl/dataset/Freatische GXG"
+)
 colors, levels = imod.visualize.read_imod_legend(src_dir / "grondwaterstand_tov_mv.leg")
 cmap_GXG_ref, norm_GXG_ref = from_levels_and_colors(levels, colors, extend="both")
 
@@ -211,6 +213,27 @@ class DisplayMap:
                         self.dataset[self.current_year][self.current_scenario][layer],
                         **self.kwargs_dict[self.current_year][layer],
                     )
+                self.current_layer = im
+                self.current_layer_text = layer
+
+                self.cbar = self.fig.colorbar(
+                    im,
+                    cax=self.fig.add_axes([0.6, 0.20, 0.38, 0.05]),
+                    orientation="horizontal",
+                    shrink=1,
+                )
+
+                self.title.set_text(
+                    self.kwargs_dict[self.current_year][self.current_layer_text][
+                        "label"
+                    ]
+                )
+            elif layer in ["GVGmaatregel_2", "GVGmaatregel_4"]:
+                im = self.imshow(
+                    self.dataset[self.current_year][layer],
+                    **self.kwargs_dict[self.current_year][layer],
+                )
+
                 self.current_layer = im
                 self.current_layer_text = layer
 

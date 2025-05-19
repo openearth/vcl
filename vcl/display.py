@@ -52,7 +52,9 @@ n_bins = [20]  # Number of bins for each color
 cmap_bodem = "custom_blue_green_orange"
 cmap_bodem = LinearSegmentedColormap.from_list(cmap_bodem, cmap_colors, N=sum(n_bins))
 
-src_dir = pathlib.Path('~').expanduser().expanduser() / 'data/vcl/dataset/Freatische GXG'
+src_dir = (
+    pathlib.Path("~").expanduser().expanduser() / "data/vcl/dataset/Freatische GXG"
+)
 colors, levels = imod.visualize.read_imod_legend(src_dir / "residu_detail.leg")
 cmap_GXG, norm_GXG = from_levels_and_colors(levels, colors, extend="both")
 
@@ -254,6 +256,33 @@ def satellite_window(datasets):
             "zorder": 2,
             "label": "Getijdenstroom",
         },
+        "GVGmaatregel_2": {
+            "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+            "alpha": 0.7,
+            "transform": transform,
+            "zorder": 1,
+            "label": "Verschil GVG maatregel 2",
+            "cmap": cmap_GXG,
+            "norm": norm_GXG,
+        },
+        "GVGmaatregel_3": {
+            "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+            "alpha": 0.7,
+            "transform": transform,
+            "zorder": 1,
+            "label": "Verschil GVG maatregel 3",
+            "cmap": cmap_GXG,
+            "norm": norm_GXG,
+        },
+        "GVGmaatregel_4": {
+            "extent": (xmin_gxg, xmax_gxg, ymin_gxg, ymax_gxg),
+            "alpha": 0.7,
+            "transform": transform,
+            "zorder": 1,
+            "label": "Verschil GVG maatregel 4",
+            "cmap": cmap_GXG,
+            "norm": norm_GXG,
+        },
     }
 
     maps_2050 = maps_2023.copy()
@@ -405,7 +434,7 @@ def contour_slice_window(datasets):
     )
 
     # Pause so you can move window around
-    plt.pause(20)
+    plt.pause(10)
 
     # Loop to check if new message is received
     while True:
@@ -612,20 +641,39 @@ def midi_board(datasets):
         socket.send_string(f"scenario ssp_{next_scenario}")
 
     gxgs = collections.deque(["GLG", "GVG", "GHG"])
+    gvg_maatregelen = collections.deque(
+        ["GVGmaatregel_2", "GVGmaatregel_3", "GVGmaatregel_4"]
+    )
+
+    layer_type_mapping = {
+        "GLG": "gxg",
+        "GVG": "gxg",
+        "GHG": "gxg",
+        "GVGmaatregel_2": "gvg_maatregel",
+        "GVGmaatregel_4": "gvg_maatregel",
+    }
+    cycles = {"gxg": gxgs, "gvg_maatregel": gvg_maatregelen}
 
     def change_gxg(gxg):
         global current_layer
 
+        layer_type = current_layer.split(",")[0]
+        layer_type = layer_type_mapping[layer_type]
+
         if gxg == "next":
-            gxgs.rotate(-1)
-            next_gxg = gxgs[0]
+            cycles[layer_type].rotate(-1)
+            next_gxg = cycles[layer_type][0]
+            # gxgs.rotate(-1)
+            # next_gxg = gxgs[0]
         elif gxg == "prev":
-            gxgs.rotate(1)
-            next_gxg = gxgs[0]
+            # gxgs.rotate(1)
+            # next_gxg = gxgs[0]
+            cycles[layer_type].rotate(1)
+            next_gxg = cycles[layer_type][0]
 
         layer = f"{next_gxg},layer"
 
-        if current_layer in [f"{gxg},layer" for gxg in gxgs]:
+        if current_layer in [f"{gxg},layer" for gxg in cycles[layer_type]]:
             change_layer(layer)
 
     years = ["2023", "2050", "2100"]
@@ -680,6 +728,7 @@ def midi_board(datasets):
             27: {"function": change_layer, "value": "bodem,layer"},
             28: {"function": change_layer, "value": "floodmap,layer"},
             29: {"function": change_layer, "value": "vogels,layer"},
+            30: {"function": change_layer, "value": f"{gvg_maatregelen[0]},layer"},
             # 28: {"function": change_layer, "value": "GLG,layer"},
             # 31: {"function": change_layer, "value": ",layer"},
             # 31: {"function": change_layer, "value": "difference,layer"},
