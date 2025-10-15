@@ -15,7 +15,7 @@ def load():
     # Dataset for ground water model (concentrations)
     # Dataset ds is ordered with (z,y,x) coordinates
     ds = xr.open_dataset(data_dir.joinpath("concentratie_data_gw_model.nc"))
-    ds_n = xr.open_dataset(data_dir.joinpath("conc_nieuw.nc"))
+    # ds_n = xr.open_dataset(data_dir.joinpath("conc_nieuw.nc"))
 
     # Dataset of bathymetry
     # ds_b0 = rasterio.open(data_dir / "terschelling_maquette_def.tif")
