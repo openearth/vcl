@@ -10,15 +10,15 @@ import time
 from pathlib import Path
 
 import click
-import matplotlib
 import numpy as np
-import psutil
 import zmq
 
 import vcl.data
-import vcl.display
+
+# import vcl.display
 import vcl.load_data
-import vcl.prep_data
+import vcl.preprocess
+import vcl.display_pygame
 
 
 def make_sockets():
@@ -86,10 +86,10 @@ def main(satellite, contour, midi, preprocess, save, args=None):
         initargs=(os.getpid(),),
     )
     if preprocess:
-        common_datasets, unique_datasets = vcl.load_data.load()
-        datasets = vcl.prep_data.preprocess(common_datasets, unique_datasets)
+        input_file = Path(__file__).parent / "input.json"
+        datasets = vcl.preprocess.preprocess(input_file=input_file)
         if save:
-            data_dir = Path("~/data/vcl/dataset").expanduser()
+            data_dir = Path("~/data/vcl/gnsbi").expanduser()
             np.save(data_dir / "preprocessed-data.npy", datasets)
     else:
         datasets = vcl.load_data.load_preprocessed()
@@ -100,12 +100,12 @@ def main(satellite, contour, midi, preprocess, save, args=None):
     if midi:
         executor.submit(vcl.display.midi_board, datasets)
     else:
-        executor.submit(vcl.display.slider_window, datasets)
+        executor.submit(vcl.display_pygame.keyboard_publisher)
     if satellite:
-        executor.submit(vcl.display.satellite_window, datasets)
+        executor.submit(vcl.display_pygame.displaymap, datasets)
     if contour:
         # executor.submit(vcl.display.satellite_window2, datasets)
-        executor.submit(vcl.display.contour_slice_window, datasets)
+        executor.submit(vcl.display_pygame.displayslice, datasets)
 
     # while True:
     #     time.sleep(0.1)

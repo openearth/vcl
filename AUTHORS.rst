@@ -5,9 +5,10 @@ Credits
 Development Lead
 ----------------
 
-* Fedor Baart <fedor.baart@deltares.nl>
+* Guus van Hemert <guus.vanhemert@deltares.nl>
 
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Fedor Baart <fedor.baart@rws.nl>
+

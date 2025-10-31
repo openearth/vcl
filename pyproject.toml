@@ -1,0 +1,58 @@
+[project]
+name = "vcl"
+version = "0.1.0"
+description = "Virtual Climate Lab: an interactive table to discuss the future of your environment."
+readme = "README.rst"
+requires-python = ">=3.6"
+license = "GPL-3.0-only"
+authors = [
+    { name = "Guus van Hemert", email = "guus.vanhemert@deltares.nl" }
+]
+keywords = ["vcl"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8"
+]
+dependencies = [
+    "Click>=7.0",
+    "pyzmq",
+    "xarray",
+    "rioxarray",
+    "scipy",
+    "numpy",
+    "netCDF4",
+    "cmocean",
+    "opencv-python",
+    "geopandas",
+    "rasterio",
+    "matplotlib",
+    "shapely",
+    "pandas",
+    "mido",
+    "python-rtmidi",
+    "pygame>=2.6.1",
+    "pygetwindow>=0.0.9",
+    "screeninfo>=0.7",
+    "seaborn>=0.11.2",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=3"]
+
+[project.urls]
+Homepage = "https://github.com/openearth/vcl"
+
+[project.scripts]
+vcl = "vcl.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["vcl", "vcl.*"]

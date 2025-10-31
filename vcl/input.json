@@ -1,0 +1,31 @@
+{
+    "basepath": "/Users/hemert/data/vcl/gnsbi/",
+    "crs": "EPSG:4326",
+    "common": {
+        "basemap": "world_ocean_basemap.tif",
+        "bathymetry": "bathymetry-elevation-combined-smoothed.tif",
+        "extent": "aoi-bbox-1-to-2.gpkg",
+        "layers": {
+            "fishery": "fishing-effort.png",
+            "navisafe": "NaviSafe_example1.png"
+        },
+        "extra_info": {
+            "fishery": {
+                "extent": [
+                    -18,
+                    45,
+                    16,
+                    64
+                ]
+            },
+            "navisafe": {
+                "extent": [
+                    -0.22,
+                    50.059,
+                    6.482,
+                    55.562
+                ]
+            }
+        }
+    }
+}

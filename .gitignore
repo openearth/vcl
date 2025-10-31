@@ -87,6 +87,7 @@ celerybeat-schedule
 .venv
 venv/
 ENV/
+uv.lock
 
 # Spyder project settings
 .spyderproject
@@ -104,3 +105,6 @@ ENV/
 # IDE settings
 .vscode/
 .idea/
+
+# DS_store
+.DS_Store

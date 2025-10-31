@@ -1,3 +1,5 @@
+from typing import Union
+
 import cv2
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -8,9 +10,14 @@ import rioxarray as rxr
 import scipy
 import shapely
 from matplotlib.colors import LightSource
+from rasterio.enums import Resampling
+from rasterio.mask import mask
+from rasterio.transform import Affine, from_bounds
+from rasterio.warp import reproject
+from shapely.geometry import mapping
 
 
-def compute_rotation_angle(extent):
+def compute_rotation_angle(extent: shapely.Polygon):
     """
     Function for computing the rotation angle of the geometry extent
     The angle is the counterclockwise angle between the geometry and the x-axis
@@ -34,12 +41,14 @@ def compute_rotation_angle(extent):
     o = right_point[1] - bottom_point[1]
     a = right_point[0] - bottom_point[0]
 
+    if a == 0:
+        return 0
     angle = np.rad2deg(np.arctan(o / a))
 
     return angle
 
 
-def rotate_and_crop(arr, ang, cval=np.nan):
+def rotate_and_crop(arr: np.ndarray, ang: float, cval: float = np.nan):
     """Array arr to be rotated by ang degrees and cropped afterwards"""
     arr_rot = scipy.ndimage.rotate(arr, ang, reshape=True, order=0, cval=cval)
 
@@ -132,7 +141,14 @@ def combine_polygons(images, shapes):
 
 
 def contourf_to_array_3d(
-    cs, nbpixels_x, nbpixels_y, nbpixels_z, axis, scale_x, scale_y, levels
+    cs: np.ndarray,
+    nbpixels_x: int,
+    nbpixels_y: int,
+    nbpixels_z: int,
+    axis: int,
+    scale_x,
+    scale_y,
+    levels,
 ):
     """
     Draws filled contours for 3d array cs along the specified axis
@@ -234,7 +250,12 @@ def create_shaded_image(sat_extent, bodem):
     ls = LightSource(azdeg=315, altdeg=45)
 
     # Add shade to scaled image
-    img_shade = ls.shade_rgb(sat_scaled, bodem, vert_exag=5, blend_mode="soft")
+    img_shade = ls.shade_rgb(sat_scaled, bodem, vert_exag=2, blend_mode="soft")
+    img_shade = img_shade * 255
+    img_shade = img_shade.astype(np.uint8)
+
+    # img_shade = sat * 255
+    # img_shade = img_shade.astype(np.uint8)
 
     return img_shade
 
@@ -441,3 +462,144 @@ def clip_gxg(ds, extent):
     extent = extent.geometry.iloc[0].bounds
 
     return ds, extent
+
+
+def array_to_rotated_raster(
+    array: np.ndarray,
+    array_extent: Union[tuple, list],
+    center_point: Union[tuple, list],
+    angle: float,
+    crs: str,
+):
+    """
+    Rotates a raster array around a specified center point and returns the reprojected array and its affine transform.
+
+    :param array: Input raster data as a NumPy array (2D or 3D).
+    :param array_extent: Tuple or list defining the spatial extent of the array (min_x, min_y, max_x, max_y).
+    :param center_point: Tuple or list with the coordinates (x, y) around which the array will be rotated.
+    :param angle: Rotation angle in degrees (counter-clockwise).
+    :param crs: Coordinate reference system of the input and output raster.
+    :return: Tuple containing the rotated array and the affine transformation used.
+    """
+
+    min_x, min_y, max_x, max_y = array_extent
+    height, width = array.shape[:2]
+    transform = from_bounds(min_x, min_y, max_x, max_y, width, height)
+
+    if array.ndim >= 3:
+        array_rio = np.moveaxis(array, -1, 0)
+    else:
+        array_rio = array[np.newaxis, ...]
+
+    center_x, center_y = center_point
+
+    T1 = Affine.translation(-center_x, -center_y)
+    R = Affine.rotation(angle)
+    T2 = Affine.translation(center_x, center_y)
+    rot_affine = T2 * R * T1 * transform
+
+    rotated = np.empty_like(array_rio)
+    for i in range(array_rio.shape[0]):
+        reproject(
+            source=array_rio[i],
+            destination=rotated[i],
+            src_transform=transform,
+            src_crs=crs,
+            dst_transform=rot_affine,
+            dst_crs=crs,
+            resampling=Resampling.bilinear,
+            num_threads=2,
+        )
+
+    return rotated, rot_affine
+
+
+def rotate_and_crop_array(
+    array: np.ndarray,
+    array_extent: Union[tuple, list],
+    center_point: Union[tuple, list],
+    angle: float,
+    crop_extent: shapely.Polygon,
+    crs: str,
+):
+    """
+    Rotates a raster array around a specified center point and crops it to a given polygon extent.
+
+    :param array: Input raster data as a NumPy array (2D or 3D).
+    :param array_extent: Tuple or list defining the spatial extent of the array (min_x, min_y, max_x, max_y).
+    :param center_point: Coordinates (x, y) around which the array will be rotated.
+    :param angle: Rotation angle in degrees (counter-clockwise).
+    :param crop_extent: A Shapely Polygon defining the crop area in the same CRS.
+    :param crs: Coordinate reference system of the input and output raster.
+    :return: Cropped and rotated array as a NumPy array.
+    """
+
+    rotated_array, rot_affine = array_to_rotated_raster(
+        array, array_extent, center_point, angle, crs
+    )
+
+    with rasterio.io.MemoryFile() as memfile:
+        with memfile.open(
+            driver="GTiff",
+            height=array.shape[0],
+            width=array.shape[1],
+            count=rotated_array.shape[0],
+            dtype=rotated_array.dtype,
+            transform=rot_affine,
+            crs=crs,
+        ) as dataset:
+            dataset.write(rotated_array)
+            out_array, out_transform = mask(
+                dataset,
+                # [mapping(crop_extent)],
+                [crop_extent],
+                crop=True,
+                filled=True,
+                nodata=0,
+            )
+
+    if out_array.shape[0] == 1:
+        masked_array = out_array[0]
+    else:
+        masked_array = np.moveaxis(out_array, 0, -1)
+    return masked_array
+
+
+def fill_array_to_bbox(
+    array: np.ndarray, array_extent: Union[tuple, list], bbox: Union[tuple, list]
+):
+    """
+    Pads a raster array with NaNs to fit a specified bounding box, preserving spatial resolution.
+
+    :param array: Input raster data as a NumPy array (2D or 3D).
+    :param array_extent: Tuple or list defining the spatial extent of the array (min_x, min_y, max_x, max_y).
+    :param bbox: Target bounding box (min_x, min_y, max_x, max_y) to fill the array into.
+    :return: A new array padded with NaNs to match the bounding box.
+    """
+
+    res_x = (array_extent[2] - array_extent[0]) / array.shape[1]
+    res_y = (array_extent[3] - array_extent[1]) / array.shape[0]
+
+    new_width = int((bbox[2] - bbox[0]) / res_x)
+    new_height = int((bbox[3] - bbox[1]) / res_y)
+
+    new_width = np.clip(new_width, a_min=array.shape[1], a_max=None)
+    new_height = np.clip(new_height, a_min=array.shape[0], a_max=None)
+
+    # Create empty array filled with NaNs
+    filled_array = np.full(
+        (new_height, new_width, array.shape[-1]), np.nan, dtype=np.float32
+    )
+
+    # Calculate offset of original raster within new raster
+    x_offset = int((array_extent[0] - bbox[0]) / res_x)
+    y_offset = int((bbox[3] - array_extent[3]) / res_y)
+
+    x_offset = np.clip(x_offset, a_min=0, a_max=None)
+    y_offset = np.clip(y_offset, a_min=0, a_max=None)
+
+    # Place original data into stretched array
+    filled_array[
+        y_offset : y_offset + array.shape[0], x_offset : x_offset + array.shape[1], :
+    ] = array
+    return filled_array
