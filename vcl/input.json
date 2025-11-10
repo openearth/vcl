@@ -7,10 +7,44 @@
         "extent": "aoi-bbox-1-to-2.gpkg",
         "layers": {
             "fishery": "fishing-effort.png",
-            "navisafe": "NaviSafe_example1.png"
+            "fishing_catch": "fishing-catch.png",
+            "navisafe": "NaviSafe_example1.png",
+            "windfarms": "windfarm_map.png",
+            "cods": "nature-track/GNSBI_Drafts_for_Deltares/cod_survey.png",
+            "mask": "mask-layer.gpkg"
+        },
+        "animations": {
+            "windfarms": "nsec/timelapse"
+        },
+        "stats": {
+            "fishery": {
+                "image": [
+                    "fishing-effort-legend.png",
+                    "cat.png"
+                ]
+            },
+            "fishing_catch": {
+                "image": [
+                    "fishing-catch-legend.png"
+                ]
+            },
+            "cods": {
+                "image": [
+                    "nature-track/cod.png",
+                    "nature-track/GNSBI_Drafts_for_Deltares/cod_survey_legend.png"
+                ]
+            }
         },
         "extra_info": {
             "fishery": {
+                "extent": [
+                    -18,
+                    45,
+                    16,
+                    64
+                ]
+            },
+            "fishing_catch": {
                 "extent": [
                     -18,
                     45,
@@ -24,6 +58,22 @@
                     50.059,
                     6.482,
                     55.562
+                ]
+            },
+            "cods": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "windfarms": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
                 ]
             }
         }

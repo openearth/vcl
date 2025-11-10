@@ -78,6 +78,8 @@ class PygameWindow:
             "variation": "year",
             "text": "",
             "text_color": (0, 0, 0),
+            "cmap": None,
+            "cbar": False,
         }
         for layer, kwargs_dict in dataset_kwargs.items():
             dataset_kwargs[layer] = default_kwargs | kwargs_dict
@@ -157,12 +159,17 @@ class PygameWindow:
             vmax = 0
             vmin = -1000
             norm = Normalize(vmin=vmin, vmax=vmax)
-
         rgba_array = np.zeros((array.shape[0], array.shape[1], 4), dtype=np.uint8)
 
         nan_mask = np.isnan(array)
-        normalized_array = norm(array)
+        if isinstance(cmap, matplotlib.colors.ListedColormap):
+            normalized_array = array.astype(np.int16)
+        else:
+            normalized_array = norm(array)
         normalized_array_no_nan = normalized_array[~nan_mask]
+        # normalized_array_no_nan = np.clip(normalized_array_no_nan, a_min=0, a_max=1)
+
+        # print(cmap(normalized_array))
         rgba_array[~nan_mask] = (cmap(normalized_array_no_nan) * 255).astype(np.uint8)
         rgba_array[nan_mask] = [0, 0, 0, 0]
 

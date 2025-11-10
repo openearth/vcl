@@ -4,32 +4,55 @@ import sys
 import threading
 import time
 from pathlib import Path
-import matplotlib as mpl
 
-import cmocean
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import mido
 
 # import pywinctl as gw
-import numpy as np
 import pygame
-import rasterio
-import rioxarray as rxr
 import zmq
-from matplotlib.colors import LinearSegmentedColormap, to_rgb
-from rasterio.enums import Resampling
-from rasterio.mask import mask
-from rasterio.transform import Affine, from_bounds
-from rasterio.warp import reproject
-from shapely.geometry import mapping
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgb
+
+import vcl.preprocess
 
 # from vcl.windows import DisplayMap, DisplaySlice
-from vcl.windows import DisplayMap, DisplaySlice
-import vcl.preprocess
+from vcl.windows import DisplayMap, DisplaySlice, StatsWindow
 
 contour_show = False
 height_map_show = False
 compare = False
 current_layer = ""
 current_overlay = ""
+
+windfarm_cmap = [
+    (255 / 255, 255 / 255, 255 / 255, 0.25),
+    (254 / 255, 217 / 255, 142 / 255, 1),
+    (254 / 255, 153 / 255, 41 / 255, 1),
+    (217 / 255, 95 / 255, 14 / 255, 1),
+    (153 / 255, 52 / 255, 4 / 255, 1),
+    (0 / 255, 197 / 255, 255 / 255, 1),
+    (0 / 255, 112 / 255, 192 / 255, 1),
+    (83 / 255, 36 / 255, 118 / 255, 1),
+    (193 / 255, 193 / 255, 193 / 255, 1),
+]
+windfarm_cmap = ListedColormap(windfarm_cmap)
+
+bathymetry_cmap = [
+    # (0, (0 / 255, 0 / 255, 62 / 255)),
+    (0, ((0 / 255, 0 / 255, 53 / 255))),
+    (0.5, (10 / 255, 20 / 255, 220 / 255)),
+    (0.75, (0 / 255, 0 / 255, 205 / 255)),
+    (0.8875, (90 / 255, 213 / 255, 6 / 255)),
+    (0.9625, (181 / 255, 211 / 255, 4 / 255)),
+    (0.9875, (215 / 255, 215 / 255, 14 / 255)),
+    (0.9975, (218 / 255, 6 / 255, 22 / 255)),
+    (1, (222 / 255, 90 / 255, 93 / 255)),
+]
+
+bathymetry_cmap = LinearSegmentedColormap.from_list(
+    "bathy_cmap", bathymetry_cmap, N=5000
+)
 
 
 def make_listen_sockets():
@@ -38,7 +61,7 @@ def make_listen_sockets():
     socket1 = context.socket(zmq.SUB)
     socket1.setsockopt(zmq.CONFLATE, 1)
     socket1.connect("tcp://localhost:5556")
-    socket1.subscribe("pygame_1")
+    socket1.subscribe("maps")
 
     socket2 = context.socket(zmq.SUB)
     socket2.connect("tcp://localhost:5556")
@@ -62,7 +85,7 @@ def make_listen_sockets():
 
     sockets = {
         "context": context,
-        "pygame_1": socket1,
+        "maps": socket1,
         "pygame_2": socket2,
         "year": socket4,
         "slice": socket3,
@@ -75,9 +98,9 @@ def displaymap(datasets):
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
-    # from matplotlib.colors import Normalize
+    from matplotlib.colors import Normalize
 
-    # norm = Normalize(vmin=-6, vmax=40)
+    norm = Normalize(vmin=-4000, vmax=0)
 
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
@@ -85,24 +108,35 @@ def displaymap(datasets):
             "type": "CMAP",
             "text": "Hoogtekaart",
             "text_color": (255, 255, 255),
-            "cmap": mpl.colormaps.get_cmap("viridis"),
+            "cmap": bathymetry_cmap,
+            "norm": norm,
         },
-        "fishery": {"type": "RGB", "text": "Fishery", "alpha": 0.6},
+        "fishery": {"type": "RGB", "text": "Fishing effort", "alpha": 0.6},
+        "fishing_catch": {"type": "RGB", "text": "Fishing catch", "alpha": 0.6},
         "navisafe": {"type": "RGB", "text": "Navisafe"},
+        "windfarms": {"type": "RGB", "text": "Windfarms", "cmap": windfarm_cmap},
+        "mask": {
+            "type": "CMAP",
+            "text": "",
+            "cmap": ListedColormap(["gray", "orange"]),
+        },
+        "cods": {"type": "RGB", "text": "Cods"},
     }
 
-    socket = sockets["pygame_1"]
+    socket = sockets["maps"]
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
+
     display = DisplayMap.DisplayMap(
         datasets=datasets,
         start_year="1970",
         flow_data=None,
+        animations_data=datasets[""]["animations"],
         dataset_kwargs=dataset_kwargs,
         bg_layer="basemap",
-        i_max=300,
+        mask_layer="mask",
+        i_max=127,
     )
-
     while True:
         socks = dict(poller.poll(10))
         # If slider sends message, update vertical line
@@ -111,7 +145,8 @@ def displaymap(datasets):
             message = message.decode("utf-8")
             layer, view_type = message.split(",")
             if view_type == "overlay":
-                display.init_arrowmanager(layer)
+                # display.init_arrowmanager(layer)
+                display.display_mask()
             else:
                 display.change_layer(layer)
 
@@ -127,6 +162,35 @@ def displaymap(datasets):
         display.draw_layers()
 
 
+def displaystats(datasets):
+    sockets = make_listen_sockets()
+    poller = sockets["poller"]
+
+    socket = sockets["maps"]
+    socket_slice = sockets["slice"]
+    socket_year = sockets["year"]
+
+    dataset_kwargs = {
+        "fishery": {"image": {"title": ""}},
+        "fishing_catch": {"image": {"title": ""}},
+    }
+    display = StatsWindow.StatsWindow(
+        datasets[""]["stats"],
+        dataset_kwargs=dataset_kwargs,
+        layers_to_ignore=["mask", "animation"],
+    )
+
+    while True:
+        socks = dict(poller.poll(10))
+        # If slider sends message, update vertical line
+        if socket in socks and socks[socket] == zmq.POLLIN:
+            topic, message = socket.recv(zmq.DONTWAIT).split()
+            message = message.decode("utf-8")
+            layer, view_type = message.split(",")
+            display.change_layer(layer)
+        plt.pause(0.01)
+
+
 def displayslice(datasets):
     sockets = make_listen_sockets()
     poller = sockets["poller"]
@@ -137,7 +201,6 @@ def displayslice(datasets):
     dataset_kwargs = {}
 
     display = DisplaySlice.DisplaySlice(slice_datasets, dataset_kwargs)
-
     while True:
         socks = dict(poller.poll(10))
 
@@ -205,9 +268,13 @@ def keyboard_publisher():
                 elif event.key == pygame.K_2:
                     change_layer("fishery,layer")
                 elif event.key == pygame.K_3:
-                    change_layer("navisafe,layer")
+                    change_layer("fishing_catch,layer")
                 elif event.key == pygame.K_4:
-                    change_layer("conc,layer")
+                    change_layer("navisafe,layer")
+                elif event.key == pygame.K_5:
+                    change_layer("windfarms,layer")
+                elif event.key == pygame.K_6:
+                    change_layer("cods,layer")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_q:
@@ -220,6 +287,8 @@ def keyboard_publisher():
                     change_year(2050)
                 elif event.key == pygame.K_p:
                     change_year(2100)
+                elif event.key == pygame.K_m:
+                    change_layer("mask,overlay")
                 if event.key == pygame.K_h:
                     print("Sending 'instance_1' message")
                     # Send a message indicating an event for the first instance
@@ -314,6 +383,118 @@ def main():
     executor.submit(displayslice)
 
     return 0
+
+
+def midi_board(datasets):
+    # import ipdb
+
+    # ipdb.set_trace()
+    # Create publishing socket for sending midi board messages to the windows
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    socket.setsockopt(zmq.CONFLATE, 1)
+    socket.bind("tcp://*:5556")
+
+    # Number of values for the sliders on midi board (0-127)
+    n_slider_values = 128
+
+    # Update slider based on 128 possible values
+    def slider_update(value):
+        socket.send_string(f"slice {int(value)}")
+
+    years = ["2023", "2050", "2100"]
+
+    def change_year(value, years=years):
+        index = int(value * len(years) / n_slider_values)
+        year = years[index]
+        socket.send_string(f"year {year}")
+
+    # Function to send layer when button pressed
+    def change_layer(text):
+        layer_type = text.split(",")[1]
+        global current_layer, current_overlay
+        if text.split(",")[0] == "":
+            socket.send_string(f"maps {text}")
+            current_layer = ""
+            current_overlay = ""
+        if current_layer == text or current_overlay == text:
+            socket.send_string(f"maps None,{layer_type}")
+            if layer_type == "layer":
+                current_layer = ""
+            elif layer_type == "overlay":
+                current_overlay = ""
+        else:
+            socket.send_string(f"maps {text}")
+            if layer_type == "layer":
+                current_layer = text
+            elif layer_type == "overlay":
+                current_overlay = text
+
+    # def change_overlay(text):
+    #     global current_overlay
+    #     if current_overlay
+
+    def start_stop_animation(text):
+        global current_layer
+        if text == "":
+            socket.send_string(f"maps animation,layer")
+            socket.send_string(f"maps {current_layer}")
+        else:
+            socket.send_string(f"maps {text}")
+
+    # Mapping from the midi control value to the function to update and the value to update to
+    def get_midi_mapping():
+        midi_mapping = {
+            # 1: {"function": change_scenario, "value": "prev"},
+            # 2: {"function": change_scenario, "value": "next"},
+            3: {"function": change_year, "value": ["2023", "2050", "2100"]},
+            7: {"function": change_year, "value": ["2023", "2100"]},
+            23: {"function": change_layer, "value": "bathymetry,layer"},
+            24: {"function": change_layer, "value": "navisafe,layer"},
+            25: {"function": change_layer, "value": "fishery,layer"},
+            26: {"function": change_layer, "value": "fishing_catch,layer"},
+            27: {"function": change_layer, "value": "windfarms,layer"},
+            28: {"function": change_layer, "value": "cods,layer"},
+            31: {"function": change_layer, "value": "mask,overlay"},
+            # 28: {"function": change_layer, "value": "GLG,layer"},
+            # 31: {"function": change_layer, "value": ",layer"},
+            # 31: {"function": change_layer, "value": "difference,layer"},
+            45: {"function": start_stop_animation, "value": "animation,layer"},
+            46: {"function": start_stop_animation, "value": ""},
+            60: {"function": slider_update},
+            64: {"function": change_layer, "value": "tidal_flows:170,overlay"},
+            67: {"function": change_layer, "value": "tidal_flows:390,overlay"},
+        }
+        return midi_mapping
+
+    # List of used slider control values
+    slider_keys = [3, 7, 60]
+    inport = mido.open_input()
+    for msg in inport:
+        # If BANK button is pressed, disconnect midi board (can't reconnect)
+        if msg.type == "sysex":
+            inport.close()
+            break
+        else:
+            try:
+                midi_mapping = get_midi_mapping()
+                # Send update if button is pressed
+                if msg.value == 127 and msg.control not in slider_keys:
+                    midi_mapping[msg.control]["function"](
+                        midi_mapping[msg.control]["value"]
+                    )
+                # Send update if slider value is changed
+                if msg.control in slider_keys:
+                    # Some functions have another optional value, try that first
+                    try:
+                        midi_mapping[msg.control]["function"](
+                            msg.value, midi_mapping[msg.control]["value"]
+                        )
+                    # Otherwise, function only needs slider value
+                    except:
+                        midi_mapping[msg.control]["function"](msg.value)
+            except:
+                continue
 
 
 if __name__ == "__main__":

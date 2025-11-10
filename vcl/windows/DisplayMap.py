@@ -15,6 +15,8 @@ class DisplayMap(PygameWindow.PygameWindow):
         flow_data,
         dataset_kwargs: dict,
         bg_layer: str,
+        animations_data: dict = None,
+        mask_layer: str = None,
         start_year="",
         scenarios=["Ref"],
         i_max: int = 300,
@@ -32,8 +34,11 @@ class DisplayMap(PygameWindow.PygameWindow):
         )
 
         self.flow_data = flow_data
+        self.animation_data = animations_data
         self.i = 0
         self.i_max = i_max
+        self.mask_layer = mask_layer
+        self.show_mask = False
 
         self.zoom_start_pos = None
         self.zoom_end_pos = None
@@ -207,7 +212,10 @@ class DisplayMap(PygameWindow.PygameWindow):
             scaled_surface.set_alpha(alpha)
             self.screen.blit(scaled_surface, (self.x_pos, self.y_pos))
 
-            if self.dataset_kwargs[layer]["type"] == "CMAP":
+            if (
+                self.dataset_kwargs[layer]["type"] == "CMAP"
+                and self.dataset_kwargs[layer]["cbar"] == True
+            ):
                 cmap = self.dataset_kwargs[layer]["cmap"]
                 norm = self.dataset_kwargs[layer].get("norm", None)
                 if norm:
@@ -231,7 +239,7 @@ class DisplayMap(PygameWindow.PygameWindow):
                 cbar.set_rect(colorbar_rect, (self.img_width, self.img_height))
                 cbar.draw(self.screen, (self.x_pos, self.y_pos))
 
-    def draw_text(self):
+    def draw_text(self, text: str = None):
         if len(self.scenarios) > 1:
             scenario_text = f"Scenario {self.current_scenario}"
         else:
@@ -241,11 +249,12 @@ class DisplayMap(PygameWindow.PygameWindow):
         else:
             year_text = self.current_year
 
-        text = scenario_text + year_text
+        if text is None:
+            text = scenario_text + year_text
         text_bottom = self.font.render(
             text,
             True,
-            (255, 255, 255),
+            (0, 0, 0),
         )
         text_bottom_rect = text_bottom.get_rect(
             bottomright=(
@@ -253,13 +262,27 @@ class DisplayMap(PygameWindow.PygameWindow):
                 self.img_height + self.y_pos - 10,
             )
         )
+
         self.screen.blit(text_bottom, text_bottom_rect)
+
+        if self.current_layer in self.dataset_kwargs:
+            text_top = self.font.render(
+                self.dataset_kwargs[self.current_layer]["text"],
+                True,
+                self.dataset_kwargs[self.current_layer]["text_color"],
+            )
+            self.screen.blit(text_top, (self.x_pos + 10, self.y_pos + 10))
+
+    def display_mask(self):
+        if self.mask_layer in self.dataset_kwargs:
+            self.show_mask = not self.show_mask
 
     def change_layer(self, layer):
         if layer == "animation":
             # self.current_layer = ""
-            self.play_animation()
-            self.current_layer = ""
+            if self.current_layer in self.animation_data:
+                self.play_animation()
+            # self.current_layer = ""
         else:
             if self.show_animation:
                 self.play_animation()
@@ -284,18 +307,22 @@ class DisplayMap(PygameWindow.PygameWindow):
         now = pygame.time.get_ticks()
         if now - self.animation_update_time > 1000:
             self.animation_frame = (self.animation_frame + 1) % len(
-                self.datasets[self.current_year]["animation_data"]
+                self.animation_data[self.current_layer]
             )
             self.animation_update_time = now
+
         frame_surface = self.create_pygame_surface_from_rgb(
-            self.datasets[self.current_year]["animation_data"][self.animation_frame][
-                "image"
-            ]
+            self.animation_data[self.current_layer][self.animation_frame]["frame"]
         )
         frame_surface = pygame.transform.scale(
             frame_surface, (self.img_width, self.img_height)
         )
         self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
+
+        frame_text = self.animation_data[self.current_layer][self.animation_frame][
+            "text"
+        ]
+        self.draw_text(frame_text)
 
     def draw_layers(self):
         self.go_fullscreen()
@@ -303,7 +330,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.screen.fill((0, 0, 0))
         if self.bg_layer in self.dataset_kwargs:
             self.draw_layer(self.bg_layer)
-        if self.current_layer in self.dataset_kwargs:
+        if self.current_layer in self.dataset_kwargs and not self.show_animation:
             self.draw_layer(self.current_layer)
         if self.show_animation:
             self.update_animation()
@@ -313,17 +340,13 @@ class DisplayMap(PygameWindow.PygameWindow):
                 self.screen, 0.1, (self.x_pos, self.y_pos)
             )
 
+        if self.show_mask:
+            self.draw_layer(self.mask_layer)
+
         self.draw_line()
 
-        if self.current_layer in self.dataset_kwargs:
-            text = self.font.render(
-                self.dataset_kwargs[self.current_layer]["text"],
-                True,
-                self.dataset_kwargs[self.current_layer]["text_color"],
-            )
-            self.screen.blit(text, (self.x_pos + 10, self.y_pos + 10))
-
-        self.draw_text()
+        if not self.show_animation:
+            self.draw_text()
 
         self.zoom_surface()
 

@@ -39,6 +39,9 @@ dependencies = [
     "pygetwindow>=0.0.9",
     "screeninfo>=0.7",
     "seaborn>=0.11.2",
+    "geocube>=0.0.16",
+    "owslib>=0.31.0",
+    "pyqt5>=5.15.6",
 ]
 
 [project.optional-dependencies]

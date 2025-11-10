@@ -74,10 +74,11 @@ def test(datasets):
 @click.command()
 @click.option("--satellite/--no-satellite", default=False)
 @click.option("--contour/--no-contour", default=False)
+@click.option("--stats/--no-stats", default=False)
 @click.option("--midi/--no-midi", default=True)
 @click.option("--preprocess/--no-preprocess", default=False)
 @click.option("--save/--no-save", default=False)
-def main(satellite, contour, midi, preprocess, save, args=None):
+def main(satellite, contour, stats, midi, preprocess, save, args=None):
     """Console script for vcl."""
 
     executor = concurrent.futures.ProcessPoolExecutor(
@@ -98,7 +99,7 @@ def main(satellite, contour, midi, preprocess, save, args=None):
     #     task = executor.submit(test, datasets)
 
     if midi:
-        executor.submit(vcl.display.midi_board, datasets)
+        executor.submit(vcl.display_pygame.midi_board, datasets)
     else:
         executor.submit(vcl.display_pygame.keyboard_publisher)
     if satellite:
@@ -106,6 +107,8 @@ def main(satellite, contour, midi, preprocess, save, args=None):
     if contour:
         # executor.submit(vcl.display.satellite_window2, datasets)
         executor.submit(vcl.display_pygame.displayslice, datasets)
+    if stats:
+        executor.submit(vcl.display_pygame.displaystats, datasets)
 
     # while True:
     #     time.sleep(0.1)

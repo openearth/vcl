@@ -7,6 +7,7 @@ import numpy as np
 import rasterio
 import shapely
 import xarray as xr
+import matplotlib.pyplot as plt
 
 import vcl.data
 
@@ -86,14 +87,42 @@ def preprocess_common(
             layer_data = preprocess_png(
                 file_path=layer_path, layer=layer, extra_info=extra_info
             )
-        if file_extension == ".tif":
+        elif file_extension == ".tif":
             layer_data = preprocess_tif()
-        if file_extension == ".nc":
+        elif file_extension == ".nc":
             layer_data = preprocess_nc()
+        elif file_extension in [".shp", ".gpkg", ".geojson"]:
+            layer_data = preprocess_shape(
+                file_path=layer_path, layer=layer, extra_info=extra_info
+            )
         else:
-            ValueError(f"Layer {layer} must be of type *.png, *.tif or *.nc")
+            raise ValueError(f"Layer {layer} must be of type *.png, *.tif or *.nc")
 
         preprocessed[layer] = layer_data
+
+    preprocessed["stats"] = {}
+    for layer, stats_types in datasets["stats"].items():
+        # preprocessed["stats"][layer] = {}
+        preprocessed["stats"][layer] = []
+        for stat_type, layer_paths in stats_types.items():
+            if stat_type == "image":
+                for layer_path in layer_paths:
+                    data = plt.imread(base_path / layer_path)
+                    preprocessed["stats"][layer].append(("image", data))
+
+    preprocessed["animations"] = {}
+    for layer, file_dir in datasets["animations"].items():
+        file_dir = base_path / file_dir
+        assert (base_path / file_dir).is_dir(), f"Directory {file_dir} does not exist."
+        animation_data = []
+        for layer_path in sorted(file_dir.glob("*")):
+            year = layer_path.stem[:4]
+            if layer_path.suffix == ".png":
+                layer_data = preprocess_png(
+                    file_path=layer_path, layer=layer, extra_info=extra_info
+                )
+            animation_data.append({"frame": layer_data, "text": year})
+        preprocessed["animations"][layer] = animation_data
 
     return preprocessed
 
@@ -192,3 +221,49 @@ def preprocess_tif():
 
 def preprocess_nc():
     return
+
+
+def preprocess_shape(file_path: Path, layer: str, extra_info: dict):
+    gdf = gpd.read_file(file_path, crs=extra_info["crs"])
+    array_extent = extra_info["extent"].bounds
+    xmin, ymin, xmax, ymax = array_extent
+
+    width = 1920
+    height = 1080
+
+    transform = rasterio.transform.from_bounds(xmin, ymin, xmax, ymax, width, height)
+
+    array = np.full((height, width), fill_value=np.nan)
+
+    # Apply buffer to lines only
+    shapes = (
+        (
+            (
+                geom.buffer(0.1)
+                if isinstance(geom, (shapely.LineString, shapely.MultiLineString))
+                else geom
+            ),
+            value,
+        )
+        for geom, value in zip(gdf.geometry, gdf.cmap_id)
+    )
+
+    # Rasterize directly into the array
+    array = rasterio.features.rasterize(
+        shapes=shapes,
+        out_shape=array.shape,
+        fill=np.nan,
+        transform=transform,
+        dtype=np.float32,
+    )
+
+    cropped_array = vcl.data.rotate_and_crop_array(
+        array=array,
+        array_extent=array_extent,
+        center_point=extra_info["mid_point"],
+        angle=extra_info["angle"],
+        crop_extent=extra_info["extent"],
+        crs=extra_info["crs"],
+    )
+
+    return cropped_array
