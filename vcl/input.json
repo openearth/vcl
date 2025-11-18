@@ -8,9 +8,23 @@
         "layers": {
             "fishery": "fishing-effort.png",
             "fishing_catch": "fishing-catch.png",
-            "navisafe": "NaviSafe_example1.png",
+            "navisafe": "cumulative_risk_fisheries_cargo_passenger_tanker_A1_nolegend.png",
             "windfarms": "windfarm_map.png",
-            "cods": "nature-track/GNSBI_Drafts_for_Deltares/cod_survey.png",
+            "cod_MPA": "nature-track/GNSBI_Drafts_for_Deltares/cod_MPA.png",
+            "cod_survey": "nature-track/GNSBI_Drafts_for_Deltares/cod_survey.png",
+            "hp_data": "nature-track/GNSBI_Drafts_for_Deltares/HP_data_draft.png",
+            "hp_distribution_MPA": "nature-track/GNSBI_Drafts_for_Deltares/HP_distribution_MPA_IMMA.png",
+            "hp_distribution_OWF": "nature-track/GNSBI_Drafts_for_Deltares/HP_distribution_OWF.png",
+            "kittiwake_feeding": "nature-track/GNSBI_Drafts_for_Deltares/Kittiwake_Feeding_FinalDraft.png",
+            "kittiwake_presence": "nature-track/GNSBI_Drafts_for_Deltares/Kittiwake_Presence_FinalDraft.png",
+            "kittiwake_presence_g": "nature-track/GNSBI_Drafts_for_Deltares/Kittiwake_Presence_Pressure_Gridded_FinalDraft.png",
+            "oyster_presence": "nature-track/GNSBI_Drafts_for_Deltares/Oyster_Presence_FinalDraft.png",
+            "oyster_presence_g": "nature-track/GNSBI_Drafts_for_Deltares/Oyster_Presence_Gridded0.05_FinalDraft.png",
+            "seagrass_presence": "nature-track/GNSBI_Drafts_for_Deltares/Seagrass_Presence_FinalDraft.png",
+            "seagrass_presence_g": "nature-track/GNSBI_Drafts_for_Deltares/Seagrass_Presence_Gridded0.05_FinalDraft.png",
+            "approach_2": "nature-track/GNSBI_Drafts_for_Deltares/Approach2_Gridded.png",
+            "vessel-traffic": "vessel-traffic.png",
+            "eez": "eez.png",
             "mask": "mask-layer.gpkg"
         },
         "animations": {
@@ -19,21 +33,47 @@
         "stats": {
             "fishery": {
                 "image": [
-                    "fishing-effort-legend.png",
-                    "cat.png"
+                    "info-sheets/map-factsheets/Slide9.png"
                 ]
             },
             "fishing_catch": {
                 "image": [
-                    "fishing-catch-legend.png"
+                    "info-sheets/map-factsheets/Slide8.png"
                 ]
             },
-            "cods": {
+            "navisafe": {
                 "image": [
-                    "nature-track/cod.png",
-                    "nature-track/GNSBI_Drafts_for_Deltares/cod_survey_legend.png"
+                    "info-sheets/map-factsheets/Slide3.png"
+                ]
+            },
+            "windfarms": {
+                "image": [
+                    "info-sheets/map-factsheets/Slide2.png"
+                ]
+            },
+            "hp_distribution_MPA": {
+                "image": [
+                    "info-sheets/map-factsheets/Slide5.png"
+                ]
+            },
+            "hp_distribution_OWF": {
+                "image": [
+                    "info-sheets/map-factsheets/Slide4.png"
+                ]
+            },
+            "kittiwake_presence": {
+                "image": [
+                    "info-sheets/map-factsheets/Slide6.png"
+                ]
+            },
+            "kittiwake_presence_g": {
+                "image": [
+                    "info-sheets/map-factsheets/Slide6.png"
                 ]
             }
+        },
+        "particles": {
+            "current": "currents_in_domain.nc"
         },
         "extra_info": {
             "fishery": {
@@ -54,13 +94,109 @@
             },
             "navisafe": {
                 "extent": [
-                    -0.22,
-                    50.059,
-                    6.482,
-                    55.562
+                    -10.6653646,
+                    48.4315936,
+                    10.7078265,
+                    63.5439509
                 ]
             },
-            "cods": {
+            "cod_MPA": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "cod_survey": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "hp_data": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "hp_distribution_MPA": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "hp_distribution_OWF": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "kittiwake_feeding": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "kittiwake_presence": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "kittiwake_presence_g": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "oyster_presence": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "oyster_presence_g": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "seagrass_presence": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "seagrass_presence_g": {
+                "extent": [
+                    -13.96314,
+                    47.57281,
+                    14.14143,
+                    62.70245
+                ]
+            },
+            "approach_2": {
                 "extent": [
                     -13.96314,
                     47.57281,

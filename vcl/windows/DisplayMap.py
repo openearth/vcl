@@ -37,6 +37,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.animation_data = animations_data
         self.i = 0
         self.i_max = i_max
+        self.overlays = []
         self.mask_layer = mask_layer
         self.show_mask = False
 
@@ -47,6 +48,9 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.pan_start_pos = None
         self.pan_offset = pygame.Vector2(0, 0)
         self.total_pan_offset = pygame.Vector2(0, 0)
+
+        self.bottom_text = None
+        self.hand_tracking = None
 
     def draw_line(self):
 
@@ -86,16 +90,17 @@ class DisplayMap(PygameWindow.PygameWindow):
                 )
             )
             self.show_flows = True
-            sound_path = Path(__file__).parent.parent / "sounds"
-            if self.t == 170:
-                pygame.mixer.music.load(sound_path / "high-tide.mp3")
-                pygame.mixer.music.set_volume(0.1)
-            else:
-                pygame.mixer.music.load(sound_path / "low-tide.mp3")
-                pygame.mixer.music.set_volume(0.3)
-            pygame.mixer.music.play(-1)
+            # sound_path = Path(__file__).parent.parent / "sounds"
+            # if self.t == 170:
+            #     pygame.mixer.music.load(sound_path / "high-tide.mp3")
+            #     pygame.mixer.music.set_volume(0.1)
+            # else:
+            #     pygame.mixer.music.load(sound_path / "low-tide.mp3")
+            #     pygame.mixer.music.set_volume(0.3)
+            # pygame.mixer.music.play(-1)
 
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            print(e)
             self.show_flows = False
             pygame.mixer.music.stop()
 
@@ -239,7 +244,7 @@ class DisplayMap(PygameWindow.PygameWindow):
                 cbar.set_rect(colorbar_rect, (self.img_width, self.img_height))
                 cbar.draw(self.screen, (self.x_pos, self.y_pos))
 
-    def draw_text(self, text: str = None):
+    def draw_text(self):
         if len(self.scenarios) > 1:
             scenario_text = f"Scenario {self.current_scenario}"
         else:
@@ -249,8 +254,12 @@ class DisplayMap(PygameWindow.PygameWindow):
         else:
             year_text = self.current_year
 
-        if text is None:
+        if self.bottom_text is None:
             text = scenario_text + year_text
+
+        else:
+            text = self.bottom_text
+
         text_bottom = self.font.render(
             text,
             True,
@@ -288,12 +297,23 @@ class DisplayMap(PygameWindow.PygameWindow):
                 self.play_animation()
             self.current_layer = layer
 
+    def display_overlay(self, overlay):
+        if overlay in self.overlays:
+            self.overlays.remove(overlay)
+        else:
+            self.overlays.append(overlay)
+
     def change_line_index(self, i):
         self.i = np.clip(i, 0, self.i_max)
 
     def change_year(self, year):
         if year in self.datasets.keys():
             self.current_year = year
+
+    def change_alpha(self, layer, alpha):
+        alpha = np.clip(alpha, a_min=0, a_max=1)
+        if layer in self.dataset_kwargs:
+            self.dataset_kwargs[layer]["alpha"] = alpha
 
     def play_animation(self):
         self.animation_update_time = pygame.time.get_ticks()
@@ -302,10 +322,14 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.animation_frame = 0
         else:
             self.show_animation = False
+            self.bottom_text = None
 
     def update_animation(self):
         now = pygame.time.get_ticks()
-        if now - self.animation_update_time > 1000:
+        frame_time = 1000
+        if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
+            frame_time = 3000
+        if now - self.animation_update_time > frame_time:
             self.animation_frame = (self.animation_frame + 1) % len(
                 self.animation_data[self.current_layer]
             )
@@ -322,7 +346,26 @@ class DisplayMap(PygameWindow.PygameWindow):
         frame_text = self.animation_data[self.current_layer][self.animation_frame][
             "text"
         ]
-        self.draw_text(frame_text)
+        self.bottom_text = frame_text
+
+    def start_hand_tracking(self, coords):
+        self.hand_tracking = True
+        self.hand_tracking_coords = coords
+        if coords[0] < 0 or coords[0] > 1 or coords[1] < 0 or coords[1] > 1:
+            self.hand_tracking = False
+
+    def draw_hand_tracking(self):
+        xpos, ypos = self.hand_tracking_coords
+
+        xpos_depth = int(xpos * self.datasets[self.current_year]["bathymetry"].shape[1])
+        ypos_depth = int(ypos * self.datasets[self.current_year]["bathymetry"].shape[0])
+        depth = self.datasets[self.current_year]["bathymetry"][ypos_depth, xpos_depth]
+
+        xpos = int(xpos * self.img_width + self.x_pos)
+        ypos = int(ypos * self.img_height + self.y_pos)
+
+        font = pygame.font.Font(None, 48)
+        self.draw_textbox(point=(xpos, ypos), text=f"Depth: {depth:.2f}m", font=font)
 
     def draw_layers(self):
         self.go_fullscreen()
@@ -334,6 +377,8 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_layer(self.current_layer)
         if self.show_animation:
             self.update_animation()
+        for overlay in self.overlays:
+            self.draw_layer(overlay)
 
         if self.show_flows:
             self.arrow_manager.update_and_draw(
@@ -345,10 +390,12 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         self.draw_line()
 
-        if not self.show_animation:
-            self.draw_text()
+        self.draw_text()
 
         self.zoom_surface()
+
+        if self.hand_tracking:
+            self.draw_hand_tracking()
 
         pygame.display.flip()
         self.clock.tick(60)

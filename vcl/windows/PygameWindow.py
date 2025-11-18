@@ -23,6 +23,7 @@ class PygameWindow:
         aspect_ratio: Optional[float] = 2 / 1,
     ):
         pygame.init()
+        pygame.display.set_caption("Virtual Climate Lab - Map Screen")
         self.datasets = datasets
         self.dataset_kwargs = self.supplement_dataset_kwargs(dataset_kwargs)
         self.current_year = start_year
@@ -199,6 +200,48 @@ class PygameWindow:
 
         self.x_pos = (self.screen_width - new_image_width) // 2
         self.y_pos = (self.screen_height - new_image_height) // 2
+
+    def draw_textbox(self, point, text, font):
+        text_surface = font.render(text, True, (0, 0, 0))
+        text_width, text_height = text_surface.get_size()
+        padding = 6
+        box_width = text_width + padding * 2
+        box_height = text_height + padding * 2
+
+        x, y = point
+
+        if x < self.img_width / 2 and y < self.img_height / 2:
+            offset = (10, 10)
+            box_x = x + offset[0]
+            box_y = y + offset[1]
+        elif x > self.img_width / 2 and y < self.img_height / 2:
+            offset = (-10, 10)
+            box_x = x + offset[0] - box_width
+            box_y = y + offset[1]
+        elif x < self.img_width / 2 and y > self.img_height / 2:
+            offset = (10, -10)
+            box_x = x + offset[0]
+            box_y = y + offset[1] - box_height
+        else:
+            offset = (-10, -10)
+            box_x = x + offset[0] - box_width
+            box_y = y + offset[1] - box_height
+
+        # Draw line from point to box corner
+        pygame.draw.line(
+            self.screen, (0, 0, 0), point, (x + offset[0], y + offset[1]), 2
+        )
+
+        # Draw box
+        pygame.draw.rect(
+            self.screen, (255, 255, 255), (box_x, box_y, box_width, box_height)
+        )
+        pygame.draw.rect(
+            self.screen, (0, 0, 0), (box_x, box_y, box_width, box_height), 2
+        )
+
+        # Draw text
+        self.screen.blit(text_surface, (box_x + padding, box_y + padding))
 
     def go_fullscreen(self):
         for event in pygame.event.get():

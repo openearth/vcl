@@ -36,5 +36,5 @@ def load():
 
 def load_preprocessed():
     data_dir = Path("~/data/vcl/gnsbi").expanduser()
-    datasets = np.load(data_dir / "preprocessed-data.npy", allow_pickle=True).item()
+    datasets = np.load(data_dir / "preprocessed-data.npy", allow_pickle=True)
     return datasets

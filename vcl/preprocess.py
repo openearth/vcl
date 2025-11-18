@@ -1,13 +1,16 @@
 import json
+import warnings
 from pathlib import Path
 from typing import Union
 
 import geopandas as gpd
+import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
 import shapely
 import xarray as xr
-import matplotlib.pyplot as plt
+from rasterio.errors import NotGeoreferencedWarning
+from tqdm import tqdm
 
 import vcl.data
 
@@ -43,6 +46,9 @@ def preprocess(input_file: Union[str, Path]):
     unique_layers = input_dict.get("unique")
 
     if common_layers:
+        print("-" * 60)
+        print("Preprocessing common layers...")
+        print("-" * 60)
         preprocessed_common_datasets = preprocess_common(
             common_layers, base_path=base_path, crs=crs
         )
@@ -73,6 +79,7 @@ def preprocess_common(
     angle = vcl.data.compute_rotation_angle(extent)
     mid_point = extent.centroid.coords[0]
 
+    print("Preprocessing basemap and bathymetry...")
     preprocessed = preprocess_essentials(
         datasets=datasets, preprocessed=preprocessed, base_path=base_path, crs=crs
     )
@@ -80,9 +87,15 @@ def preprocess_common(
     extra_info = {"extent": extent, "mid_point": mid_point, "angle": angle, "crs": crs}
     extra_info = datasets.get("extra_info", {}) | extra_info
 
-    for layer, layer_path in datasets["layers"].items():
+    print("Preprocessing layers...")
+    pbar = tqdm(datasets["layers"], unit="layer")
+    for layer in pbar:
+        pbar.set_description(f"Processing: {layer}")
+
+        layer_path = base_path / datasets["layers"][layer]
         layer_path = base_path / layer_path
         file_extension = layer_path.suffix
+
         if file_extension == ".png":
             layer_data = preprocess_png(
                 file_path=layer_path, layer=layer, extra_info=extra_info
@@ -100,8 +113,12 @@ def preprocess_common(
 
         preprocessed[layer] = layer_data
 
+    print("Preprocessing info...")
     preprocessed["stats"] = {}
-    for layer, stats_types in datasets["stats"].items():
+    pbar = tqdm(datasets["stats"], unit="layer")
+    for layer in pbar:
+        pbar.set_description(f"Processing: {layer}")
+        stats_types = datasets["stats"][layer]
         # preprocessed["stats"][layer] = {}
         preprocessed["stats"][layer] = []
         for stat_type, layer_paths in stats_types.items():
@@ -110,19 +127,32 @@ def preprocess_common(
                     data = plt.imread(base_path / layer_path)
                     preprocessed["stats"][layer].append(("image", data))
 
+    print("Preprocessing animations...")
+    pbar = tqdm(datasets["animations"], unit="layer")
     preprocessed["animations"] = {}
-    for layer, file_dir in datasets["animations"].items():
-        file_dir = base_path / file_dir
+    for layer in pbar:
+        pbar.set_description(f"Processing: {layer}")
+        file_dir = base_path / datasets["animations"][layer]
         assert (base_path / file_dir).is_dir(), f"Directory {file_dir} does not exist."
         animation_data = []
         for layer_path in sorted(file_dir.glob("*")):
-            year = layer_path.stem[:4]
+            year = layer_path.stem[:4].split("_")[0]
             if layer_path.suffix == ".png":
                 layer_data = preprocess_png(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
             animation_data.append({"frame": layer_data, "text": year})
         preprocessed["animations"][layer] = animation_data
+
+    print("Preprocessing particles...")
+    preprocessed["particles"] = {}
+    pbar = tqdm(datasets["particles"], unit="layer")
+    for layer in pbar:
+        layer_path = base_path / datasets["particles"][layer]
+        particle_data = preprocess_particles(
+            file_path=layer_path, layer=layer, extra_info=extra_info
+        )
+        preprocessed["particles"][layer] = particle_data
 
     return preprocessed
 
@@ -179,17 +209,20 @@ def preprocess_essentials(
 
 
 def preprocess_png(file_path: Path, layer: str, extra_info: dict):
-    with rasterio.open(file_path) as src:
-        bounds = src.bounds
-        data = src.read()
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
+        with rasterio.open(file_path) as src:
+            bounds = src.bounds
+            data = src.read()
+
     if not file_path.with_suffix(".pgw").exists():
         layer_info = extra_info.get(layer, None)
         assert layer_info is not None, ValueError(
-            "Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
+            f"Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
         )
         bounds = layer_info.get("extent", None)
         assert bounds is not None, ValueError(
-            "Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
+            f"Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
         )
 
     cropped_data = vcl.data.rotate_and_crop_array(
@@ -219,12 +252,17 @@ def preprocess_tif():
     return
 
 
-def preprocess_nc():
+def preprocess_nc(file_path: Path, layer: str, extra_info: dict):
+    ds = xr.open_dataset(file_path)
     return
 
 
 def preprocess_shape(file_path: Path, layer: str, extra_info: dict):
-    gdf = gpd.read_file(file_path, crs=extra_info["crs"])
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message="driver GPKG does not support open option CRS"
+        )
+        gdf = gpd.read_file(file_path, crs=extra_info["crs"])
     array_extent = extra_info["extent"].bounds
     xmin, ymin, xmax, ymax = array_extent
 
@@ -267,3 +305,29 @@ def preprocess_shape(file_path: Path, layer: str, extra_info: dict):
     )
 
     return cropped_array
+
+
+def preprocess_particles(file_path: Path, layer: str, extra_info: dict):
+    ds = xr.open_dataset(file_path)
+    x_values = ds["Mesh_face_x"].values
+    y_values = ds["Mesh_face_y"].values
+    cur_x = ds["currents_u"].values
+    cur_y = ds["currents_v"].values
+
+    xmin, ymin, xmax, ymax = extra_info["extent"].bounds
+
+    mask = (
+        (x_values >= xmin)
+        & (x_values <= xmax)
+        & (y_values >= ymin)
+        & (y_values <= ymax)
+    )
+
+    x_values = x_values[mask]
+    y_values = y_values[mask]
+    cur_x = cur_x[:, mask]
+    cur_y = cur_y[:, mask]
+    # points = np.vstack((x_values, y_values)).T
+
+    particle_data = {"face_x": x_values, "face_y": y_values, "ucx": cur_x, "ucy": cur_y}
+    return particle_data

@@ -13,7 +13,7 @@ class StatsWindow:
         self.dataset_kwargs = self.supplement_dataset_kwargs(dataset_kwargs)
         self.layers_to_ignore = layers_to_ignore
 
-        self.fig, self.axes = plt.subplots()
+        self.fig, self.axes = plt.subplots(num="Virtual Climate Lab - Info screen")
         self.fig.tight_layout()
 
         self.current_layer = None

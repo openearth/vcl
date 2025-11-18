@@ -1,16 +1,17 @@
 import numpy as np
 import pygame
 from matplotlib import colormaps
+from scipy.spatial import KDTree
 
 # --- Constants ---
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 BACKGROUND_COLOR = (20, 20, 30)
-FLOW_SPEED = 100
-MAX_ARROWS = 1000  # The maximum number of arrows to maintain
-ARROW_SCALE = 50
-ARROWHEAD_SIZE = 15
-SPAWN_THRESHOLD_MAG = 0.05
-STAGNANT_MAGNITUDE_THRESHOLD = 0.05
+FLOW_SPEED = 50
+MAX_ARROWS = 1500  # The maximum number of arrows to maintain
+ARROW_SCALE = 35
+ARROWHEAD_SIZE = 10
+SPAWN_THRESHOLD_MAG = 0.02
+STAGNANT_MAGNITUDE_THRESHOLD = 0.02
 OFFSCREEN_BUFFER = 50
 ARROW_LIFETIME_RANGE = (5, 10)  # Min and Max lifetime in seconds
 
@@ -29,10 +30,10 @@ def generate_sample_data(num_points=1000):
     return {"face_x": face_x, "face_y": face_y, "ucx": ucx, "ucy": ucy}
 
 
-def get_vector_at_position(pos_x, pos_y, dataset):
-    distances_sq = (dataset["face_x"] - pos_x) ** 2 + (dataset["face_y"] - pos_y) ** 2
-    nearest_index = np.argmin(distances_sq)
-    return dataset["ucx"][nearest_index], dataset["ucy"][nearest_index]
+def get_vector_at_position(pos_x, pos_y, dataset, tree):
+    dist, idx = tree.query([pos_x, pos_y])
+    u, v = dataset["ucx"][idx], dataset["ucy"][idx]
+    return u, v
 
 
 # --- Particle/Arrow Class ---
@@ -58,8 +59,8 @@ class Arrow:
         surface = pygame.Surface((arrow_size, arrow_size), pygame.SRCALPHA)
         start_x, start_y = arrow_size // 2, arrow_size // 2
 
-        end_x = start_x + self.u * self.vector_scale
-        end_y = start_y + self.v * self.vector_scale
+        end_x = float(start_x + self.u * self.vector_scale)
+        end_y = float(start_y + self.v * self.vector_scale)
 
         pygame.draw.line(surface, self.color, (start_x, start_y), (end_x, end_y), 3)
 
@@ -89,7 +90,16 @@ class Arrow:
         return rgba_color
 
     def update(
-        self, dt, dataset, data_min_x, data_min_y, scale_x, scale_y, min_mag, max_mag
+        self,
+        dt,
+        dataset,
+        tree,
+        data_min_x,
+        data_min_y,
+        scale_x,
+        scale_y,
+        min_mag,
+        max_mag,
     ):
         self.pos[0] += self.u * FLOW_SPEED * dt
         self.pos[1] += self.v * FLOW_SPEED * dt
@@ -97,7 +107,7 @@ class Arrow:
 
         data_x = (self.pos[0] / scale_x) + data_min_x
         data_y = -(self.pos[1] / scale_y) - data_min_y
-        u_new, v_new = get_vector_at_position(data_x, data_y, dataset)
+        u_new, v_new = get_vector_at_position(data_x, data_y, dataset, tree)
 
         magnitude_new = np.sqrt(u_new**2 + v_new**2)
         normalized_mag_new = (
@@ -135,6 +145,7 @@ class ArrowManager:
     ):
         self.arrows = []
         self.dataset = dataset
+        self.tree = KDTree(np.column_stack((dataset["face_x"], dataset["face_y"])))
         self.data_min_x = data_min_x
         self.data_min_y = data_min_y
         self.scale_x = scale_x
@@ -241,6 +252,7 @@ class ArrowManager:
             arrow.update(
                 dt,
                 self.dataset,
+                self.tree,
                 self.data_min_x,
                 self.data_min_y,
                 self.scale_x,

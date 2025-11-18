@@ -3,6 +3,7 @@
 import concurrent.futures
 import json
 import os
+import pickle
 import signal
 import sys
 import threading
@@ -14,11 +15,11 @@ import numpy as np
 import zmq
 
 import vcl.data
+import vcl.display_pygame
 
 # import vcl.display
 import vcl.load_data
 import vcl.preprocess
-import vcl.display_pygame
 
 
 def make_sockets():
@@ -76,9 +77,10 @@ def test(datasets):
 @click.option("--contour/--no-contour", default=False)
 @click.option("--stats/--no-stats", default=False)
 @click.option("--midi/--no-midi", default=True)
+@click.option("--hand_tracking/--no-hand_tracking", default=False)
 @click.option("--preprocess/--no-preprocess", default=False)
 @click.option("--save/--no-save", default=False)
-def main(satellite, contour, stats, midi, preprocess, save, args=None):
+def main(satellite, contour, stats, midi, hand_tracking, preprocess, save, args=None):
     """Console script for vcl."""
 
     executor = concurrent.futures.ProcessPoolExecutor(
@@ -91,7 +93,13 @@ def main(satellite, contour, stats, midi, preprocess, save, args=None):
         datasets = vcl.preprocess.preprocess(input_file=input_file)
         if save:
             data_dir = Path("~/data/vcl/gnsbi").expanduser()
-            np.save(data_dir / "preprocessed-data.npy", datasets)
+            # np.save(
+            #     data_dir / "preprocessed-data.npy",
+            #     datasets,
+            #     allow_pickle=True,
+            # )
+            with open(data_dir / "preprocessed-data.npy", "wb") as f:
+                pickle.dump(datasets, f, protocol=4)
     else:
         datasets = vcl.load_data.load_preprocessed()
 
@@ -109,6 +117,8 @@ def main(satellite, contour, stats, midi, preprocess, save, args=None):
         executor.submit(vcl.display_pygame.displayslice, datasets)
     if stats:
         executor.submit(vcl.display_pygame.displaystats, datasets)
+    if hand_tracking:
+        executor.submit(vcl.display_pygame.hand_tracker, datasets)
 
     # while True:
     #     time.sleep(0.1)

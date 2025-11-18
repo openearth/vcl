@@ -3,7 +3,7 @@ name = "vcl"
 version = "0.1.0"
 description = "Virtual Climate Lab: an interactive table to discuss the future of your environment."
 readme = "README.rst"
-requires-python = ">=3.6"
+requires-python = ">=3.10"
 license = "GPL-3.0-only"
 authors = [
     { name = "Guus van Hemert", email = "guus.vanhemert@deltares.nl" }
@@ -24,13 +24,13 @@ dependencies = [
     "xarray",
     "rioxarray",
     "scipy",
-    "numpy",
-    "netCDF4",
+    "numpy>=1.24.4",
+    "netCDF4>=1.6.5",
     "cmocean",
     "opencv-python",
-    "geopandas",
+    "geopandas>=0.14",
     "rasterio",
-    "matplotlib",
+    "matplotlib>=3.4,<3.8",
     "shapely",
     "pandas",
     "mido",
@@ -42,6 +42,9 @@ dependencies = [
     "geocube>=0.0.16",
     "owslib>=0.31.0",
     "pyqt5>=5.15.6",
+    "tqdm>=4.64.1",
+    "mediapipe>=0.10.21",
+    "setuptools>=59.6.0",
 ]
 
 [project.optional-dependencies]
