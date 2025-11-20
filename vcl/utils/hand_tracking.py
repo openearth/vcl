@@ -7,8 +7,37 @@ import zmq
 from typing import Union
 
 # Define reference points (top-left, top-right, bottom-right, bottom-left)
-CAMERA_POINTS = np.array([(0.2, 0.2), (0.8, 0.2), (0.75, 0.8), (0.25, 0.8)])
+CAMERA_POINTS = np.array([(0.05, 0.94), (0.99, 0.92), (0.89, 0.22), (0.14, 0.25)])
 TABLE_POINTS = np.array([(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)])
+
+fgbg = cv2.createBackgroundSubtractorMOG2(
+    history=500, varThreshold=50, detectShadows=False
+)
+
+# Initialize CLAHE object
+# clipLimit: Threshold for contrast limiting. Higher values give more contrast. (e.g., 2.0 to 4.0)
+# tileGridSize: Size of the grid for histogram equalization. (e.g., (8,8))
+clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+
+
+def apply_clahe_lab(image):
+    """Applies CLAHE to the L channel of an image in LAB color space."""
+    # 1. Convert BGR image to LAB color space
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+
+    # 2. Split the LAB image into L, A, and B channels
+    l, a, b = cv2.split(lab)
+
+    # 3. Apply CLAHE to the L-channel (Lightness)
+    cl = clahe.apply(l)
+
+    # 4. Merge the CLAHE-enhanced L-channel back with the A and B channels
+    limg = cv2.merge((cl, a, b))
+
+    # 5. Convert the LAB image back to BGR (standard for display/MediaPipe input)
+    final_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+    return final_frame
 
 
 def distance_tips(a, b):
@@ -25,7 +54,7 @@ def angle(a, b, c):
     return np.degrees(np.arccos(dot / (mag_ab * mag_cb)))
 
 
-def get_finger_angles(lms, mp_hands, extended_angle=160, folded_angle=80):
+def get_finger_angles(lms, mp_hands, extended_angle=140, folded_angle=90):
     thumb_tip = lms.landmark[mp_hands.HandLandmark.THUMB_TIP]
     thumb_ip = lms.landmark[mp_hands.HandLandmark.THUMB_IP]
     thumb_mcp = lms.landmark[mp_hands.HandLandmark.THUMB_MCP]
@@ -72,7 +101,7 @@ def webcam_module(
     device_index: int = 0,
     max_number_of_hands: int = 1,
     frame_size: Iterable[float] = None,
-    click_hold_time: float = 2.5,
+    click_hold_time: float = 1.5,
     circle_hold_time: float = 1.0,
     click_cooldown_time: float = 2.5,
     click_tolerance: float = 0.01,
@@ -121,7 +150,12 @@ def webcam_module(
     # Setup Mediapipe
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
-    hands = mp_hands.Hands(max_num_hands=max_number_of_hands)
+    hands = mp_hands.Hands(
+        model_complexity=1,
+        max_num_hands=max_number_of_hands,
+        min_detection_confidence=0.2,
+        min_tracking_confidence=0.2,
+    )
 
     # Click detection state tracking
     hand_states = {}  # Dictionary to track state for each hand
@@ -140,6 +174,7 @@ def webcam_module(
     while cap.isOpened():
         # Read frame
         ret, frame = cap.read()
+
         if not ret:
             break
 
@@ -147,6 +182,18 @@ def webcam_module(
         frame = cv2.flip(frame, 1)
         frame = cv2.resize(frame, frame_size)
         h, w, _ = frame.shape
+
+        fgmask = fgbg.apply(frame)
+        fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, None)
+        # frame = cv2.cvtColor(fgmask, cv2.COLOR_GRAY2BGR)
+
+        # # Find contours in mask
+        # contours, _ = cv2.findContours(
+        #     fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        # )
+
+        frame = apply_clahe_lab(frame)
+
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = hands.process(rgb)
 

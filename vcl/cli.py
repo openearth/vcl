@@ -100,8 +100,10 @@ def main(satellite, contour, stats, midi, hand_tracking, preprocess, save, args=
             # )
             with open(data_dir / "preprocessed-data.npy", "wb") as f:
                 pickle.dump(datasets, f, protocol=4)
-    else:
-        datasets = vcl.load_data.load_preprocessed()
+    # else:
+    #     datasets = vcl.load_data.load_preprocessed()
+
+    datasets = data_dir / "preprocessed-data.npy"
 
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)

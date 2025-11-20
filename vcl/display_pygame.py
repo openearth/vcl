@@ -20,6 +20,7 @@ import vcl.preprocess
 # from vcl.windows import DisplayMap, DisplaySlice
 from vcl.windows import DisplayMap, DisplaySlice, StatsWindow
 from vcl.utils import hand_tracking
+from vcl.load_data import load_preprocessed
 
 contour_show = False
 height_map_show = False
@@ -106,6 +107,7 @@ def make_listen_sockets():
 
 
 def displaymap(datasets):
+    datasets = load_preprocessed(datasets)
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
@@ -210,6 +212,7 @@ def displaymap(datasets):
 
 
 def displaystats(datasets):
+    datasets = load_preprocessed(datasets)
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
@@ -239,6 +242,7 @@ def displaystats(datasets):
 
 
 def displayslice(datasets):
+    datasets = load_preprocessed(datasets)
     sockets = make_listen_sockets()
     poller = sockets["poller"]
     socket_slice = sockets["slice"]
@@ -496,6 +500,7 @@ def main():
 
 
 def midi_board(datasets):
+    datasets = load_preprocessed(datasets)
     # import ipdb
 
     # ipdb.set_trace()
@@ -668,7 +673,11 @@ def hand_tracker(datasets):
     extent = datasets[""]["extent"].bounds
 
     hand_tracking.webcam_module(
-        extent=extent, socket=socket, socket_topic=socket_topic, max_number_of_hands=4
+        device_index=0,
+        extent=extent,
+        socket=socket,
+        socket_topic=socket_topic,
+        max_number_of_hands=4,
     )
 
 
