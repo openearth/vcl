@@ -547,11 +547,12 @@ def midi_board(datasets):
 
     nature_track = collections.deque(
         [
+            "hp_distribution_MPA",
+            "hp_distribution_OWF",
+            "approach_2",
             "cod_MPA",
             "cod_survey",
             "hp_data",
-            "hp_distribution_MPA",
-            "hp_distribution_OWF",
             "kittiwake_feeding",
             "kittiwake_presence",
             "kittiwake_presence_g",
@@ -559,7 +560,6 @@ def midi_board(datasets):
             "oyster_presence_g",
             "seagrass_presence",
             "seagrass_presence_g",
-            "approach_2",
         ]
     )
     gvg_maatregelen = collections.deque(["GVGmaatregel_2", "GVGmaatregel_4"])
