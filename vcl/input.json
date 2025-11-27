@@ -8,8 +8,11 @@
         "layers": {
             "fishery": "fishing-effort.png",
             "fishing_catch": "fishing-catch.png",
-            "navisafe": "cumulative_risk_fisheries_cargo_passenger_tanker_A1_nolegend.png",
+            "navisafe": "all_vessel_through_cargo_algorithm_nolabels.png",
             "windfarms": "windfarm_map.png",
+            "owf_2030": "2030_windfarm_map.png",
+            "owf_2040": "2040_windfarm_map.png",
+            "owf_all": "all_windfarm_map.png",
             "cod_MPA": "nature-track/GNSBI_Drafts_for_Deltares/cod_MPA.png",
             "cod_survey": "nature-track/GNSBI_Drafts_for_Deltares/cod_survey.png",
             "hp_data": "nature-track/GNSBI_Drafts_for_Deltares/HP_data_draft.png",
@@ -25,6 +28,7 @@
             "approach_2": "nature-track/GNSBI_Drafts_for_Deltares/Approach2_Gridded.png",
             "vessel-traffic": "vessel-traffic.png",
             "eez": "eez.png",
+            "ospar": "ospar_regions.png",
             "mask": "mask-layer.gpkg"
         },
         "animations": {
@@ -33,22 +37,17 @@
         "stats": {
             "fishery": {
                 "image": [
-                    "info-sheets/map-factsheets/Slide9.png"
-                ]
-            },
-            "fishing_catch": {
-                "image": [
-                    "info-sheets/map-factsheets/Slide8.png"
+                    "info-sheets/map-factsheets/map-factsheets/Slide6.png"
                 ]
             },
             "navisafe": {
                 "image": [
-                    "info-sheets/map-factsheets/Slide3.png"
+                    "info-sheets/map-factsheets/map-factsheets/Slide8.png"
                 ]
             },
             "windfarms": {
                 "image": [
-                    "info-sheets/map-factsheets/Slide2.png"
+                    "info-sheets/map-factsheets/map-factsheets/Slide3.png"
                 ]
             },
             "hp_distribution_MPA": {
@@ -58,7 +57,7 @@
             },
             "hp_distribution_OWF": {
                 "image": [
-                    "info-sheets/map-factsheets/Slide4.png"
+                    "info-sheets/map-factsheets/map-factsheets/Slide4.png"
                 ]
             },
             "kittiwake_presence": {
@@ -69,6 +68,21 @@
             "kittiwake_presence_g": {
                 "image": [
                     "info-sheets/map-factsheets/Slide6.png"
+                ]
+            },
+            "vessel-traffic": {
+                "image": [
+                    "info-sheets/map-factsheets/map-factsheets/Slide7.png"
+                ]
+            },
+            "approach_2": {
+                "image": [
+                    "info-sheets/map-factsheets/map-factsheets/Slide5.png"
+                ]
+            },
+            "eez": {
+                "image": [
+                    "info-sheets/map-factsheets/map-factsheets/Slide2.png"
                 ]
             }
         },
@@ -205,6 +219,38 @@
                 ]
             },
             "windfarms": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "owf_2030": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "owf_2040": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "owf_all": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "ospar": {
                 "extent": [
                     -15.19886427,
                     47.55220244,

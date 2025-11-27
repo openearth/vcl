@@ -28,6 +28,7 @@ compare = False
 current_layer = ""
 current_overlay = ""
 current_tide = ""
+current_overlays = []
 
 windfarm_cmap = [
     (255 / 255, 255 / 255, 255 / 255, 0.25),
@@ -107,7 +108,7 @@ def make_listen_sockets():
 
 
 def displaymap(datasets):
-    datasets = load_preprocessed(datasets)
+    datasets = load_preprocessed()
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
@@ -135,6 +136,7 @@ def displaymap(datasets):
             "cmap": ListedColormap(["gray", "orange"]),
         },
         "eez": {"type": "RGB", "text": ""},
+        "ospar": {"type": "RGB", "text": ""},
         "cod_MPA": {"type": "RGB", "text": "Cods MPA"},
         "cod_survey": {"type": "RGB", "text": "Cods MPA"},
         "hp_data": {"type": "RGB", "text": "Harbour Porpoise data"},
@@ -154,6 +156,9 @@ def displaymap(datasets):
         "seagrass_presence": {"type": "RGB", "text": "Seagrass presence"},
         "seagrass_presence_g": {"type": "RGB", "text": "Seagrass presence (grid)"},
         "approach_2": {"type": "RGB", "text": "Ecological importance"},
+        "owf_2030": {"type": "RGB", "text": ""},
+        "owf_2040": {"type": "RGB", "text": ""},
+        "owf_all": {"type": "RGB", "text": ""},
     }
 
     socket = sockets["maps"]
@@ -170,6 +175,7 @@ def displaymap(datasets):
         bg_layer="basemap",
         mask_layer="mask",
         i_max=127,
+        aspect_ratio=1920 / 1080,
     )
     coords = None
     while True:
@@ -212,7 +218,7 @@ def displaymap(datasets):
 
 
 def displaystats(datasets):
-    datasets = load_preprocessed(datasets)
+    datasets = load_preprocessed()
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
@@ -220,14 +226,22 @@ def displaystats(datasets):
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
 
-    dataset_kwargs = {
-        "fishery": {"image": {"title": ""}},
-        "fishing_catch": {"image": {"title": ""}},
-    }
+    # dataset_kwargs = {
+    #     "fishery": {"image": {"title": ""}},
+    #     "fishing_catch": {"image": {"title": ""}},
+    # }
     display = StatsWindow.StatsWindow(
         datasets[""]["stats"],
-        dataset_kwargs=dataset_kwargs,
+        dataset_kwargs={},
         layers_to_ignore=["mask", "animation", "20", "30"],
+        overlay_layers=[
+            "eez",
+            "vessel-traffic",
+            "ospar",
+            "owf_2030",
+            "owf_2040",
+            "owf_all",
+        ],
     )
 
     while True:
@@ -242,7 +256,7 @@ def displaystats(datasets):
 
 
 def displayslice(datasets):
-    datasets = load_preprocessed(datasets)
+    datasets = load_preprocessed()
     sockets = make_listen_sockets()
     poller = sockets["poller"]
     socket_slice = sockets["slice"]
@@ -275,7 +289,7 @@ def keyboard_publisher():
     # Function to send layer when button pressed
     def change_layer(text):
         layer_type = text.split(",")[1]
-        global current_layer, current_overlay, current_tide
+        global current_layer, current_overlay, current_tide, current_overlays
         if text.split(",")[0] == "":
             socket.send_string(f"maps {text}")
             current_layer = ""
@@ -292,14 +306,21 @@ def keyboard_publisher():
                 current_layer = text
             elif layer_type == "tide":
                 current_tide = text
+            elif layer_type == "overlay" and text in current_overlays:
+                current_overlay = ""
+                current_overlays.remove(text)
+            elif layer_type == "overlay" and text not in current_overlays:
+                current_overlay = text
+                current_overlays.append(text)
 
     nature_track = collections.deque(
         [
+            "hp_distribution_MPA",
+            "hp_distribution_OWF",
+            "approach_2",
             "cod_MPA",
             "cod_survey",
             "hp_data",
-            "hp_distribution_MPA",
-            "hp_distribution_OWF",
             "kittiwake_feeding",
             "kittiwake_presence",
             "kittiwake_presence_g",
@@ -307,38 +328,79 @@ def keyboard_publisher():
             "oyster_presence_g",
             "seagrass_presence",
             "seagrass_presence_g",
-            "approach_2",
         ]
     )
-    gvg_maatregelen = collections.deque(["GVGmaatregel_2", "GVGmaatregel_4"])
+    fishing = collections.deque(["fishery", "fishery_catch"])
+    windfarms = collections.deque(["owf_2030", "owf_2040", "owf_all"])
 
-    layer_type_mapping = {layer: "nature_track" for layer in nature_track}
+    collection_type_mapping_1 = {layer: "nature_track" for layer in nature_track}
+    collection_type_mapping_2 = {layer: "fishing" for layer in fishing}
+    collection_type_mapping_3 = {layer: "owf" for layer in windfarms}
+    collection_type_mapping = (
+        collection_type_mapping_1
+        | collection_type_mapping_2
+        | collection_type_mapping_3
+    )
 
-    cycles = {"nature_track": nature_track, "gvg_maatregel": gvg_maatregelen}
+    cycles = {"nature_track": nature_track, "fishing": fishing, "owf": windfarms}
 
     def cycle_collection(cycle):
-        global current_layer
+        global current_layer, current_overlays
 
-        layer_type = current_layer.split(",")[0]
-        layer_type = layer_type_mapping[layer_type]
+        if len(current_overlays) > 0:
+            current_overlay = current_overlays[-1]
+        else:
+            current_overlay = ""
+
+        if (
+            current_overlay != ""
+            and current_overlay.split(",")[0] in collection_type_mapping
+        ):
+            layer = current_overlay
+        else:
+            layer = current_layer
+
+        if current_layer != "" and current_layer is not None:
+            layer_name = layer.split(",")[0]
+            layer_type = layer.split(",")[1]
+        else:
+            return
+
+        print(current_overlays, current_overlay)
+
+        collection_type = collection_type_mapping.get(layer_name, None)
+
+        if collection_type is None:
+            return
 
         if cycle == "next":
-            cycles[layer_type].rotate(-1)
-            next_layer = cycles[layer_type][0]
+            cycles[collection_type].rotate(-1)
+            next_layer = cycles[collection_type][0]
             # gxgs.rotate(-1)
             # next_gxg = gxgs[0]
         elif cycle == "prev":
             # gxgs.rotate(1)
             # next_gxg = gxgs[0]
-            cycles[layer_type].rotate(1)
-            next_layer = cycles[layer_type][0]
+            cycles[collection_type].rotate(1)
+            next_layer = cycles[collection_type][0]
 
-        layer = f"{next_layer},layer"
+        layer = f"{next_layer},{layer_type}"
 
         if current_layer in [
-            f"{collection},layer" for collection in cycles[layer_type]
+            f"{collection},{layer_type}" for collection in cycles[collection_type]
         ]:
-            change_layer(layer)
+            if layer_type == "layer":
+                change_layer(layer)
+        elif current_overlay in [
+            f"{collection},{layer_type}" for collection in cycles[collection_type]
+        ]:
+            if layer_type == "overlay":
+                if cycle == "prev":
+                    change_layer(f"{cycles[collection_type][1]},overlay")
+                else:
+                    change_layer(f"{cycles[collection_type][-1]},overlay")
+                time.sleep(0.01)
+                change_layer(layer)
 
     alpha = 1
 
@@ -370,19 +432,21 @@ def keyboard_publisher():
                 if event.key == pygame.K_1:
                     change_layer("bathymetry,layer")
                 elif event.key == pygame.K_2:
-                    change_layer("fishery,layer")
+                    change_layer(f"{fishing[0]},layer")
                 elif event.key == pygame.K_3:
-                    change_layer("fishing_catch,layer")
-                elif event.key == pygame.K_4:
                     change_layer("navisafe,layer")
-                elif event.key == pygame.K_5:
+                elif event.key == pygame.K_4:
                     change_layer("windfarms,layer")
+                elif event.key == pygame.K_5:
+                    change_layer(f"{windfarms[0]},overlay")
                 elif event.key == pygame.K_6:
                     change_layer(f"{nature_track[0]},layer")
                 elif event.key == pygame.K_7:
                     change_layer("vessel-traffic,overlay")
                 elif event.key == pygame.K_8:
                     change_layer("eez,overlay")
+                elif event.key == pygame.K_9:
+                    change_layer("ospar,overlay")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_q:
@@ -417,7 +481,6 @@ def keyboard_publisher():
                 #     socket.send_string("slice L")
                 # elif event.key == pygame.K_ESCAPE:
                 #     running = False
-
             # for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT and event.key not in keys_held:
@@ -500,7 +563,7 @@ def main():
 
 
 def midi_board(datasets):
-    datasets = load_preprocessed(datasets)
+    datasets = load_preprocessed()
     # import ipdb
 
     # ipdb.set_trace()
@@ -527,7 +590,7 @@ def midi_board(datasets):
     # Function to send layer when button pressed
     def change_layer(text):
         layer_type = text.split(",")[1]
-        global current_layer, current_overlay, current_tide
+        global current_layer, current_overlay, current_tide, current_overlays
         if text.split(",")[0] == "":
             socket.send_string(f"maps {text}")
             current_layer = ""
@@ -544,6 +607,12 @@ def midi_board(datasets):
                 current_layer = text
             elif layer_type == "tide":
                 current_tide = text
+            elif layer_type == "overlay" and text in current_overlays:
+                current_overlay = ""
+                current_overlays.remove(text)
+            elif layer_type == "overlay" and text not in current_overlays:
+                current_overlay = text
+                current_overlays.append(text)
 
     nature_track = collections.deque(
         [
@@ -562,35 +631,75 @@ def midi_board(datasets):
             "seagrass_presence_g",
         ]
     )
-    gvg_maatregelen = collections.deque(["GVGmaatregel_2", "GVGmaatregel_4"])
+    fishing = collections.deque(["fishery", "fishery_catch"])
+    windfarms = collections.deque(["owf_2030", "owf_2040", "owf_all"])
 
-    layer_type_mapping = {layer: "nature_track" for layer in nature_track}
+    collection_type_mapping_1 = {layer: "nature_track" for layer in nature_track}
+    collection_type_mapping_2 = {layer: "fishing" for layer in fishing}
+    collection_type_mapping_3 = {layer: "owf" for layer in windfarms}
+    collection_type_mapping = (
+        collection_type_mapping_1
+        | collection_type_mapping_2
+        | collection_type_mapping_3
+    )
 
-    cycles = {"nature_track": nature_track, "gvg_maatregel": gvg_maatregelen}
+    cycles = {"nature_track": nature_track, "fishing": fishing, "owf": windfarms}
 
     def cycle_collection(cycle):
-        global current_layer
+        global current_layer, current_overlays
 
-        layer_type = current_layer.split(",")[0]
-        layer_type = layer_type_mapping[layer_type]
+        if len(current_overlays) > 0:
+            current_overlay = current_overlays[-1]
+        else:
+            current_overlay = ""
+
+        if (
+            current_overlay != ""
+            and current_overlay.split(",")[0] in collection_type_mapping
+        ):
+            layer = current_overlay
+        else:
+            layer = current_layer
+
+        if current_layer != "" and current_layer is not None:
+            layer_name = layer.split(",")[0]
+            layer_type = layer.split(",")[1]
+        else:
+            return
+
+        collection_type = collection_type_mapping.get(layer_name, None)
+
+        if collection_type is None:
+            return
 
         if cycle == "next":
-            cycles[layer_type].rotate(-1)
-            next_layer = cycles[layer_type][0]
+            cycles[collection_type].rotate(-1)
+            next_layer = cycles[collection_type][0]
             # gxgs.rotate(-1)
             # next_gxg = gxgs[0]
         elif cycle == "prev":
             # gxgs.rotate(1)
             # next_gxg = gxgs[0]
-            cycles[layer_type].rotate(1)
-            next_layer = cycles[layer_type][0]
+            cycles[collection_type].rotate(1)
+            next_layer = cycles[collection_type][0]
 
-        layer = f"{next_layer},layer"
+        layer = f"{next_layer},{layer_type}"
 
         if current_layer in [
-            f"{collection},layer" for collection in cycles[layer_type]
+            f"{collection},{layer_type}" for collection in cycles[collection_type]
         ]:
-            change_layer(layer)
+            if layer_type == "layer":
+                change_layer(layer)
+        elif current_overlay in [
+            f"{collection},{layer_type}" for collection in cycles[collection_type]
+        ]:
+            if layer_type == "overlay":
+                if cycle == "prev":
+                    change_layer(f"{cycles[collection_type][1]},overlay")
+                else:
+                    change_layer(f"{cycles[collection_type][-1]},overlay")
+                time.sleep(0.01)
+                change_layer(layer)
 
     # def change_overlay(text):
     #     global current_overlay
@@ -607,28 +716,30 @@ def midi_board(datasets):
     # Mapping from the midi control value to the function to update and the value to update to
     def get_midi_mapping():
         midi_mapping = {
-            # 1: {"function": change_scenario, "value": "prev"},
-            # 2: {"function": change_scenario, "value": "next"},
+            1: {"function": change_layer, "value": "owf_2030,overlay"},
+            2: {"function": change_layer, "value": "ospar,overlay"},
             3: {"function": change_year, "value": ["2023", "2050", "2100"]},
             7: {"function": change_year, "value": ["2023", "2100"]},
             23: {"function": change_layer, "value": "bathymetry,layer"},
             24: {"function": change_layer, "value": "navisafe,layer"},
-            25: {"function": change_layer, "value": "fishery,layer"},
-            26: {"function": change_layer, "value": "fishing_catch,layer"},
-            27: {"function": change_layer, "value": "windfarms,layer"},
+            25: {"function": change_layer, "value": f"{fishing[0]},layer"},
+            26: {"function": change_layer, "value": "windfarms,layer"},
+            27: {"function": change_layer, "value": f"{windfarms[0]},overlay"},
             28: {"function": change_layer, "value": f"{nature_track[0]},layer"},
             29: {"function": change_layer, "value": "vessel-traffic,overlay"},
+            30: {"function": change_layer, "value": "eez,overlay"},
             31: {"function": change_layer, "value": "mask,mask"},
             # 28: {"function": change_layer, "value": "GLG,layer"},
             # 31: {"function": change_layer, "value": ",layer"},
             # 31: {"function": change_layer, "value": "difference,layer"},
+            44: {"function": change_layer, "value": "owf_2040,overlay"},
             45: {"function": start_stop_animation, "value": "animation,layer"},
             46: {"function": start_stop_animation, "value": ""},
             47: {"function": cycle_collection, "value": "prev"},
             48: {"function": cycle_collection, "value": "next"},
             60: {"function": slider_update},
+            67: {"function": change_layer, "value": "owf_all,overlay"},
             64: {"function": change_layer, "value": "20,tide"},
-            67: {"function": change_layer, "value": "30,tide"},
         }
         return midi_mapping
 
@@ -663,6 +774,7 @@ def midi_board(datasets):
 
 
 def hand_tracker(datasets):
+    datasets = load_preprocessed()
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     socket.setsockopt(zmq.CONFLATE, 1)

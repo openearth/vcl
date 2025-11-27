@@ -7,8 +7,33 @@ import zmq
 from typing import Union
 
 # Define reference points (top-left, top-right, bottom-right, bottom-left)
-CAMERA_POINTS = np.array([(0.05, 0.94), (0.99, 0.92), (0.89, 0.22), (0.14, 0.25)])
-TABLE_POINTS = np.array([(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)])
+CAMERA_POINTS = np.array(
+    [(0.05, 0.94), (0.99, 0.92), (0.89, 0.22), (0.14, 0.25)], dtype=np.float32
+)
+TABLE_POINTS = np.array(
+    [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], dtype=np.float32
+)
+
+
+M = cv2.getPerspectiveTransform(CAMERA_POINTS, TABLE_POINTS)
+
+
+def get_table_coordinate(normalized_x, normalized_y):
+    """
+    Takes a normalized point in the camera frame (0-1)
+    Returns a normalized point on the table (0-1)
+    """
+    # Shape must be (1, 1, 2)
+    point_array = np.array([[[normalized_x, normalized_y]]], dtype=np.float32)
+
+    dst = cv2.perspectiveTransform(point_array, M)
+
+    # Extract result
+    x_out = dst[0][0][0]
+    y_out = dst[0][0][1]
+
+    return x_out, y_out
+
 
 fgbg = cv2.createBackgroundSubtractorMOG2(
     history=500, varThreshold=50, detectShadows=False
@@ -107,7 +132,7 @@ def webcam_module(
     click_tolerance: float = 0.01,
     show_polygon: bool = True,
     show_hands: bool = True,
-    show_mappings: bool = False,
+    show_mappings: bool = True,
     print_mappings: bool = False,
 ) -> None:
     """Webcame module that captures video from a specified device, detects hand landmarks using Mediapipe,
@@ -231,6 +256,7 @@ def webcam_module(
                     np.array([[[camera_x, camera_y]]]), H_camera_to_table
                 )[0][0]
                 table_x, table_y = table_coords
+                table_x, table_y = get_table_coordinate(camera_x, camera_y)
 
                 # Convert to map space
                 map_coords = cv2.perspectiveTransform(

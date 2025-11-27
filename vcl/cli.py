@@ -82,7 +82,7 @@ def test(datasets):
 @click.option("--save/--no-save", default=False)
 def main(satellite, contour, stats, midi, hand_tracking, preprocess, save, args=None):
     """Console script for vcl."""
-
+    data_dir = Path("~/data/vcl/gnsbi").expanduser()
     executor = concurrent.futures.ProcessPoolExecutor(
         max_workers=10,
         initializer=start_thread_to_terminate_when_parent_process_dies,
@@ -92,7 +92,6 @@ def main(satellite, contour, stats, midi, hand_tracking, preprocess, save, args=
         input_file = Path(__file__).parent / "input.json"
         datasets = vcl.preprocess.preprocess(input_file=input_file)
         if save:
-            data_dir = Path("~/data/vcl/gnsbi").expanduser()
             # np.save(
             #     data_dir / "preprocessed-data.npy",
             #     datasets,

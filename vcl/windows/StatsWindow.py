@@ -7,10 +7,17 @@ matplotlib.rcParams["toolbar"] = "None"
 
 
 class StatsWindow:
-    def __init__(self, datasets, dataset_kwargs, layers_to_ignore: list = []):
+    def __init__(
+        self,
+        datasets,
+        dataset_kwargs,
+        overlay_layers: list = [],
+        layers_to_ignore: list = [],
+    ):
         self.datasets = datasets
         self.dataset_kwargs = dataset_kwargs
         self.dataset_kwargs = self.supplement_dataset_kwargs(dataset_kwargs)
+        self.overlay_layers = overlay_layers
         self.layers_to_ignore = layers_to_ignore
 
         self.fig, self.axes = plt.subplots(num="Virtual Climate Lab - Info screen")
@@ -149,14 +156,31 @@ class StatsWindow:
         self.fig.canvas.draw()
 
     def change_layer(self, layer):
-        if layer in self.dataset_kwargs:
-            self.current_layer = layer
-            self.plot_layer()
-        else:
-            if layer in self.layers_to_ignore:
-                return
-            self.current_layer = None
-            self.plot_start_screen()
+        try:
+            if (
+                layer in self.dataset_kwargs
+                and (self.current_layer is None)
+                and layer in self.overlay_layers
+            ):
+                self.current_layer = layer
+                self.plot_layer()
+            elif layer in self.dataset_kwargs and layer not in self.overlay_layers:
+                self.current_layer = layer
+                self.plot_layer()
+            elif (
+                layer in self.dataset_kwargs
+                and layer in self.overlay_layers
+                and layer == self.current_layer
+            ):
+                self.current_layer = None
+                self.plot_start_screen()
+            else:
+                if layer in self.layers_to_ignore or layer in self.overlay_layers:
+                    return
+                self.current_layer = None
+                self.plot_start_screen()
+        except Exception as e:
+            print(e)
 
 
 # data = {
