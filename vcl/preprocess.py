@@ -14,8 +14,6 @@ from tqdm import tqdm
 
 import vcl.data
 
-data_dir = data_dir = Path("~/data/vcl/gnsbi").expanduser()
-
 
 def preprocess(input_file: Union[str, Path]):
     input_file = Path(input_file)
