@@ -790,6 +790,7 @@ def hand_tracker(datasets):
         socket=socket,
         socket_topic=socket_topic,
         max_number_of_hands=4,
+        calibrate=True,
     )
 
 

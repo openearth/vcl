@@ -389,6 +389,13 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_layer(self.mask_layer)
 
         self.draw_line()
+        # pygame.draw.line(
+        #     self.screen,
+        #     (0, 0, 0),
+        #     (self.x_pos, 0.80 * self.img_height + self.y_pos),
+        #     (self.img_width, 0.80 * self.img_height + self.y_pos),
+        #     2,
+        # )
 
         self.draw_text()
 

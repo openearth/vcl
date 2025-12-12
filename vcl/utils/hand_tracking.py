@@ -134,6 +134,7 @@ def webcam_module(
     show_hands: bool = True,
     show_mappings: bool = True,
     print_mappings: bool = False,
+    calibrate: bool = False,
 ) -> None:
     """Webcame module that captures video from a specified device, detects hand landmarks using Mediapipe,
     and maps the index finger tip position through camera, table, and map coordinate spaces.
@@ -178,8 +179,8 @@ def webcam_module(
     hands = mp_hands.Hands(
         model_complexity=1,
         max_num_hands=max_number_of_hands,
-        min_detection_confidence=0.2,
-        min_tracking_confidence=0.2,
+        min_detection_confidence=0.3,
+        min_tracking_confidence=0.3,
     )
 
     # Click detection state tracking
@@ -208,6 +209,14 @@ def webcam_module(
         frame = cv2.resize(frame, frame_size)
         h, w, _ = frame.shape
 
+        if not calibrate:
+            src_points = (CAMERA_POINTS * [w, h]).astype(np.float32)
+            dst_points = np.array([[0, 0], [w, 0], [w, h], [0, h]], dtype=np.float32)
+
+            M = cv2.getPerspectiveTransform(src_points, dst_points)
+            # M, _ = cv2.findHomography(CAMERA_POINTS, dst_points)
+            frame = cv2.warpPerspective(frame, M, (w, h))
+
         fgmask = fgbg.apply(frame)
         fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, None)
         # frame = cv2.cvtColor(fgmask, cv2.COLOR_GRAY2BGR)
@@ -217,7 +226,7 @@ def webcam_module(
         #     fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         # )
 
-        frame = apply_clahe_lab(frame)
+        # frame = apply_clahe_lab(frame)
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = hands.process(rgb)
@@ -229,7 +238,7 @@ def webcam_module(
         current_hands = set()
 
         # Draw reference polygon in camera space
-        if show_polygon:
+        if calibrate:
             polygon_pixels = (CAMERA_POINTS * [w, h]).astype(int)
             for i in range(4):
                 p1 = tuple(polygon_pixels[i])
@@ -257,6 +266,8 @@ def webcam_module(
                 )[0][0]
                 table_x, table_y = table_coords
                 table_x, table_y = get_table_coordinate(camera_x, camera_y)
+                if not calibrate:
+                    table_x, table_y = camera_x, camera_y
 
                 # Convert to map space
                 map_coords = cv2.perspectiveTransform(
@@ -446,7 +457,7 @@ def webcam_module(
                     and table_y <= 1
                 ):
                     state["circle_detected"] = False
-                    socket.send_string(f"maps animation,layer")
+                    # socket.send_string(f"maps animation,layer")
 
                 if (
                     state["rclick_detected"]

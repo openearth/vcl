@@ -1,0 +1,80 @@
+Instructions for installing VCL
+
+1.  Clone the github repository into a directory of your choosing:
+
+        git clone https://github.com/openearth/vcl
+
+2.  Move into the repository and switch to the correct branch (Terschelling or GNSBI):
+
+        cd path/to/vcl/repository
+        (Terschelling) git checkout demo-terschelling 
+        (GNSBI) git checkout cases/gnsbi
+
+3.  Install VCL:
+
+    There are two ways to install VCL onto your computer:
+
+        1. Using uv (Recommended, only for GNSBI):
+
+                uv sync
+
+        2. Using conda (e.g. miniforge or miniconda):
+
+                conda create -n vcl python=3.12
+                conda activate vcl
+                pip install -e .
+
+4.  Download the data and make sure it is in the correct folder:
+
+    (Terschelling)  all data needs to be put into the following folder:
+
+        C:/Users/User/data/vcl/dataset
+
+    (GNSBI) the data can be placed anywhere on the computer. Make sure to give the correct basepath in input.json.
+
+
+Instructions for running the VCL
+
+1.  Activate the environment:
+
+        (conda) conda activate vcl
+
+        (uv) This assumes you are in the vcl directory, if not, provide path to vcl directory before path to .venv
+                .\.venv\Scripts\activate.bat    (Windows)
+                source .venv/bin/activate       (MacOS and Linux)       
+
+2.  Preprocess the data:
+
+        vcl --preprocess --save
+
+3.  Run the VCL:
+
+        (Terschelling)  vcl --satellite --contour
+        (GNSBI)         vcl --satellite --stats
+
+    Drag the satellite window to the beamer screen and press 'f' to make it full screen (on Windows). For the Terschelling
+    case you may need to make the beamer screen your main screen to be able to fullscreen on the beamer.
+
+
+VCL commands
+
+There are multiple options available for running VCL. These are the current options:
+
+    --satellite/--no-satellite          start the satellite window to be displayed on the 3D print
+    --contour/--no-contour              start the contour window to display the transacts on the extra monitor
+                                        (only Terschelling has contours to be displayed)
+    --stats/no-stats                    start the stats window to display extra information on the layers on the extra monitor
+                                        (only available for GNSBI)
+    --midi/no-midi                      use the midi board for interaction. Default is to use the midi board. If midi is not
+                                        used an alternative window for interaction will be started. This window is out-dated for 
+                                        Terschelling.
+    --hand_tracking/no-hand_tracking    start the hand_tracking module. Will open an extra window of the camera view.
+                                        (only available for GNSBI)
+    --preprocess/no-preprocess          preprocess the data layers. Will not preprocess by default.
+    --save/no-save                      save the preprocessed data layers to the basepath directory. Will not save by default.
+
+
+
+
+
+
