@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from pathlib import Path
+import geopandas as gpd
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -21,6 +22,7 @@ import vcl.preprocess
 from vcl.windows import DisplayMap, DisplaySlice, StatsWindow
 from vcl.utils import hand_tracking
 from vcl.load_data import load_preprocessed
+from vcl.interactivity import uid_detection
 
 contour_show = False
 height_map_show = False
@@ -88,12 +90,18 @@ def make_listen_sockets():
     socket5.connect("tcp://localhost:5557")
     socket5.subscribe("hands")
 
+    socket6 = context.socket(zmq.SUB)
+    socket6.setsockopt(zmq.CONFLATE, 1)
+    socket6.connect("tcp://localhost:5558")
+    socket6.subscribe("uid")
+
     poller = zmq.Poller()
     poller.register(socket1, zmq.POLLIN)
     poller.register(socket2, zmq.POLLIN)
     poller.register(socket3, zmq.POLLIN)
     poller.register(socket4, zmq.POLLIN)
     poller.register(socket5, zmq.POLLIN)
+    poller.register(socket6, zmq.POLLIN)
 
     sockets = {
         "context": context,
@@ -102,6 +110,7 @@ def make_listen_sockets():
         "year": socket4,
         "slice": socket3,
         "hands": socket5,
+        "uid": socket6,
         "poller": poller,
     }
     return sockets
@@ -223,6 +232,7 @@ def displaystats(datasets):
     poller = sockets["poller"]
 
     socket = sockets["maps"]
+    socket_uid = sockets["uid"]
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
 
@@ -252,6 +262,13 @@ def displaystats(datasets):
             message = message.decode("utf-8")
             layer, view_type = message.split(",")
             display.change_layer(layer)
+        if socket_uid in socks and socks[socket_uid] == zmq.POLLIN:
+            try:
+                topic, coords = socket_uid.recv(zmq.DONTWAIT).split()
+                coords = coords.decode("utf-8")
+                display.change_layer(coords)
+            except Exception as e:
+                print(e)
         plt.pause(0.01)
 
 
@@ -791,6 +808,20 @@ def hand_tracker(datasets):
         socket_topic=socket_topic,
         max_number_of_hands=4,
         calibrate=True,
+    )
+
+
+def uid_detector(datasets):
+    datasets = load_preprocessed()
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    socket.setsockopt(zmq.CONFLATE, 1)
+    socket.bind("tcp://*:5558")
+
+    extent = datasets[""]["extent"].bounds
+
+    uid_detection.main(
+        socket=socket, extent=extent, datasets=datasets[""]["interactivity"]
     )
 
 

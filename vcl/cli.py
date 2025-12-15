@@ -78,9 +78,12 @@ def test(datasets):
 @click.option("--stats/--no-stats", default=False)
 @click.option("--midi/--no-midi", default=True)
 @click.option("--hand_tracking/--no-hand_tracking", default=False)
+@click.option("--uid/--no-uid", default=False)
 @click.option("--preprocess/--no-preprocess", default=False)
 @click.option("--save/--no-save", default=False)
-def main(satellite, contour, stats, midi, hand_tracking, preprocess, save, args=None):
+def main(
+    satellite, contour, stats, midi, hand_tracking, uid, preprocess, save, args=None
+):
     """Console script for vcl."""
     with open(Path(__file__).parent / "input.json") as f:
         input_dict = json.load(f)
@@ -125,6 +128,8 @@ def main(satellite, contour, stats, midi, hand_tracking, preprocess, save, args=
         executor.submit(vcl.display_pygame.displaystats, datasets)
     if hand_tracking:
         executor.submit(vcl.display_pygame.hand_tracker, datasets)
+    if uid:
+        executor.submit(vcl.display_pygame.uid_detector, datasets)
 
     # while True:
     #     time.sleep(0.1)

@@ -34,6 +34,9 @@
         "animations": {
             "windfarms": "nsec/timelapse"
         },
+        "interactivity": {
+            "eez": "World_EEZ_v12_20231025_gpkg/eez_v12.gpkg"
+        },
         "stats": {
             "fishery": {
                 "image": [
@@ -83,6 +86,96 @@
             "eez": {
                 "image": [
                     "info-sheets/map-factsheets/map-factsheets/Slide2.png"
+                ]
+            },
+            "NLD_detection": {
+                "image": [
+                    "interactivity/land_detection/NLD.png"
+                ]
+            },
+            "BEL_detection": {
+                "image": [
+                    "interactivity/land_detection/BEL.png"
+                ]
+            },
+            "DEU_detection": {
+                "image": [
+                    "interactivity/land_detection/DEU.png"
+                ]
+            },
+            "FRA_detection": {
+                "image": [
+                    "interactivity/land_detection/FRA.jpg"
+                ]
+            },
+            "DNK_detection": {
+                "image": [
+                    "interactivity/land_detection/DNK.png"
+                ]
+            },
+            "SWE_detection": {
+                "image": [
+                    "interactivity/land_detection/SWE.png"
+                ]
+            },
+            "NOR_detection": {
+                "image": [
+                    "interactivity/land_detection/NOR.png"
+                ]
+            },
+            "GBR_detection": {
+                "image": [
+                    "interactivity/land_detection/GBR.png"
+                ]
+            },
+            "IRL_detection": {
+                "image": [
+                    "interactivity/land_detection/IRL.png"
+                ]
+            },
+            "NLD_info": {
+                "image": [
+                    "interactivity/land_info/NLD.png"
+                ]
+            },
+            "BEL_info": {
+                "image": [
+                    "interactivity/land_info/BEL.png"
+                ]
+            },
+            "DEU_info": {
+                "image": [
+                    "interactivity/land_info/DEU.png"
+                ]
+            },
+            "FRA_info": {
+                "image": [
+                    "interactivity/land_info/FRA.png"
+                ]
+            },
+            "DNK_info": {
+                "image": [
+                    "interactivity/land_info/DNK.png"
+                ]
+            },
+            "SWE_info": {
+                "image": [
+                    "interactivity/land_info/SWE.png"
+                ]
+            },
+            "NOR_info": {
+                "image": [
+                    "interactivity/land_info/NOR.png"
+                ]
+            },
+            "GBR_info": {
+                "image": [
+                    "interactivity/land_info/GBR.png"
+                ]
+            },
+            "IRL_info": {
+                "image": [
+                    "interactivity/land_info/IRL.png"
                 ]
             }
         },

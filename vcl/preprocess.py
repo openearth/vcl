@@ -152,6 +152,14 @@ def preprocess_common(
         )
         preprocessed["particles"][layer] = particle_data
 
+    print("Preprocessing interactivity polygons...")
+    preprocessed["interactivity"] = {}
+    pbar = tqdm(datasets["interactivity"], unit="layer")
+    for layer in pbar:
+        layer_path = base_path / datasets["interactivity"][layer]
+        layer_data = gpd.read_file(layer_path)
+        preprocessed["interactivity"][layer] = layer_data
+
     return preprocessed
 
 
