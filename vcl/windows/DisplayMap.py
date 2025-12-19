@@ -304,6 +304,12 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.overlays.append(overlay)
 
     def change_line_index(self, i):
+        if isinstance(i, float):
+            if i >= 1:
+                i = int(i)
+            elif i >= 0 and i < 1:
+                i = int(i * self.i_max)
+
         self.i = np.clip(i, 0, self.i_max)
 
     def change_year(self, year):

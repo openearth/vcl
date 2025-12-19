@@ -78,6 +78,7 @@ def make_listen_sockets():
     socket3 = context.socket(zmq.SUB)
     socket3.setsockopt(zmq.CONFLATE, 1)
     socket3.connect("tcp://localhost:5556")
+    socket3.connect("tcp://localhost:5558")
     socket3.subscribe("slice")
 
     socket4 = context.socket(zmq.SUB)
@@ -88,6 +89,7 @@ def make_listen_sockets():
     socket5 = context.socket(zmq.SUB)
     socket5.setsockopt(zmq.CONFLATE, 1)
     socket5.connect("tcp://localhost:5557")
+    socket5.connect("tcp://localhost:5558")
     socket5.subscribe("hands")
 
     socket6 = context.socket(zmq.SUB)
@@ -206,7 +208,7 @@ def displaymap(datasets):
 
         if socket_slice in socks and socks[socket_slice] == zmq.POLLIN:
             topic, message = socket_slice.recv(zmq.DONTWAIT).split()
-            slice_index = int(message)
+            slice_index = float(message)
             display.change_line_index(slice_index)
 
         if socket_year in socks and socks[socket_year] == zmq.POLLIN:
@@ -820,9 +822,12 @@ def uid_detector(datasets):
 
     extent = datasets[""]["extent"].bounds
 
-    uid_detection.main(
-        socket=socket, extent=extent, datasets=datasets[""]["interactivity"]
-    )
+    try:
+        uid_detection.main(
+            socket=socket, extent=extent, datasets=datasets[""]["interactivity"]
+        )
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
