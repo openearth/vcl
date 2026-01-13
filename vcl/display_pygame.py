@@ -1,3 +1,24 @@
+"""Pygame-based visualization and control module for VCL (Virtual Climate Lab).
+
+This module provides the main display interface for the VCL system using Pygame and
+ZeroMQ for inter-process communication. It manages multiple visualization windows,
+handles user input from keyboards and MIDI controllers, and coordinates real-time
+data updates across different display components.
+
+Key Components:
+    - DisplayMap: Main map visualization showing geospatial layers
+    - DisplaySlice: Cross-section/slice visualization
+    - StatsWindow: Statistics and information panels
+    - Hand tracking: MediaPipe-based gesture control
+    - UID detection: AprilTag/QR code/ArUco marker detection for interactivity
+
+Communication:
+    The module uses ZeroMQ publish-subscribe pattern across multiple ports:
+    - 5556: Keyboard/MIDI commands (maps, year changes)
+    - 5557: Hand tracking coordinates
+    - 5558: UID detection results
+"""
+
 import collections
 import concurrent.futures
 import os
@@ -24,14 +45,17 @@ from vcl.utils import hand_tracking
 from vcl.load_data import load_preprocessed
 from vcl.interactivity import uid_detection
 
+# Global state variables for layer management
 contour_show = False
 height_map_show = False
 compare = False
-current_layer = ""
-current_overlay = ""
-current_tide = ""
-current_overlays = []
+current_layer = ""  # Currently active base layer
+current_overlay = ""  # Currently active overlay layer
+current_tide = ""  # Currently active tide/current visualization
+current_overlays = []  # Stack of active overlays
 
+# Custom colormap for windfarm visualization
+# Colors represent different windfarm categories or states
 windfarm_cmap = [
     (255 / 255, 255 / 255, 255 / 255, 0.25),
     (254 / 255, 217 / 255, 142 / 255, 1),
@@ -45,6 +69,8 @@ windfarm_cmap = [
 ]
 windfarm_cmap = ListedColormap(windfarm_cmap)
 
+# Custom colormap for bathymetry (depth) visualization
+# Color scale transitions from deep blue (deep water) to yellow/red (shallow/land)
 bathymetry_cmap = [
     # (0, (0 / 255, 0 / 255, 62 / 255)),
     (0, ((0 / 255, 0 / 255, 53 / 255))),
@@ -55,14 +81,37 @@ bathymetry_cmap = [
     (0.9875, (215 / 255, 215 / 255, 14 / 255)),
     (0.9975, (218 / 255, 6 / 255, 22 / 255)),
     (1, (222 / 255, 90 / 255, 93 / 255)),
-]
+]  # Deep sea blue → shallow water blue → coastal green → land yellow/red
 
+# Create continuous colormap with 5000 discrete steps for smooth gradients
 bathymetry_cmap = LinearSegmentedColormap.from_list(
     "bathy_cmap", bathymetry_cmap, N=5000
 )
 
 
 def make_listen_sockets():
+    """Create and configure ZeroMQ subscriber sockets for inter-process communication.
+
+    This function initializes multiple ZMQ subscriber sockets on different ports to
+    receive messages from various input sources (keyboard, MIDI, hand tracking, UID
+    detection). Each socket subscribes to specific topics and some use CONFLATE to
+    ensure only the latest message is received.
+
+    Returns:
+        dict: Dictionary containing ZMQ context, sockets, and poller with keys:
+            - context: ZMQ context object
+            - maps: Socket for map layer change commands (port 5556, 5557)
+            - pygame_2: Socket for pygame instance selection (port 5556)
+            - year: Socket for year/time period changes (port 5556)
+            - slice: Socket for cross-section slice updates (port 5556, 5558)
+            - hands: Socket for hand tracking coordinates (port 5557, 5558)
+            - uid: Socket for UID detection results (port 5558)
+            - poller: ZMQ poller for multiplexing socket events
+
+    Note:
+        CONFLATE option ensures only the most recent message is kept in the queue,
+        preventing lag from accumulated messages during heavy processing.
+    """
     context = zmq.Context()
 
     socket1 = context.socket(zmq.SUB)
@@ -119,6 +168,26 @@ def make_listen_sockets():
 
 
 def displaymap(datasets):
+    """Main map display window showing geospatial layers and overlays.
+
+    This function creates and runs the primary map visualization window. It handles
+    layer switching, overlay management, year changes, hand tracking visualization,
+    and current/tide animations. Messages are received via ZMQ sockets
+    from keyboard, MIDI, and tracking modules.
+
+    Args:
+        datasets: Preprocessed dataset dictionary (not used - data is loaded internally).
+
+    Socket Messages:
+        - maps: Layer change commands in format "layer_name,layer_type"
+        - slice: Slice index for cross-section line positioning
+        - year: Year/time period for temporal data
+        - hands: Hand tracking coordinates in format "x,y"
+
+    Note:
+        Runs in an infinite loop until the process is terminated. Uses non-blocking
+        ZMQ polling with 10ms timeout to maintain responsiveness.
+    """
     datasets = load_preprocessed()
     sockets = make_listen_sockets()
     poller = sockets["poller"]
@@ -229,6 +298,23 @@ def displaymap(datasets):
 
 
 def displaystats(datasets):
+    """Statistics and information panel display window.
+
+    This function creates a window showing statistical information, charts, and
+    infographics for the selected layer. It responds to layer changes and UID
+    detection for interactive navigation.
+
+    Args:
+        datasets: Preprocessed dataset dictionary (not used - data is loaded internally).
+
+    Socket Messages:
+        - maps: Layer selection for displaying corresponding statistics
+        - uid: UID detection results for interactive layer navigation
+
+    Note:
+        Uses matplotlib's pause() for rendering updates. Certain layers are ignored
+        (mask, animation, 20, 30) as they don't have associated statistics.
+    """
     datasets = load_preprocessed()
     sockets = make_listen_sockets()
     poller = sockets["poller"]
@@ -275,6 +361,22 @@ def displaystats(datasets):
 
 
 def displayslice(datasets):
+    """Cross-section slice visualization window.
+
+    This function creates a window displaying vertical or horizontal cross-sections
+    through the data at the current slice position. The slice position is controlled
+    by keyboard/MIDI input.
+
+    Args:
+        datasets: Preprocessed dataset dictionary (not used - data is loaded internally).
+
+    Socket Messages:
+        - slice: Slice index position for updating the cross-section view
+
+    Note:
+        Currently uses empty slice_datasets and dataset_kwargs - implementation
+        may be incomplete or requires configuration.
+    """
     datasets = load_preprocessed()
     sockets = make_listen_sockets()
     poller = sockets["poller"]
@@ -296,6 +398,40 @@ def displayslice(datasets):
 
 
 def keyboard_publisher():
+    """Keyboard input handler that publishes commands via ZMQ.
+
+    This function creates a Pygame window for keyboard input and translates keypresses
+    into ZMQ messages that control the display windows. It handles layer selection,
+    overlay toggling, year changes, and slice navigation.
+
+    Key Mappings:
+        1-9: Layer/overlay selection
+            1: Bathymetry layer
+            2: Fishing layer
+            3: Navisafe layer
+            4: Windfarms layer
+            5: Windfarms overlay
+            6: Nature tracking layer
+            7: Vessel traffic overlay
+            8: EEZ (Exclusive Economic Zone) overlay
+            9: OSPAR overlay
+        A: Animation layer (only for windfarms)
+        Q/E: Tide visualization (20th/30th timestep)
+        I/O/P: Year selection (2023/2050/2100)
+        M: Mask layer toggle
+        N/B: Cycle next/previous in active layer collection
+        LEFT/RIGHT: Navigate slice position
+
+    ZMQ Topics:
+        - maps: Layer change commands
+        - year: Year/time period changes
+        - slice: Slice position updates
+        - pygame_1/pygame_2: Instance-specific messages
+
+    Note:
+        Runs until window is closed. Uses global variables to track current layer
+        state for toggle behavior.
+    """
     # --- ZMQ Setup ---
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
@@ -484,16 +620,6 @@ def keyboard_publisher():
                     cycle_collection("next")
                 elif event.key == pygame.K_b:
                     cycle_collection("prev")
-                elif event.key == pygame.K_DOWN:
-                    1
-                if event.key == pygame.K_h:
-                    print("Sending 'instance_1' message")
-                    # Send a message indicating an event for the first instance
-                    socket.send_string("pygame_1 instance_1")
-                elif event.key == pygame.K_j:
-                    print("Sending 'instance_2' message")
-                    # Send a message indicating an event for the second instance
-                    socket.send_string("pygame_2 instance_2")
                 # elif event.key == pygame.K_RIGHT:
                 #     socket.send_string("slice R")
                 # elif event.key == pygame.K_LEFT:
@@ -561,11 +687,41 @@ def keyboard_publisher():
 
 
 def start_thread_to_terminate_when_parent_process_dies(ppid):
+    """Start a daemon thread to monitor parent process and terminate if parent dies.
+
+    This function is used as an initializer for worker processes to ensure they
+    terminate cleanly if the parent process crashes or is killed.
+
+    Args:
+        ppid: Parent process ID to monitor.
+
+    Note:
+        The thread is started as a daemon but the monitoring logic is not implemented.
+        This is a placeholder for process lifecycle management.
+    """
     thread = threading.Thread(daemon=True)
     thread.start()
 
 
 def main():
+    """Main entry point for the VCL display system.
+
+    This function initializes a process pool and launches multiple display windows
+    and input handlers as separate processes. Each process runs independently and
+    communicates via ZMQ sockets.
+
+    Launched Processes:
+        - keyboard_publisher: Keyboard input handler
+        - displaymap: Main map visualization
+        - displayslice: Cross-section viewer
+
+    Returns:
+        int: Exit code (always returns 0).
+
+    Note:
+        Uses ProcessPoolExecutor with up to 10 workers. Additional processes
+        (midi_board, hand_tracker, uid_detector) can be added via executor.submit().
+    """
     """Console script for vcl."""
 
     executor = concurrent.futures.ProcessPoolExecutor(
@@ -582,6 +738,43 @@ def main():
 
 
 def midi_board(datasets):
+    """MIDI controller input handler that publishes commands via ZMQ.
+
+    This function listens for MIDI input from a connected controller and translates
+    MIDI control change messages into ZMQ commands for controlling the display windows.
+    It supports both button presses and slider/fader inputs.
+
+    Args:
+        datasets: Preprocessed dataset dictionary (not used - data is loaded internally).
+
+    MIDI Mapping:
+        Buttons (value 127):
+            1: OWF 2030 overlay
+            2: OSPAR overlay
+            23: Bathymetry layer
+            24: Navisafe layer
+            25: Fishing layer
+            26: Windfarms layer
+            27: Windfarms overlay
+            28: Nature tracking layer
+            29: Vessel traffic overlay
+            30: EEZ overlay
+            31: Mask toggle
+            44: OWF 2040 overlay
+            45/46: Animation start/stop
+            47/48: Cycle previous/next in collection
+            64: Tide visualization (20)
+            67: OWF all overlay
+
+        Sliders (0-127):
+            3: Year selection (2023/2050/2100)
+            7: Year selection (2023/2100)
+            60: Slice position
+
+    Note:
+        The function runs until the MIDI BANK button is pressed (sysex message).
+        Uses exception handling to ignore unmapped controls gracefully.
+    """
     datasets = load_preprocessed()
     # import ipdb
 
@@ -793,6 +986,23 @@ def midi_board(datasets):
 
 
 def hand_tracker(datasets):
+    """Hand tracking module that publishes hand coordinates via ZMQ.
+
+    This function initializes the webcam-based hand tracking system using MediaPipe.
+    Detected hand positions are transformed to map coordinates based on the extent
+    and published for display on the map.
+
+    Args:
+        datasets: Preprocessed dataset dictionary (not used - data is loaded internally).
+
+    ZMQ Topics:
+        - hands: Hand coordinates in format "x,y" (map coordinates)
+
+    Note:
+        Supports tracking up to 4 hands simultaneously. The calibrate parameter
+        enables interactive calibration for mapping camera view to map extent.
+        Publishes to port 5557.
+    """
     datasets = load_preprocessed()
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
@@ -814,6 +1024,26 @@ def hand_tracker(datasets):
 
 
 def uid_detector(datasets):
+    """Unique identifier (UID) detection module for interactive elements.
+
+    This function runs AprilTag/QR code/ArUco marker detection on webcam input
+    and publishes detected UIDs via ZMQ. The UIDs can trigger layer changes or
+    display specific information when markers are detected.
+
+    Args:
+        datasets: Preprocessed dataset dictionary (not used - data is loaded internally).
+
+    ZMQ Topics:
+        - uid: Detected unique identifier string
+        - slice: Slice position updates
+        - hands: Hand position updates
+
+    Note:
+        Uses the extent to determine the spatial context for detections.
+        Interactivity polygons from datasets define trigger regions.
+        Publishes to port 5558. Exceptions are caught and printed but don't
+        terminate the module.
+    """
     datasets = load_preprocessed()
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
@@ -831,6 +1061,7 @@ def uid_detector(datasets):
 
 
 if __name__ == "__main__":
+    # Alternative entry points for testing:
     # input_file = Path(__file__).parent / "input.json"
     # datasets = preprocess.preprocess(input_file=input_file)
     # displaymap(datasets=datasets)

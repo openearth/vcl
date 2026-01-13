@@ -1,5 +1,16 @@
+"""
+Map display window module for the Virtual Climate Lab.
+
+This module provides the DisplayMap class for interactive map visualization with
+features including multiple layers, zoom/pan, flow arrows, animations, hand tracking,
+and slider navigation.
+
+Classes:
+    DisplayMap: Interactive map display window with advanced visualization features.
+"""
+
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import numpy as np
 import pygame
@@ -9,20 +20,73 @@ from vcl.windows import PygameWindow
 
 
 class DisplayMap(PygameWindow.PygameWindow):
+    """
+    Interactive map display window with zoom, pan, and animation capabilities.
+
+    Extends PygameWindow to provide a feature-rich map visualization interface including:
+    - Multiple data layers with transparency control
+    - Slider navigation with visual indicator
+    - Flow field visualization using arrows
+    - Zoom and pan capabilities
+    - Animation playback
+    - Hand tracking interaction
+    - Mask layer overlay
+    - Scenario and year selection
+
+    Attributes:
+        flow_data (dict): Flow field data with velocity components (ucx, ucy).
+        animation_data (dict): Animation frames and associated text for each layer.
+        i (int): Current index position on the timeline.
+        i_max (int): Maximum timeline index.
+        overlays (list): List of active overlay layer names.
+        mask_layer (str): Name of the mask layer.
+        show_mask (bool): Whether mask layer is currently visible.
+        zoom_start_pos (tuple): Starting position for zoom rectangle selection.
+        zoom_end_pos (tuple): Ending position for zoom rectangle selection.
+        zoom_rect (pygame.Rect): Current zoom region.
+        zoomed_in (bool): Whether currently in zoomed view.
+        pan_start_pos (tuple): Starting position for pan operation.
+        pan_offset (pygame.Vector2): Current pan offset.
+        total_pan_offset (pygame.Vector2): Accumulated pan offset.
+        bottom_text (str): Text to display at bottom of screen.
+        hand_tracking (bool): Whether hand tracking is active.
+        hand_tracking_coords (tuple): Normalized coordinates (0-1) of tracked hand.
+        show_flows (bool): Whether flow arrows are displayed.
+        arrow_manager (ArrowManager): Manager for flow arrow visualization.
+        show_animation (bool): Whether animation is playing.
+        animation_frame (int): Current animation frame index.
+    """
+
     def __init__(
         self,
         datasets: dict,
-        flow_data,
         dataset_kwargs: dict,
-        bg_layer: str,
-        animations_data: dict = None,
-        mask_layer: str = None,
-        start_year="",
-        scenarios=["Ref"],
-        i_max: int = 300,
+        flow_data: Optional[dict] = None,
+        bg_layer: Optional[str] = None,
+        animations_data: Optional[dict] = None,
+        mask_layer: Optional[str] = None,
+        start_year: Optional[str] = "",
+        scenarios: Optional[List[str]] = ["Ref"],
+        i_max: Optional[int] = 300,
         screen_size: Optional[Tuple[int, int]] = (800, 600),
         aspect_ratio: Optional[float] = 2 / 1,
     ):
+        """
+        Initialize a DisplayMap window.
+
+        Args:
+            datasets: Dictionary of datasets keyed by year/time period.
+            dataset_kwargs: Configuration for each dataset layer.
+            flow_data: Flow field data with face_x, face_y, ucx, ucy arrays.
+            bg_layer: Name of the background layer to display.
+            animations_data: Optional animation data with frames and text.
+            mask_layer: Optional name of mask layer for overlay.
+            start_year: Initial year to display.
+            scenarios: List of scenario names.
+            i_max: Maximum slider index (300 default).
+            screen_size: Initial window dimensions.
+            aspect_ratio: Target aspect ratio for map display.
+        """
         super().__init__(
             datasets=datasets,
             dataset_kwargs=dataset_kwargs,
@@ -53,6 +117,12 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.hand_tracking = None
 
     def draw_line(self):
+        """
+        Draw the slider indicator line at current position.
+
+        Renders a vertical line across the map at position determined by
+        self.i / self.i_max, providing visual feedback of slider position.
+        """
 
         pygame.draw.line(
             self.screen,
@@ -73,6 +143,14 @@ class DisplayMap(PygameWindow.PygameWindow):
         )
 
     def init_arrowmanager(self, t):
+        """
+        Initialize the arrow manager for flow visualization at time t.
+
+        Sets up the ArrowManager with flow field data at the specified time index.
+
+        Args:
+            t: Time index for flow data selection.
+        """
         try:
             self.t = int(t)
             current_flow_data = {
@@ -90,21 +168,22 @@ class DisplayMap(PygameWindow.PygameWindow):
                 )
             )
             self.show_flows = True
-            # sound_path = Path(__file__).parent.parent / "sounds"
-            # if self.t == 170:
-            #     pygame.mixer.music.load(sound_path / "high-tide.mp3")
-            #     pygame.mixer.music.set_volume(0.1)
-            # else:
-            #     pygame.mixer.music.load(sound_path / "low-tide.mp3")
-            #     pygame.mixer.music.set_volume(0.3)
-            # pygame.mixer.music.play(-1)
 
         except (ValueError, TypeError) as e:
             print(e)
             self.show_flows = False
-            pygame.mixer.music.stop()
 
     def zoom_surface(self):
+        """
+        Handle zoom and pan operations on the map surface.
+
+        Manages three interaction states:
+        1. Zoomed in with panning: Allows dragging to pan the zoomed view
+        2. Drawing zoom rectangle: Shows blue outline while selecting region
+        3. Zoomed in: Displays scaled version of selected region
+
+        Clamps panning to prevent viewing outside the map boundaries.
+        """
         # Panning logic while mouse is held down and zoomed in
         if self.zoomed_in and pygame.mouse.get_pressed()[0] and self.pan_start_pos:
             current_pos = pygame.mouse.get_pos()
@@ -172,6 +251,16 @@ class DisplayMap(PygameWindow.PygameWindow):
             pygame.draw.rect(self.screen, (0, 0, 255), draw_rect, 2)  # Blue outline
 
     def draw_layer(self, layer):
+        """
+        Render a specific data layer to the screen.
+
+        Implements surface caching to avoid redundant scaling operations.
+        Handles both scenario-based and year-based layer variations.
+        Renders colorbar for CMAP-type layers if enabled.
+
+        Args:
+            layer: Name of the layer to render.
+        """
         if layer in self.dataset_kwargs:
 
             layer_data = self.dataset_kwargs[layer]
@@ -245,6 +334,12 @@ class DisplayMap(PygameWindow.PygameWindow):
                 cbar.draw(self.screen, (self.x_pos, self.y_pos))
 
     def draw_text(self):
+        """
+        Draw scenario, year, and layer text overlays on the map.
+
+        Renders text at bottom-right showing current scenario and year.
+        Displays layer-specific text at top-left if current layer is defined.
+        """
         if len(self.scenarios) > 1:
             scenario_text = f"Scenario {self.current_scenario}"
         else:
@@ -283,10 +378,22 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.screen.blit(text_top, (self.x_pos + 10, self.y_pos + 10))
 
     def display_mask(self):
+        """
+        Toggle the visibility of the mask layer.
+        """
         if self.mask_layer in self.dataset_kwargs:
             self.show_mask = not self.show_mask
 
     def change_layer(self, layer):
+        """
+        Change the currently displayed layer.
+
+        Special handling for "animation" layer to trigger animation playback.
+        Stops animation if switching to a different layer.
+
+        Args:
+            layer: Name of the layer to display, or "animation" to play animation.
+        """
         if layer == "animation":
             # self.current_layer = ""
             if self.current_layer in self.animation_data:
@@ -298,12 +405,28 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.current_layer = layer
 
     def display_overlay(self, overlay):
+        """
+        Toggle an overlay layer on or off.
+
+        Args:
+            overlay: Name of the overlay layer to toggle.
+        """
         if overlay in self.overlays:
             self.overlays.remove(overlay)
         else:
             self.overlays.append(overlay)
 
     def change_line_index(self, i):
+        """
+        Change the slider position indicator.
+
+        Accepts both absolute indices and normalized values (0-1).
+        Clamps the result to valid range [0, i_max].
+
+        Args:
+            i: New index value. If >= 1, treated as absolute index.
+               If 0 <= i < 1, treated as normalized position.
+        """
         if isinstance(i, float):
             if i >= 1:
                 i = int(i)
@@ -313,15 +436,33 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.i = np.clip(i, 0, self.i_max)
 
     def change_year(self, year):
+        """
+        Change the displayed year/time period.
+
+        Args:
+            year: Year key that exists in the datasets dictionary.
+        """
         if year in self.datasets.keys():
             self.current_year = year
 
     def change_alpha(self, layer, alpha):
+        """
+        Change the transparency of a layer.
+
+        Args:
+            layer: Name of the layer to modify.
+            alpha: Alpha value in range [0, 1], where 0 is fully transparent.
+        """
         alpha = np.clip(alpha, a_min=0, a_max=1)
         if layer in self.dataset_kwargs:
             self.dataset_kwargs[layer]["alpha"] = alpha
 
     def play_animation(self):
+        """
+        Toggle animation playback on or off.
+
+        Initializes animation from frame 0 if starting, or stops if already playing.
+        """
         self.animation_update_time = pygame.time.get_ticks()
         if not self.show_animation:
             self.show_animation = True
@@ -331,6 +472,13 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.bottom_text = None
 
     def update_animation(self):
+        """
+        Update and render the current animation frame.
+
+        Advances animation frames at 1 second intervals, with a 3 second pause
+        on the final frame. Loops back to start after completion.
+        Renders the frame image and associated text overlay.
+        """
         now = pygame.time.get_ticks()
         frame_time = 1000
         if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
@@ -355,12 +503,25 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.bottom_text = frame_text
 
     def start_hand_tracking(self, coords):
+        """
+        Enable hand tracking visualization at specified coordinates.
+
+        Args:
+            coords: Tuple (x, y) with normalized coordinates in range [0, 1].
+                   Disables tracking if coordinates are out of bounds.
+        """
         self.hand_tracking = True
         self.hand_tracking_coords = coords
         if coords[0] < 0 or coords[0] > 1 or coords[1] < 0 or coords[1] > 1:
             self.hand_tracking = False
 
     def draw_hand_tracking(self):
+        """
+        Draw hand tracking visualization showing depth at tracked position.
+
+        Samples bathymetry data at the tracked hand position and displays
+        depth value in a text box with leader line.
+        """
         xpos, ypos = self.hand_tracking_coords
 
         xpos_depth = int(xpos * self.datasets[self.current_year]["bathymetry"].shape[1])
@@ -374,6 +535,13 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.draw_textbox(point=(xpos, ypos), text=f"Depth: {depth:.2f}m", font=font)
 
     def draw_layers(self):
+        """
+        Main rendering method - orchestrates all drawing operations.
+
+        Handles fullscreen mode, clears screen, renders all active layers,
+        draws flow arrows, mask layer, slider line, text overlays,
+        zoom/pan effects, and hand tracking. Updates display at 60 FPS.
+        """
         self.go_fullscreen()
         self.adjust_aspect_ratio()
         self.screen.fill((0, 0, 0))
@@ -414,6 +582,12 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.clock.tick(60)
 
     def go_fullscreen(self):
+        """
+        Handle fullscreen toggle with arrow manager reinitialization.
+
+        Extends parent fullscreen behavior to reinitialize arrow manager
+        when screen dimensions change, ensuring arrows scale correctly.
+        """
         super().go_fullscreen()
 
         if (

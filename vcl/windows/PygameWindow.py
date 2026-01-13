@@ -1,4 +1,15 @@
-from typing import Optional, Tuple, Union
+"""
+Base window module for pygame-based visualization in the Virtual Climate Lab.
+
+This module provides the foundational PygameWindow class that handles common
+window management tasks such as screen initialization, fullscreen toggling,
+dataset-to-surface conversion, aspect ratio management, and zoom/pan interactions.
+
+Classes:
+    PygameWindow: Base class for creating pygame windows with dataset visualization.
+"""
+
+from typing import Optional, Tuple, Union, List
 
 import matplotlib as mpl
 import matplotlib.colors
@@ -12,16 +23,65 @@ from screeninfo import get_monitors
 
 
 class PygameWindow:
+    """
+    Base pygame window class for dataset visualization.
+
+    This class provides core functionality for creating pygame-based windows including
+    screen management, dataset loading and conversion to pygame surfaces, aspect ratio
+    handling, zoom/pan interactions, and fullscreen toggle capabilities.
+
+    Attributes:
+        datasets (dict): Dictionary of datasets keyed by year/group.
+        dataset_kwargs (dict): Configuration for each dataset layer.
+        current_year (str): Currently displayed year/time period.
+        current_scenario (str): Currently selected scenario.
+        scenarios (list): List of available scenarios.
+        screen_width (int): Current screen width in pixels.
+        screen_height (int): Current screen height in pixels.
+        is_fullscreen (bool): Whether window is in fullscreen mode.
+        screen (pygame.Surface): Main pygame display surface.
+        clock (pygame.time.Clock): Clock for frame rate control.
+        surfaces (dict): Pre-rendered pygame surfaces from datasets.
+        bg_layer (str): Name of the background layer.
+        aspect_ratio (float): Target aspect ratio for image display.
+        current_layer (str): Currently active display layer.
+        show_flows (bool): Whether to show flow arrows.
+        show_animation (bool): Whether animation is playing.
+        font (pygame.font.Font): Font for text rendering.
+        img_width (int): Calculated image width based on aspect ratio.
+        img_height (int): Calculated image height based on aspect ratio.
+        x_pos (int): X position where image should be drawn.
+        y_pos (int): Y position where image should be drawn.
+        zoomed_in (bool): Whether currently in zoomed view.
+        zoom_rect (pygame.Rect): Rectangle defining zoom region.
+        zoom_start_pos (tuple): Starting position of zoom selection.
+        pan_start_pos (tuple): Starting position for pan operation.
+    """
+
     def __init__(
         self,
         datasets: dict,
         dataset_kwargs: dict,
-        bg_layer: str = None,
-        start_year="",
-        scenarios=["Ref"],
+        bg_layer: Optional[str] = None,
+        start_year: Optional[str] = "",
+        scenarios: Optional[List[str]] = ["Ref"],
         screen_size: Optional[Tuple[int, int]] = (800, 600),
         aspect_ratio: Optional[float] = 2 / 1,
     ):
+        """
+        Initialize a new PygameWindow instance.
+
+        Args:
+            datasets: Dictionary of datasets, typically keyed by year/time period.
+                     Each dataset contains layer data as numpy arrays.
+            dataset_kwargs: Configuration dictionary for each dataset layer.
+                           Specifies rendering type (RGB/CMAP), colormap, text labels, etc.
+            bg_layer: Name of the background layer to display. If None, uses first layer.
+            start_year: Initial year/time period to display. Defaults to first available.
+            scenarios: List of scenario names (e.g., ['Ref', 'High', 'Low']).
+            screen_size: Initial window dimensions (width, height) in pixels.
+            aspect_ratio: Target aspect ratio for displayed images.
+        """
         pygame.init()
         pygame.display.set_caption("Virtual Climate Lab - Map Screen")
         self.datasets = datasets
@@ -54,6 +114,15 @@ class PygameWindow:
         pygame.mixer.init()
 
     def prepare_surface_dict(self):
+        """
+        Prepare the surface dictionary structure based on dataset organization.
+
+        Creates a nested dictionary structure for storing pygame surfaces.
+        Handles both flat (single year) and nested (multiple years) dataset structures.
+
+        Returns:
+            dict: Nested dictionary with structure {year: {scenario: {layer: surface}}}.
+        """
         surfaces = {}
 
         # Check if the structure is nested (keyed by year/group)
@@ -74,6 +143,18 @@ class PygameWindow:
         return surfaces
 
     def supplement_dataset_kwargs(self, dataset_kwargs: dict):
+        """
+        Supplement dataset kwargs with default values.
+
+        Merges user-provided layer configuration with default values for
+        rendering type, text labels, colormaps, and other display parameters.
+
+        Args:
+            dataset_kwargs: User-provided configuration for dataset layers.
+
+        Returns:
+            dict: Complete configuration dict with defaults applied.
+        """
         default_kwargs = {
             "type": "RGB",
             "variation": "year",
@@ -88,6 +169,13 @@ class PygameWindow:
         return dataset_kwargs
 
     def convert_dataset_to_surfaces(self):
+        """
+        Convert all dataset arrays to pygame surfaces for efficient rendering.
+
+        Iterates through all datasets and layers, converting numpy arrays to
+        pre-rendered pygame surfaces using either RGB or colormap-based methods.
+        Stores results in self.surfaces for quick blitting during rendering.
+        """
         for layer in self.dataset_kwargs.keys():
             for year, dataset_dict in self.datasets.items():
                 if self.dataset_kwargs[layer]["variation"] == "scenario":
@@ -114,6 +202,19 @@ class PygameWindow:
                         )
 
     def create_pygame_surface_from_rgb(self, array: np.ndarray):
+        """
+        Create a pygame surface from an RGB(A) numpy array.
+
+        Handles NaN values by making them transparent. Converts the array to
+        uint8 format and creates a pygame surface with proper alpha channel.
+
+        Args:
+            array: RGB or RGBA array with shape (height, width, 3 or 4).
+                  Values should be in 0-255 range. NaN values become transparent.
+
+        Returns:
+            pygame.Surface: Surface with SRCALPHA flag, ready for blitting.
+        """
         array_height, array_width = array.shape[:2]
 
         # Detect NaNs (assumes NaNs are consistent across channels)
@@ -150,6 +251,21 @@ class PygameWindow:
         cmap: Union[matplotlib.colors.Colormap, str] = None,
         norm=None,
     ):
+        """
+        Create a pygame surface from a 2D array using a matplotlib colormap.
+
+        Applies a colormap to a 2D data array, handling normalization and NaN values.
+        NaN values are rendered as transparent pixels.
+
+        Args:
+            array: 2D numpy array with data values to visualize.
+            cmap: Matplotlib colormap object or name string. Defaults to 'viridis'.
+            norm: Matplotlib Normalize object for value mapping. If None, uses
+                 array's min/max values (with hardcoded override for specific use case).
+
+        Returns:
+            pygame.Surface: RGBA surface with colormap applied.
+        """
         if cmap is None:
             cmap = mpl.colormaps.get_cmap("viridis")
         if isinstance(cmap, str):
@@ -168,9 +284,7 @@ class PygameWindow:
         else:
             normalized_array = norm(array)
         normalized_array_no_nan = normalized_array[~nan_mask]
-        # normalized_array_no_nan = np.clip(normalized_array_no_nan, a_min=0, a_max=1)
 
-        # print(cmap(normalized_array))
         rgba_array[~nan_mask] = (cmap(normalized_array_no_nan) * 255).astype(np.uint8)
         rgba_array[nan_mask] = [0, 0, 0, 0]
 
@@ -182,6 +296,13 @@ class PygameWindow:
         return surface
 
     def adjust_aspect_ratio(self):
+        """
+        Adjust image dimensions to maintain target aspect ratio within screen bounds.
+
+        Calculates optimal image dimensions and position to fit the target aspect
+        ratio within the current screen size. Updates img_width, img_height, x_pos,
+        and y_pos attributes for centered display.
+        """
         self.screen_width, self.screen_height = self.screen.get_size()
         # Calculate the new image dimensions based on screen size
         if self.screen_width / self.screen_height > self.aspect_ratio:
@@ -202,6 +323,18 @@ class PygameWindow:
         self.y_pos = (self.screen_height - new_image_height) // 2
 
     def draw_textbox(self, point, text, font):
+        """
+        Draw a text box with leader line at the specified point.
+
+        Creates a white box with black border containing text, positioned to avoid
+        overlapping with the point. The box is placed in one of four quadrants
+        relative to the point, with a connecting line.
+
+        Args:
+            point: Tuple (x, y) specifying the point to annotate.
+            text: String to display in the text box.
+            font: pygame.font.Font object for text rendering.
+        """
         text_surface = font.render(text, True, (0, 0, 0))
         text_width, text_height = text_surface.get_size()
         padding = 6
@@ -244,6 +377,17 @@ class PygameWindow:
         self.screen.blit(text_surface, (box_x + padding, box_y + padding))
 
     def go_fullscreen(self):
+        """
+        Handle fullscreen toggle and mouse interaction events.
+
+        Processes pygame events including:
+        - F key: Toggle between fullscreen and windowed mode
+        - Left mouse button: Initiate zoom selection or pan (when zoomed)
+        - Right mouse button: Reset zoom
+
+        Manages multi-monitor support by detecting the current monitor and
+        adjusting window size and position accordingly.
+        """
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_f:

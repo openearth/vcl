@@ -1,3 +1,16 @@
+"""
+Slice visualization window module for the Virtual Climate Lab.
+
+This module provides functionality for displaying 2D cross-sectional slices
+from 3D datasets with axes, tick marks, colorbars, and custom visualization.
+
+Functions:
+    draw_colorbar: Draw a segmented colorbar with labels.
+
+Classes:
+    DisplaySlice: Window for displaying 2D slices with scientific visualization features.
+"""
+
 import pygame
 import numpy as np
 
@@ -8,12 +21,18 @@ from vcl.windows import PygameWindow
 
 def draw_colorbar(screen, rect, colors, labels, label_x_pos):
     """
-    Draws a segmented color bar with distinct color blocks.
-    :param screen: The Pygame surface to draw on.
-    :param rect: The pygame.Rect object for the color bar's position and size.
-    :param colors: A list of (threshold, color) tuples.
-    :param labels: A list of labels for each segment.
-    :param label_x_pos: The x-coordinate for the labels.
+    Draw a segmented colorbar with distinct color blocks.
+    
+    Creates a vertical colorbar divided into equal-height segments,
+    each filled with a distinct color. Labels are positioned at the
+    midpoint of each segment.
+    
+    Args:
+        screen: The Pygame surface to draw on.
+        rect: The pygame.Rect object for the colorbar's position and size.
+        colors: A list of (threshold, color) tuples where color is RGB in 0-1 range.
+        labels: A list of string labels for each segment.
+        label_x_pos: The x-coordinate for the label text.
     """
     bar_width, bar_height = rect.width, rect.height
 
@@ -56,6 +75,27 @@ def draw_colorbar(screen, rect, colors, labels, label_x_pos):
 
 
 class DisplaySlice(PygameWindow.PygameWindow):
+    """
+    Window for displaying 2D cross-sectional slices from 3D datasets.
+    
+    Provides a scientific visualization interface for exploring 3D data by
+    displaying 2D slices with proper axes, tick marks, labels, and colorbars.
+    Suitable for viewing vertical/horizontal slices through oceanographic or
+    atmospheric data.
+    
+    Attributes:
+        datasets (dict): Dictionary of 3D datasets to visualize.
+        dataset_kwargs (dict): Configuration for each dataset including ticks and colorbar.
+        current_layer (str): Currently displayed layer name.
+        i (int): Current slice index.
+        padding_left (float): Left padding for plot area.
+        padding_bottom (float): Bottom padding for plot area.
+        padding_top (float): Top padding for plot area.
+        plot_width (float): Width of the plot area.
+        plot_height (float): Height of the plot area.
+        plot_rect (pygame.Rect): Rectangle defining the plot area.
+        cbar_width (float): Width of the colorbar.
+    """
     def __init__(
         self,
         datasets,
@@ -63,6 +103,16 @@ class DisplaySlice(PygameWindow.PygameWindow):
         starting_layer="conc",
         screen_size: Optional[Tuple[int, int]] = (800, 600),
     ):
+        """
+        Initialize a DisplaySlice window.
+        
+        Args:
+            datasets: Dictionary of 3D datasets where each value is a numpy array.
+            dataset_kwargs: Configuration for each layer including xticks, yticks,
+                          colormap data, and colorbar labels.
+            starting_layer: Name of the initial layer to display.
+            screen_size: Initial window dimensions (width, height).
+        """
         pygame.init()
         self.datasets = datasets
         self.dataset_kwargs = dataset_kwargs
@@ -80,6 +130,19 @@ class DisplaySlice(PygameWindow.PygameWindow):
         self.i = 0
 
     def show_slice(self, screen, data, slice_index, position, size):
+        """
+        Render a 2D slice from a 3D dataset at the specified index.
+        
+        Extracts a 2D slice along the last axis, applies a colormap,
+        and blits the result to the screen at the given position and size.
+        
+        Args:
+            screen: Pygame surface to draw on.
+            data: 3D numpy array to slice.
+            slice_index: Index along the last axis (clamped to valid range).
+            position: Tuple (x, y) for top-left corner of slice display.
+            size: Tuple (width, height) for scaled slice dimensions.
+        """
         slice_index = np.clip(slice_index, 0, data.shape[-1] - 1)
         slice_2d = data[..., slice_index]
         surface = self.create_pygame_surface_from_cmap(
@@ -92,6 +155,13 @@ class DisplaySlice(PygameWindow.PygameWindow):
         screen.blit(scaled_surface, position)
 
     def initialize_ratios(self):
+        """
+        Calculate layout dimensions based on current screen size.
+        
+        Computes padding, plot area dimensions, colorbar dimensions, and
+        creates the plot rectangle. All values are scaled proportionally
+        to the screen size for responsive layout.
+        """
         self.padding_left = 0.1 * self.screen_width
         self.padding_bottom = 0.05 * self.screen_height
         self.padding_top = 0.05 * self.screen_height
@@ -122,6 +192,12 @@ class DisplaySlice(PygameWindow.PygameWindow):
         )
 
     def draw_axes(self):
+        """
+        Draw x and y axes for the plot.
+        
+        Renders left (y) axis and bottom (x) axis as black lines,
+        then calls draw_xticks and draw_yticks to add tick marks.
+        """
         pygame.draw.line(
             self.screen,
             (0, 0, 0),
@@ -141,6 +217,13 @@ class DisplaySlice(PygameWindow.PygameWindow):
         self.draw_yticks()
 
     def draw_yticks(self):
+        """
+        Draw y-axis tick marks and labels.
+        
+        Supports two formats:
+        1. List of numeric values: Equally spaced based on min/max
+        2. List of (position, label) tuples: Custom positioning
+        """
         font = pygame.font.Font(None, int(16 / 800 * self.screen_width))
         ticks = self.dataset_kwargs[self.current_layer]["yticks"]
 
@@ -172,6 +255,13 @@ class DisplaySlice(PygameWindow.PygameWindow):
                 self.screen.blit(text_surface, text_rect)
 
     def draw_xticks(self):
+        """
+        Draw x-axis tick marks and labels.
+        
+        Supports two formats:
+        1. List of numeric values: Equally spaced based on min/max
+        2. List of (position, label) tuples: Custom positioning
+        """
         font = pygame.font.Font(None, int(16 / 800 * self.screen_width))
         ticks = self.dataset_kwargs[self.current_layer]["xticks"]
 
@@ -210,6 +300,12 @@ class DisplaySlice(PygameWindow.PygameWindow):
                 self.screen.blit(text_surface, text_rect)
 
     def draw_colorbar(self):
+        """
+        Draw the colorbar for the current layer.
+        
+        Uses the helper function draw_colorbar to render a segmented
+        colorbar with labels positioned to the right of the bar.
+        """
         # Define colorbar position based on calculated widths
         colorbar_x = self.padding_left + self.plot_rect.width + 10
         colorbar_rect = pygame.Rect(
@@ -228,6 +324,12 @@ class DisplaySlice(PygameWindow.PygameWindow):
         )
 
     def draw_fill_rect(self):
+        """
+        Draw a filled rectangle for water/ocean background.
+        
+        Renders a blue-gray fill from depth 25m to the bottom of the plot,
+        representing the water column in oceanographic visualizations.
+        """
         fill_color = (37, 80, 112)
 
         fill_rect_x = self.plot_rect.x
@@ -244,6 +346,11 @@ class DisplaySlice(PygameWindow.PygameWindow):
         )
 
     def draw_slice(self):
+        """
+        Draw the current slice at index self.i.
+        
+        Calls show_slice to render the 2D slice within the plot area.
+        """
         self.show_slice(
             self.screen,
             self.datasets[self.current_layer],
@@ -253,9 +360,21 @@ class DisplaySlice(PygameWindow.PygameWindow):
         )
 
     def change_index(self, i):
+        """
+        Change the displayed slice index.
+        
+        Args:
+            i: New slice index.
+        """
         self.i = i
 
     def draw_layers(self):
+        """
+        Main rendering method - orchestrates all drawing operations.
+        
+        Handles fullscreen mode, initializes layout ratios, fills background,
+        draws water fill, axes, colorbar, and slice. Updates display.
+        """
         self.go_fullscreen()
         self.initialize_ratios()
         self.screen.fill((255, 255, 255))
@@ -268,6 +387,12 @@ class DisplaySlice(PygameWindow.PygameWindow):
         pygame.display.flip()
 
     def go_fullscreen(self):
+        """
+        Handle fullscreen toggle and update screen dimensions.
+        
+        Extends parent fullscreen behavior to update screen_width and
+        screen_height attributes after display mode changes.
+        """
         super().go_fullscreen()
 
         self.screen_width, self.screen_height = self.screen.get_size()

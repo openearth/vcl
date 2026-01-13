@@ -1,4 +1,29 @@
-"""Console script for vcl."""
+"""Command-line interface for Virtual Climate Lab (VCL).
+
+This module provides the CLI entry point for launching the VCL visualization system.
+It uses Click for command-line argument parsing and manages multiple display processes
+via concurrent futures. The CLI allows selection of different components including
+the main map display, statistics panels, MIDI/keyboard control, hand tracking, and
+UID detection.
+
+The system uses ZeroMQ for inter-process communication between display windows and
+input handlers. All processes are launched in a process pool and communicate via
+publish-subscribe sockets on localhost ports 5555-5558.
+
+Usage:
+    # Launch with MIDI control and main map display
+    vcl --midi --satellite
+
+    # Full system with all features
+    vcl --midi --satellite --stats --hand_tracking --uid
+
+    # Preprocess data and save
+    vcl --preprocess --save
+
+Environment:
+    Requires input.json in the vcl package directory with configuration including
+    basepath for data files.
+"""
 
 import concurrent.futures
 import json
@@ -23,6 +48,22 @@ import vcl.preprocess
 
 
 def make_sockets():
+    """Create ZeroMQ sockets for inter-process communication.
+
+    Initializes subscriber and publisher sockets for receiving and sending messages
+    between CLI and display processes. Currently not actively used in the main CLI
+    flow but available for potential extensions.
+
+    Returns:
+        dict: Dictionary containing ZMQ context and sockets:
+            - context: ZMQ context object
+            - SUB: Subscriber socket connected to port 5556
+            - PUB: Publisher socket bound to port 5555
+
+    Note:
+        SUB socket uses CONFLATE to only keep the latest message, preventing
+        message queue buildup.
+    """
     sockets = {}
 
     context = zmq.Context()
@@ -41,6 +82,20 @@ def make_sockets():
 
 
 def start_thread_to_terminate_when_parent_process_dies(ppid):
+    """Initialize worker process to terminate when parent dies.
+
+    This function is used as an initializer for worker processes in the process pool.
+    It starts a daemon thread that would monitor the parent process and terminate
+    the worker if the parent dies unexpectedly.
+
+    Args:
+        ppid: Parent process ID to monitor.
+
+    Note:
+        Current implementation is a placeholder with monitoring logic commented out.
+        The daemon thread is started but doesn't actively monitor the parent.
+        Uncomment the monitoring code if child process cleanup is needed.
+    """
     # pid = os.getpid()
 
     # def f():
@@ -84,7 +139,44 @@ def test(datasets):
 def main(
     satellite, contour, stats, midi, hand_tracking, uid, preprocess, save, args=None
 ):
-    """Console script for vcl."""
+    """Main CLI entry point for Virtual Climate Lab.
+
+    Launches selected VCL components in separate processes. Each component runs
+    independently and communicates via ZeroMQ sockets. The process pool manages
+    up to 10 worker processes.
+
+    Args:
+        satellite: If True, launch the main satellite/map display window.
+        contour: If True, launch the cross-section/slice viewer window.
+        stats: If True, launch the statistics and information panel window.
+        midi: If True, use MIDI controller for input (default). If False, use keyboard.
+        hand_tracking: If True, enable webcam-based hand tracking for gesture control.
+        uid: If True, enable UID detection (AprilTag/QR/ArUco) for interactive elements.
+        preprocess: If True, run data preprocessing from input.json configuration.
+        save: If True with --preprocess, save preprocessed data to disk.
+        args: Additional arguments (not used).
+
+    Returns:
+        int: Exit code (always 0).
+
+    Raises:
+        FileNotFoundError: If input.json is not found in the package directory.
+
+    Note:
+        The function reads input.json for configuration and preprocessed-data.npy
+        for cached data. Data preprocessing can be time-consuming, so use --save
+        to cache results.
+
+    Examples:
+        Launch full system:
+            $ vcl --midi --satellite --stats --hand_tracking --uid
+
+        Preprocess and save data:
+            $ vcl --preprocess --save
+
+        Launch minimal system with keyboard:
+            $ vcl --no-midi --satellite
+    """
     with open(Path(__file__).parent / "input.json") as f:
         input_dict = json.load(f)
 

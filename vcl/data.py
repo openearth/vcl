@@ -52,8 +52,8 @@ def rotate_and_crop(arr: np.ndarray, ang: float, cval: float = np.nan):
     """Array arr to be rotated by ang degrees and cropped afterwards"""
     arr_rot = scipy.ndimage.rotate(arr, ang, reshape=True, order=0, cval=cval)
 
-    shift_up = np.ceil(np.arcsin(abs(ang) / 360 * 2 * np.pi) * arr.shape[1])
-    shift_right = np.ceil(np.arcsin(abs(ang) / 360 * 2 * np.pi) * arr.shape[0])
+    shift_up = np.ceil(np.sin(abs(ang) / 360 * 2 * np.pi) * arr.shape[1])
+    shift_right = np.ceil(np.sin(abs(ang) / 360 * 2 * np.pi) * arr.shape[0])
 
     arr_crop = arr_rot[
         int(shift_up) : arr_rot.shape[0] - int(shift_up),

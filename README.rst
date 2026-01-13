@@ -2,45 +2,219 @@
 Virtual Climate Lab
 ===================
 
-
-.. image:: https://img.shields.io/pypi/v/vcl.svg
-        :target: https://pypi.python.org/pypi/vcl
-
-.. image:: https://img.shields.io/travis/openearth/vcl.svg
-        :target: https://travis-ci.com/openearth/vcl
-
-.. image:: https://readthedocs.org/projects/vcl/badge/?version=latest
-        :target: https://vcl.readthedocs.io/en/latest/?version=latest
-        :alt: Documentation Status
-
-
-
-
-Virtual Climate Lab: an interactive table to discuss the future of your environment.
-
+Virtual Climate Lab: An interactive visualization system for exploring geospatial environments with basemap and bathymetry data.
 
 * Free software: GNU General Public License v3
-* Documentation: https://vcl.readthedocs.io.
 
-install
--------
-* We don't include qt5 as a dependency. But we do expect it to be installed. Please install it separately according to your environment (use mamba/anaconda for windows)
-* We also don't include opencv (version 4, cv2) as a dependency.
-
-
-Features
+Overview
 --------
 
-* satellite images, projected on tabel
-    * show contourlines on top 
-    * slider position on top
-* shows a 2d cross-section on a 2nd screen
-* shows slider on a main screen
+Virtual Climate Lab (VCL) is an interactive table-based visualization system designed for collaborative exploration of geospatial data. The system provides a framework for visualizing basemap imagery (aerial photos, satellite images) combined with bathymetry data, with support for additional custom data layers. It features intuitive multi-modal input controls including MIDI controllers, keyboard, hand tracking, and physical marker detection.
+
+**Core Requirements:**
+
+* **Basemap**: Aerial imagery or satellite basemap (required)
+* **Bathymetry**: Depth/elevation data (required)
+
+**Optional Data Layers:**
+
+* Custom raster layers (PNG, GeoTIFF, NetCDF)
+* Vector data (shapefiles, GeoPackage, GeoJSON)
+* Particle simulations and flow fields
+* Temporal/animated data sequences
+* Statistical information panels
+
+**Key Features:**
+
+* **Multi-layer Geospatial Visualization**: Overlay custom data layers on basemap and bathymetry
+* **Temporal Analysis**: Support for time-series and scenario data
+* **Interactive Controls**: MIDI controller, keyboard, hand gesture tracking, and AprilTag/QR code detection
+* **Real-time Animations**: Particle simulations and temporal progressions
+* **Statistical Panels**: Layer-specific information displays with charts and infographics
+* **Cross-section Views**: Vertical/horizontal slices through data for detailed analysis
+
+Architecture
+------------
+
+VCL uses a multi-process architecture with ZeroMQ for inter-process communication:
+
+**Display Components:**
+
+* **DisplayMap**: Main map window showing geospatial layers and overlays (1920x1080)
+* **DisplaySlice**: Cross-section viewer for vertical data slices
+* **StatsWindow**: Statistics and information panels for each layer
+
+**Input Handlers:**
+
+* **Keyboard Publisher**: Translates keyboard input to layer commands
+* **MIDI Board**: Processes MIDI controller input for intuitive layer control
+* **Hand Tracker**: MediaPipe-based gesture recognition for touch-free interaction
+* **UID Detector**: AprilTag/QR code/ArUco marker detection for physical interactivity
+
+**Data Pipeline:**
+
+1. **Preprocessing**: Converts raw geospatial data (PNG, TIF, NetCDF, shapefiles) to aligned rasters
+2. **Caching**: Saves preprocessed data as pickle for fast loading
+3. **Visualization**: Real-time rendering with Pygame and matplotlib
+
+Installation
+------------
+
+**Install VCL using uv (recommended):**
+
+.. code-block:: bash
+
+    # Clone the repository
+    git clone https://github.com/openearth/vcl
+    cd vcl
+    
+    # Install dependencies and sync environment
+    uv sync
+
+**Alternative installation with pip:**
+
+.. code-block:: bash
+
+    # Clone the repository
+    git clone https://github.com/openearth/vcl
+    cd vcl
+    
+    # Create and activate virtual environment
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    
+    # Install dependencies
+    pip install -e .
+
+Quick Start
+-----------
+
+**1. Prepare Your Data:**
+
+Create an ``input.json`` configuration file in the vcl package directory. **Required fields** are basemap, bathymetry, and extent. All other layers are optional:
+
+.. code-block:: json
+
+    {
+        "basepath": "/path/to/data",
+        "crs": "EPSG:4326",
+        "common": {
+            "basemap": "basemap.tif",           # Required: aerial/satellite image
+            "bathymetry": "bathymetry.tif",     # Required: depth/elevation data
+            "extent": "extent.geojson",         # Required: area of interest polygon
+            "layers": {                          # Optional: custom data layers
+                "layer1": "data1.png",
+                "layer2": "data2.shp"
+            },
+            "stats": {},                         # Optional: statistical panels
+            "animations": {},                    # Optional: temporal sequences
+            "particles": {},                     # Optional: flow simulations
+            "interactivity": {}                  # Optional: interactive regions
+        }
+    }
+
+**2. Preprocess Data:**
+
+.. code-block:: bash
+
+    vcl --preprocess --save
+
+**3. Launch the System:**
+
+.. code-block:: bash
+
+    # Full system with MIDI control
+    vcl --midi --satellite --stats
+
+    # With hand tracking and UID detection
+    vcl --midi --satellite --stats --hand_tracking --uid
+
+    # Keyboard-only mode
+    vcl --no-midi --satellite
+
+Command-Line Options
+--------------------
+
+.. code-block:: bash
+
+    vcl [OPTIONS]
+
+**Options:**
+
+* ``--satellite / --no-satellite``: Enable main map display (default: False)
+* ``--contour / --no-contour``: Enable cross-section viewer (default: False)
+* ``--stats / --no-stats``: Enable statistics panels (default: False)
+* ``--midi / --no-midi``: Use MIDI controller input (default: True)
+* ``--hand_tracking / --no-hand_tracking``: Enable hand tracking (default: False)
+* ``--uid / --no-uid``: Enable UID marker detection (default: False)
+* ``--preprocess / --no-preprocess``: Run data preprocessing (default: False)
+* ``--save / --no-save``: Save preprocessed data to disk (default: False)
+
+Keyboard Controls
+-----------------
+
+When using keyboard mode (``--no-midi``), keyboard controls are available for layer navigation and interaction. Specific key mappings are configured in ``display_pygame.py`` and depend on your data setup.
+
+**Common Functions:**
+
+* ``LEFT`` / ``RIGHT``: Navigate slice position
+* ``N`` / ``B``: Cycle next/previous in active layer collection
+* ``M``: Mask layer toggle
+
+**Note:** Layer selection keys and temporal controls are configured based on your specific data layers. See ``vcl/display_pygame.py`` in the ``keyboard_publisher()`` function for the complete key mapping configuration.
+
+Data Formats
+------------
+
+VCL supports multiple geospatial data formats:
+
+* **Raster**: PNG (with .pgw), GeoTIFF, NetCDF
+* **Vector**: Shapefile, GeoPackage, GeoJSON
+* **Particle**: NetCDF with mesh coordinates and velocity fields
+* **Extent**: Any vector format defining the area of interest
+
+All data is transformed to EPSG:4326 (WGS84) by default and aligned to the extent polygon.
+
+Development
+-----------
+
+**Project Structure:**
+
+.. code-block:: text
+
+    vcl/
+    ├── vcl/
+    │   ├── cli.py              # Command-line interface
+    │   ├── preprocess.py       # Data preprocessing pipeline
+    │   ├── display_pygame.py   # Main display and input handlers
+    │   ├── data.py            # Geospatial utilities
+    │   ├── load_data.py       # Data loading
+    │   ├── windows/           # Display window classes
+    │   │   ├── DisplayMap.py
+    │   │   ├── DisplaySlice.py
+    │   │   └── StatsWindow.py
+    │   ├── utils/             # Utility modules
+    │   │   └── hand_tracking.py
+    │   └── interactivity/     # UID detection
+    │       └── uid_detection.py
+    └── README.rst
+
+Contributing
+------------
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 Credits
 -------
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
+Developed by Deltares and partners for interactive coastal zone management and climate scenario exploration.
+
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+
+License
+-------
+
+GNU General Public License v3

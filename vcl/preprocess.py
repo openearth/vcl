@@ -1,3 +1,19 @@
+"""Data preprocessing module for VCL (Virtual Coastal Landscape).
+
+This module provides functionality to preprocess various geospatial data formats including
+PNG, TIF, NetCDF, and shapefiles for visualization in the VCL display system. It handles
+data rotation, cropping, transformation, and rasterization to prepare data for rendering.
+
+The preprocessing pipeline processes three main types of data:
+- Common layers: basemap, bathymetry, extent, and other shared layers
+- Unique layers: year-specific data that varies across different time periods
+- Essential layers: core data required for all visualizations
+
+Typical usage:
+    input_file = Path("path/to/input.json")
+    datasets = preprocess(input_file)
+"""
+
 import json
 import warnings
 from pathlib import Path
@@ -16,6 +32,31 @@ import vcl.data
 
 
 def preprocess(input_file: Union[str, Path]):
+    """Main preprocessing function that orchestrates the entire preprocessing pipeline.
+
+    This function reads a JSON configuration file and processes both common and unique
+    layers according to the specifications. It validates that required layers (basemap,
+    extent, bathymetry) are present and combines the preprocessed data into a unified
+    dictionary structure.
+
+    Args:
+        input_file: Path to the JSON configuration file containing layer definitions,
+                   file paths, and preprocessing parameters.
+
+    Returns:
+        dict: Dictionary mapping years (or empty string for non-temporal data) to
+             preprocessed datasets. Each dataset contains all common layers plus any
+             year-specific unique layers.
+
+    Raises:
+        ValueError: If the input file is not a JSON file or if required layers
+                   (common, basemap, extent, bathymetry) are missing.
+
+    Example:
+        >>> datasets = preprocess("config.json")
+        >>> # Access 2050 data
+        >>> data_2050 = datasets["2050"]
+    """
     input_file = Path(input_file)
     file_extension = input_file.suffix
     if file_extension != ".json":
@@ -69,6 +110,34 @@ def preprocess(input_file: Union[str, Path]):
 def preprocess_common(
     datasets, base_path: Union[str, Path] = "", crs: str = "EPSG:4326"
 ):
+    """Preprocess common layers that are shared across all time periods.
+
+    This function processes all non-temporal data including basemap, bathymetry,
+    extent polygon, layers, statistics, animations, particles, and interactivity
+    polygons. It handles rotation, cropping, and coordinate transformations.
+
+    Args:
+        datasets: Dictionary containing paths and configuration for all layers to process.
+        base_path: Base directory path for resolving relative file paths. Defaults to
+                  current directory.
+        crs: Coordinate Reference System as an EPSG string (e.g., "EPSG:4326").
+            Defaults to "EPSG:4326" (WGS84).
+
+    Returns:
+        dict: Dictionary containing all preprocessed common data, including:
+            - basemap: Processed basemap raster
+            - bathymetry: Processed bathymetry raster
+            - extent: Geometry defining the area of interest
+            - layers: Dictionary of preprocessed data layers
+            - stats: Statistics and info panels for each layer
+            - animations: Temporal animation data
+            - particles: Particle simulation data
+            - interactivity: Interactive polygon regions
+
+    Note:
+        The extent polygon is used to compute rotation angle and midpoint for
+        aligning all data to a common reference frame.
+    """
     base_path = Path(base_path)
     # Create dictionary to store processed data and values
     preprocessed = {}
@@ -164,6 +233,22 @@ def preprocess_common(
 
 
 def preprocess_unique(datasets):
+    """Preprocess unique layers that vary across different time periods.
+
+    This function creates a structure for year-specific data. Currently a placeholder
+    that initializes empty dictionaries for each year.
+
+    Args:
+        datasets: Dictionary with years as keys and layer specifications as values.
+
+    Returns:
+        dict: Dictionary mapping years to empty preprocessed dataset dictionaries.
+             These will be populated with year-specific data.
+
+    Note:
+        This is currently a stub implementation. Year-specific preprocessing
+        logic should be added here as needed.
+    """
     preprocessed_datasets = {}
     for year in datasets.keys():
         preprocessed_datasets[year] = {}
@@ -177,6 +262,29 @@ def preprocess_essentials(
     base_path: Union[str, Path] = "",
     crs: str = "EPSG:4326",
 ):
+    """Preprocess essential layers required for all visualizations.
+
+    This function processes the core dataset components: basemap, bathymetry, and extent.
+    It creates a shaded relief basemap, applies rotation and cropping transformations
+    to align all data to the extent polygon.
+
+    Args:
+        datasets: Dictionary containing paths to essential layers (basemap, bathymetry, extent).
+        preprocessed: Dictionary to store preprocessed results.
+        base_path: Base directory path for resolving relative file paths. Defaults to
+                  current directory.
+        crs: Coordinate Reference System as an EPSG string. Defaults to "EPSG:4326".
+
+    Returns:
+        dict: The preprocessed dictionary updated with:
+            - extent: Geometry polygon defining the area of interest
+            - basemap: Shaded relief basemap aligned to extent
+            - bathymetry: Bathymetry raster aligned to extent
+
+    Note:
+        The basemap is created by combining the base raster with bathymetric shading
+        to create a visually appealing 3D relief effect.
+    """
     base_path = Path(base_path)
 
     extent = gpd.read_file(base_path / datasets["extent"]).iloc[0]["geometry"]
@@ -215,6 +323,33 @@ def preprocess_essentials(
 
 
 def preprocess_png(file_path: Path, layer: str, extra_info: dict):
+    """Preprocess PNG raster files with optional georeferencing.
+
+    This function loads PNG images and transforms them to match the target extent.
+    It handles both georeferenced PNGs (with .pgw world files) and non-georeferenced
+    images where bounds must be specified in extra_info.
+
+    Args:
+        file_path: Path to the PNG file to process.
+        layer: Name/identifier of the layer being processed.
+        extra_info: Dictionary containing transformation parameters:
+            - extent: Target geometry extent
+            - mid_point: Center point for rotation
+            - angle: Rotation angle in degrees
+            - crs: Coordinate reference system
+            - [layer]: Optional layer-specific extent if no .pgw file exists
+
+    Returns:
+        numpy.ndarray: Processed raster array aligned and cropped to the target extent,
+                      filled to match the bounding box dimensions.
+
+    Raises:
+        ValueError: If the PNG lacks a .pgw file and no bounds are provided in extra_info.
+
+    Note:
+        The function rotates and crops the raster to align with the extent polygon,
+        then fills any gaps to ensure the output matches the full bounding box.
+    """
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
         with rasterio.open(file_path) as src:
@@ -255,15 +390,67 @@ def preprocess_png(file_path: Path, layer: str, extra_info: dict):
 
 
 def preprocess_tif():
+    """Preprocess TIF/GeoTIFF raster files.
+
+    Placeholder function for TIF file processing. Currently not implemented.
+
+    Returns:
+        None
+
+    Note:
+        This function needs to be implemented to handle GeoTIFF preprocessing.
+        Implementation should follow the pattern of preprocess_png().
+    """
     return
 
 
 def preprocess_nc(file_path: Path, layer: str, extra_info: dict):
+    """Preprocess NetCDF files.
+
+    Placeholder function for NetCDF file processing. Opens the dataset but does
+    not currently process it.
+
+    Args:
+        file_path: Path to the NetCDF (.nc) file.
+        layer: Name/identifier of the layer being processed.
+        extra_info: Dictionary containing transformation parameters (currently unused).
+
+    Returns:
+        None
+
+    Note:
+        This function needs to be implemented to extract and process relevant
+        variables from NetCDF datasets.
+    """
     ds = xr.open_dataset(file_path)
     return
 
 
 def preprocess_shape(file_path: Path, layer: str, extra_info: dict):
+    """Preprocess vector shapefiles, GeoPackages, and GeoJSON files.
+
+    This function converts vector geometries (polygons, lines, points) to rasterized
+    arrays suitable for display. LineStrings are buffered to ensure visibility.
+    Features are rasterized using their cmap_id attribute for color mapping.
+
+    Args:
+        file_path: Path to the vector file (.shp, .gpkg, or .geojson).
+        layer: Name/identifier of the layer being processed.
+        extra_info: Dictionary containing transformation parameters:
+            - extent: Target geometry extent for bounds
+            - mid_point: Center point for rotation
+            - angle: Rotation angle in degrees
+            - crs: Coordinate reference system
+
+    Returns:
+        numpy.ndarray: Rasterized and rotated array (1080x1920) with feature values
+                      from the cmap_id column. Non-feature pixels contain NaN.
+
+    Note:
+        - LineStrings and MultiLineStrings are buffered by 0.1 units for visibility
+        - Output resolution is fixed at 1920x1080
+        - The cmap_id column must exist in the GeoDataFrame for proper colorization
+    """
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message="driver GPKG does not support open option CRS"
@@ -314,6 +501,30 @@ def preprocess_shape(file_path: Path, layer: str, extra_info: dict):
 
 
 def preprocess_particles(file_path: Path, layer: str, extra_info: dict):
+    """Preprocess particle simulation data from NetCDF files.
+
+    This function loads particle or flow field data (typically ocean currents) from
+    NetCDF files and filters the data to only include points within the area of interest.
+    It extracts mesh cell positions and velocity vectors.
+
+    Args:
+        file_path: Path to the NetCDF file containing particle/current data.
+        layer: Name/identifier of the layer being processed.
+        extra_info: Dictionary containing transformation parameters:
+            - extent: Geometry defining the area of interest for spatial filtering
+
+    Returns:
+        dict: Dictionary containing filtered particle data with keys:
+            - face_x: X-coordinates of mesh cell centers within extent
+            - face_y: Y-coordinates of mesh cell centers within extent
+            - ucx: U-component (x-direction) of currents for all time steps
+            - ucy: V-component (y-direction) of currents for all time steps
+
+    Note:
+        The NetCDF file is expected to have variables:
+        - Mesh_face_x, Mesh_face_y: Spatial coordinates
+        - currents_u, currents_v: Velocity components
+    """
     ds = xr.open_dataset(file_path)
     x_values = ds["Mesh_face_x"].values
     y_values = ds["Mesh_face_y"].values
