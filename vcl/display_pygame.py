@@ -848,14 +848,14 @@ def midi_board(datasets):
 
     collection_type_mapping_1 = {layer: "nature_track" for layer in nature_track}
     collection_type_mapping_2 = {layer: "fishing" for layer in fishing}
-    collection_type_mapping_3 = {layer: "owf" for layer in windfarms}
+    # collection_type_mapping_3 = {layer: "owf" for layer in windfarms}
     collection_type_mapping = (
         collection_type_mapping_1
         | collection_type_mapping_2
-        | collection_type_mapping_3
+        # | collection_type_mapping_3
     )
 
-    cycles = {"nature_track": nature_track, "fishing": fishing, "owf": windfarms}
+    cycles = {"nature_track": nature_track, "fishing": fishing}
 
     def cycle_collection(cycle):
         global current_layer, current_overlays
@@ -936,7 +936,7 @@ def midi_board(datasets):
             24: {"function": change_layer, "value": "navisafe,layer"},
             25: {"function": change_layer, "value": f"{fishing[0]},layer"},
             26: {"function": change_layer, "value": "windfarms,layer"},
-            27: {"function": change_layer, "value": f"{windfarms[0]},overlay"},
+            # 27: {"function": change_layer, "value": f"{windfarms[0]},overlay"},
             28: {"function": change_layer, "value": f"{nature_track[0]},layer"},
             29: {"function": change_layer, "value": "vessel-traffic,overlay"},
             30: {"function": change_layer, "value": "eez,overlay"},
