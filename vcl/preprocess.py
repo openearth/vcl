@@ -15,6 +15,7 @@ Typical usage:
 """
 
 import json
+import logging
 import warnings
 from pathlib import Path
 from typing import Union
@@ -29,6 +30,8 @@ from rasterio.errors import NotGeoreferencedWarning
 from tqdm import tqdm
 
 import vcl.data
+
+logger = logging.getLogger(__name__)
 
 
 def preprocess(input_file: Union[str, Path]):
@@ -85,9 +88,9 @@ def preprocess(input_file: Union[str, Path]):
     unique_layers = input_dict.get("unique")
 
     if common_layers:
-        print("-" * 60)
-        print("Preprocessing common layers...")
-        print("-" * 60)
+        logger.info("-" * 60)
+        logger.info("Preprocessing common layers...")
+        logger.info("-" * 60)
         preprocessed_common_datasets = preprocess_common(
             common_layers, base_path=base_path, crs=crs
         )
@@ -146,7 +149,9 @@ def preprocess_common(
     angle = vcl.data.compute_rotation_angle(extent)
     mid_point = extent.centroid.coords[0]
 
-    print("Preprocessing basemap and bathymetry...")
+    mid_point = extent.centroid.coords[0]
+
+    logger.info("Preprocessing basemap and bathymetry...")
     preprocessed = preprocess_essentials(
         datasets=datasets, preprocessed=preprocessed, base_path=base_path, crs=crs
     )
@@ -154,7 +159,9 @@ def preprocess_common(
     extra_info = {"extent": extent, "mid_point": mid_point, "angle": angle, "crs": crs}
     extra_info = datasets.get("extra_info", {}) | extra_info
 
-    print("Preprocessing layers...")
+    extra_info = datasets.get("extra_info", {}) | extra_info
+
+    logger.info("Preprocessing layers...")
     pbar = tqdm(datasets["layers"], unit="layer")
     for layer in pbar:
         pbar.set_description(f"Processing: {layer}")
@@ -180,7 +187,9 @@ def preprocess_common(
 
         preprocessed[layer] = layer_data
 
-    print("Preprocessing info...")
+        preprocessed[layer] = layer_data
+
+    logger.info("Preprocessing info...")
     preprocessed["stats"] = {}
     pbar = tqdm(datasets["stats"], unit="layer")
     for layer in pbar:
@@ -194,7 +203,9 @@ def preprocess_common(
                     data = plt.imread(base_path / layer_path)
                     preprocessed["stats"][layer].append(("image", data))
 
-    print("Preprocessing animations...")
+                    preprocessed["stats"][layer].append(("image", data))
+
+    logger.info("Preprocessing animations...")
     pbar = tqdm(datasets["animations"], unit="layer")
     preprocessed["animations"] = {}
     for layer in pbar:
@@ -211,7 +222,9 @@ def preprocess_common(
             animation_data.append({"frame": layer_data, "text": year})
         preprocessed["animations"][layer] = animation_data
 
-    print("Preprocessing particles...")
+        preprocessed["animations"][layer] = animation_data
+
+    logger.info("Preprocessing particles...")
     preprocessed["particles"] = {}
     pbar = tqdm(datasets["particles"], unit="layer")
     for layer in pbar:
@@ -221,7 +234,9 @@ def preprocess_common(
         )
         preprocessed["particles"][layer] = particle_data
 
-    print("Preprocessing interactivity polygons...")
+        preprocessed["particles"][layer] = particle_data
+
+    logger.info("Preprocessing interactivity polygons...")
     preprocessed["interactivity"] = {}
     pbar = tqdm(datasets["interactivity"], unit="layer")
     for layer in pbar:

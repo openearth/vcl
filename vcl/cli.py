@@ -27,6 +27,7 @@ Environment:
 
 import concurrent.futures
 import json
+import logging
 import os
 import pickle
 import signal
@@ -139,6 +140,10 @@ def test(datasets):
 def main(
     satellite, contour, stats, midi, hand_tracking, uid, preprocess, save, args=None
 ):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
     """Main CLI entry point for Virtual Climate Lab.
 
     Launches selected VCL components in separate processes. Each component runs
