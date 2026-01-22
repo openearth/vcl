@@ -149,16 +149,12 @@ def preprocess_common(
     angle = vcl.data.compute_rotation_angle(extent)
     mid_point = extent.centroid.coords[0]
 
-    mid_point = extent.centroid.coords[0]
-
     logger.info("Preprocessing basemap and bathymetry...")
     preprocessed = preprocess_essentials(
         datasets=datasets, preprocessed=preprocessed, base_path=base_path, crs=crs
     )
 
     extra_info = {"extent": extent, "mid_point": mid_point, "angle": angle, "crs": crs}
-    extra_info = datasets.get("extra_info", {}) | extra_info
-
     extra_info = datasets.get("extra_info", {}) | extra_info
 
     logger.info("Preprocessing layers...")
@@ -187,8 +183,6 @@ def preprocess_common(
 
         preprocessed[layer] = layer_data
 
-        preprocessed[layer] = layer_data
-
     logger.info("Preprocessing info...")
     preprocessed["stats"] = {}
     pbar = tqdm(datasets["stats"], unit="layer")
@@ -201,8 +195,6 @@ def preprocess_common(
             if stat_type == "image":
                 for layer_path in layer_paths:
                     data = plt.imread(base_path / layer_path)
-                    preprocessed["stats"][layer].append(("image", data))
-
                     preprocessed["stats"][layer].append(("image", data))
 
     logger.info("Preprocessing animations...")
@@ -222,8 +214,6 @@ def preprocess_common(
             animation_data.append({"frame": layer_data, "text": year})
         preprocessed["animations"][layer] = animation_data
 
-        preprocessed["animations"][layer] = animation_data
-
     logger.info("Preprocessing particles...")
     preprocessed["particles"] = {}
     pbar = tqdm(datasets["particles"], unit="layer")
@@ -232,8 +222,6 @@ def preprocess_common(
         particle_data = preprocess_particles(
             file_path=layer_path, layer=layer, extra_info=extra_info
         )
-        preprocessed["particles"][layer] = particle_data
-
         preprocessed["particles"][layer] = particle_data
 
     logger.info("Preprocessing interactivity polygons...")
