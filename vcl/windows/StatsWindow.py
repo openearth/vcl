@@ -234,9 +234,7 @@ class StatsWindow:
             ax = self.fig.add_subplot(gs[0, i])
             self.axes.append(ax)
 
-        for ax, (plot_type, data) in zip(
-            self.axes, self.datasets[self.current_layer].items()
-        ):
+        for ax, (plot_type, data) in zip(self.axes, self.datasets[self.current_layer]):
             if plot_type == "piechart":
                 self.plot_piechart(self.current_layer, ax)
             elif plot_type == "histogram":

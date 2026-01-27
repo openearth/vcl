@@ -7,6 +7,8 @@ import rasterio
 import rioxarray as rxr
 import xarray as xr
 
+from typing import Union
+
 
 def load():
     # p_drive_dir = Path(r"P:\11209197-virtualclimatelab\01_data\Delft3D")
@@ -34,7 +36,6 @@ def load():
     return common_datasets, unique_datasets
 
 
-def load_preprocessed():
-    data_dir = Path("~/data/vcl/gnsbi").expanduser()
-    datasets = np.load(data_dir / "preprocessed-data.npy", allow_pickle=True)
+def load_preprocessed(data_path: Union[str, Path]):
+    datasets = np.load(data_path, allow_pickle=True)
     return datasets

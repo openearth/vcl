@@ -167,7 +167,7 @@ def make_listen_sockets():
     return sockets
 
 
-def displaymap(datasets):
+def displaymap(data_path):
     """Main map display window showing geospatial layers and overlays.
 
     This function creates and runs the primary map visualization window. It handles
@@ -188,7 +188,7 @@ def displaymap(datasets):
         Runs in an infinite loop until the process is terminated. Uses non-blocking
         ZMQ polling with 10ms timeout to maintain responsiveness.
     """
-    datasets = load_preprocessed()
+    datasets = load_preprocessed(data_path=data_path)
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
@@ -297,7 +297,7 @@ def displaymap(datasets):
         display.draw_layers()
 
 
-def displaystats(datasets):
+def displaystats(data_path):
     """Statistics and information panel display window.
 
     This function creates a window showing statistical information, charts, and
@@ -315,7 +315,7 @@ def displaystats(datasets):
         Uses matplotlib's pause() for rendering updates. Certain layers are ignored
         (mask, animation, 20, 30) as they don't have associated statistics.
     """
-    datasets = load_preprocessed()
+    datasets = load_preprocessed(data_path=data_path)
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
@@ -360,7 +360,7 @@ def displaystats(datasets):
         plt.pause(0.01)
 
 
-def displayslice(datasets):
+def displayslice(data_path):
     """Cross-section slice visualization window.
 
     This function creates a window displaying vertical or horizontal cross-sections
@@ -377,7 +377,7 @@ def displayslice(datasets):
         Currently uses empty slice_datasets and dataset_kwargs - implementation
         may be incomplete or requires configuration.
     """
-    datasets = load_preprocessed()
+    datasets = load_preprocessed(data_path=data_path)
     sockets = make_listen_sockets()
     poller = sockets["poller"]
     socket_slice = sockets["slice"]
@@ -737,7 +737,7 @@ def main():
     return 0
 
 
-def midi_board(datasets):
+def midi_board(data_path):
     """MIDI controller input handler that publishes commands via ZMQ.
 
     This function listens for MIDI input from a connected controller and translates
@@ -775,7 +775,7 @@ def midi_board(datasets):
         The function runs until the MIDI BANK button is pressed (sysex message).
         Uses exception handling to ignore unmapped controls gracefully.
     """
-    datasets = load_preprocessed()
+    datasets = load_preprocessed(data_path=data_path)
     # import ipdb
 
     # ipdb.set_trace()
@@ -985,7 +985,7 @@ def midi_board(datasets):
                 continue
 
 
-def hand_tracker(datasets):
+def hand_tracker(data_path):
     """Hand tracking module that publishes hand coordinates via ZMQ.
 
     This function initializes the webcam-based hand tracking system using MediaPipe.
@@ -1003,7 +1003,7 @@ def hand_tracker(datasets):
         enables interactive calibration for mapping camera view to map extent.
         Publishes to port 5557.
     """
-    datasets = load_preprocessed()
+    datasets = load_preprocessed(data_path=data_path)
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     socket.setsockopt(zmq.CONFLATE, 1)
@@ -1023,7 +1023,7 @@ def hand_tracker(datasets):
     )
 
 
-def uid_detector(datasets):
+def uid_detector(data_path):
     """Unique identifier (UID) detection module for interactive elements.
 
     This function runs AprilTag/QR code/ArUco marker detection on webcam input
@@ -1044,7 +1044,7 @@ def uid_detector(datasets):
         Publishes to port 5558. Exceptions are caught and printed but don't
         terminate the module.
     """
-    datasets = load_preprocessed()
+    datasets = load_preprocessed(data_path=data_path)
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
     socket.setsockopt(zmq.CONFLATE, 1)
