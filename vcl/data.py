@@ -257,7 +257,7 @@ def create_shaded_image(sat_extent, bodem):
     # img_shade = sat * 255
     # img_shade = img_shade.astype(np.uint8)
 
-    return img_shade
+    return img_shade, (left, bottom, right, top)
 
 
 def get_plot_lims(extent):

@@ -299,7 +299,10 @@ def preprocess_essentials(
     basemap_bounds = basemap.bounds
     bathymetry = rasterio.open(base_path / datasets["bathymetry"])
 
-    basemap = vcl.data.create_shaded_image(basemap, bathymetry)
+    basemap, basemap_bounds = vcl.data.create_shaded_image(basemap, bathymetry)
+    print(extent)
+    print(basemap_bounds)
+    print(angle)
 
     basemap = vcl.data.rotate_and_crop_array(
         array=basemap,

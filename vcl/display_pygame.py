@@ -198,47 +198,6 @@ def displaymap(data_path):
 
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
-        "bathymetry": {
-            "type": "CMAP",
-            "text": "Bathymetry",
-            "text_color": (255, 255, 255),
-            "cmap": bathymetry_cmap,
-            "norm": norm,
-        },
-        "fishery": {"type": "RGB", "text": "Fishing effort", "alpha": 0.6},
-        "fishing_catch": {"type": "RGB", "text": "Fishing catch", "alpha": 0.6},
-        "navisafe": {"type": "RGB", "text": "Navisafe"},
-        "vessel-traffic": {"type": "RGB", "text": "Vessel traffic", "alpha": 0.7},
-        "windfarms": {"type": "RGB", "text": "Windfarms", "cmap": windfarm_cmap},
-        "mask": {
-            "type": "CMAP",
-            "text": "",
-            "cmap": ListedColormap(["gray", "orange"]),
-        },
-        "eez": {"type": "RGB", "text": ""},
-        "ospar": {"type": "RGB", "text": ""},
-        "cod_MPA": {"type": "RGB", "text": "Cods MPA"},
-        "cod_survey": {"type": "RGB", "text": "Cods MPA"},
-        "hp_data": {"type": "RGB", "text": "Harbour Porpoise data"},
-        "hp_distribution_MPA": {
-            "type": "RGB",
-            "text": "Harbour Porpoise distribution (MPA)",
-        },
-        "hp_distribution_OWF": {
-            "type": "RGB",
-            "text": "Harbour Porpoise distribution (OWF)",
-        },
-        "kittiwake_feeding": {"type": "RGB", "text": "Kittiwake feeding"},
-        "kittiwake_presence": {"type": "RGB", "text": "Kittiwake presence"},
-        "kittiwake_presence_g": {"type": "RGB", "text": "Kittiwake presence (grid)"},
-        "oyster_presence": {"type": "RGB", "text": "Oyster presence"},
-        "oyster_presence_g": {"type": "RGB", "text": "Oyster presence (grid)"},
-        "seagrass_presence": {"type": "RGB", "text": "Seagrass presence"},
-        "seagrass_presence_g": {"type": "RGB", "text": "Seagrass presence (grid)"},
-        "approach_2": {"type": "RGB", "text": "Ecological importance"},
-        "owf_2030": {"type": "RGB", "text": ""},
-        "owf_2040": {"type": "RGB", "text": ""},
-        "owf_all": {"type": "RGB", "text": ""},
     }
 
     socket = sockets["maps"]
@@ -249,11 +208,11 @@ def displaymap(data_path):
     display = DisplayMap.DisplayMap(
         datasets=datasets,
         start_year="1970",
-        flow_data=datasets[""]["particles"]["current"],
+        flow_data={},
         animations_data=datasets[""]["animations"],
         dataset_kwargs=dataset_kwargs,
         bg_layer="basemap",
-        mask_layer="mask",
+        mask_layer=None,
         i_max=127,
         aspect_ratio=1920 / 1080,
     )
