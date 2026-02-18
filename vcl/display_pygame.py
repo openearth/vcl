@@ -191,7 +191,6 @@ def displaymap(data_path):
     datasets = load_preprocessed(data_path=data_path)
     sockets = make_listen_sockets()
     poller = sockets["poller"]
-
     from matplotlib.colors import Normalize
 
     norm = Normalize(vmin=-4000, vmax=0)
@@ -245,7 +244,6 @@ def displaymap(data_path):
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
     socket_hands = sockets["hands"]
-
     display = DisplayMap.DisplayMap(
         datasets=datasets,
         start_year="1970",

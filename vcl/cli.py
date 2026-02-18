@@ -182,6 +182,7 @@ def main(
         Launch minimal system with keyboard:
             $ vcl --no-midi --satellite
     """
+
     with open(Path(__file__).parent / "input.json") as f:
         input_dict = json.load(f)
 
