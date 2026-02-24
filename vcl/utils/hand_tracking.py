@@ -6,10 +6,11 @@ from typing import Iterable
 import zmq
 from typing import Union
 
+from vcl.config import load_camera_points
+
 # Define reference points (top-left, top-right, bottom-right, bottom-left)
-CAMERA_POINTS = np.array(
-    [(0.01, 0.88), (0.97, 0.87), (0.88, 0.13), (0.09, 0.16)], dtype=np.float32
-)
+CAMERA_POINTS = load_camera_points()
+
 TABLE_POINTS = np.array(
     [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], dtype=np.float32
 )

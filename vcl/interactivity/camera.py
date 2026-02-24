@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 
-CAMERA_POINTS = np.array(
-    [(0.01, 0.88), (0.97, 0.87), (0.88, 0.13), (0.09, 0.16)], dtype=np.float32
-)
+from vcl.config import load_camera_points
+
+CAMERA_POINTS = load_camera_points()
+
 TABLE_POINTS = np.array(
     [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], dtype=np.float32
 )

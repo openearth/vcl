@@ -198,6 +198,15 @@ def displaymap(data_path):
 
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
+        "aangepast_bouwen": {"type": "RGB", "alpha": 0.8},
+        "bescherming": {"type": "RGB", "alpha": 0.8},
+        "compartiment": {"type": "RGB", "alpha": 0.8},
+        "d_T100_000": {"type": "RGB", "alpha": 0.8},
+        "d_T100": {"type": "RGB", "alpha": 0.8},
+        "c_management": {"type": "RGB", "alpha": 0.8},
+        "risico_zone": {"type": "RGB", "alpha": 0.8},
+        "risico_zone_20": {"type": "RGB", "alpha": 0.8},
+        "schuilen": {"type": "RGB", "alpha": 0.8},
     }
 
     socket = sockets["maps"]
@@ -427,37 +436,6 @@ def keyboard_publisher():
                 current_overlay = text
                 current_overlays.append(text)
 
-    nature_track = collections.deque(
-        [
-            "hp_distribution_MPA",
-            "hp_distribution_OWF",
-            "approach_2",
-            "cod_MPA",
-            "cod_survey",
-            "hp_data",
-            "kittiwake_feeding",
-            "kittiwake_presence",
-            "kittiwake_presence_g",
-            "oyster_presence",
-            "oyster_presence_g",
-            "seagrass_presence",
-            "seagrass_presence_g",
-        ]
-    )
-    fishing = collections.deque(["fishery", "fishery_catch"])
-    windfarms = collections.deque(["owf_2030", "owf_2040", "owf_all"])
-
-    collection_type_mapping_1 = {layer: "nature_track" for layer in nature_track}
-    collection_type_mapping_2 = {layer: "fishing" for layer in fishing}
-    collection_type_mapping_3 = {layer: "owf" for layer in windfarms}
-    collection_type_mapping = (
-        collection_type_mapping_1
-        | collection_type_mapping_2
-        | collection_type_mapping_3
-    )
-
-    cycles = {"nature_track": nature_track, "fishing": fishing, "owf": windfarms}
-
     def cycle_collection(cycle):
         global current_layer, current_overlays
 
@@ -544,23 +522,23 @@ def keyboard_publisher():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
-                    change_layer("bathymetry,layer")
+                    change_layer("aangepast_bouwen,layer")
                 elif event.key == pygame.K_2:
-                    change_layer(f"{fishing[0]},layer")
+                    change_layer(f"bescherming,layer")
                 elif event.key == pygame.K_3:
-                    change_layer("navisafe,layer")
+                    change_layer("compartiment,layer")
                 elif event.key == pygame.K_4:
-                    change_layer("windfarms,layer")
+                    change_layer("d_T100_000,layer")
                 elif event.key == pygame.K_5:
-                    change_layer(f"{windfarms[0]},overlay")
+                    change_layer("d_T100,layer")
                 elif event.key == pygame.K_6:
-                    change_layer(f"{nature_track[0]},layer")
+                    change_layer("c_management,layer")
                 elif event.key == pygame.K_7:
-                    change_layer("vessel-traffic,overlay")
+                    change_layer("risico_zone,layer")
                 elif event.key == pygame.K_8:
-                    change_layer("eez,overlay")
+                    change_layer("risico_zone_20,layer")
                 elif event.key == pygame.K_9:
-                    change_layer("ospar,overlay")
+                    change_layer("schuilen,layer")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_q:

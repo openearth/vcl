@@ -42,6 +42,7 @@ import zmq
 
 import vcl.data
 import vcl.display_pygame
+import vcl.interactivity.calibration
 
 # import vcl.display
 import vcl.load_data
@@ -137,8 +138,22 @@ def test(datasets):
 @click.option("--uid/--no-uid", default=False)
 @click.option("--preprocess/--no-preprocess", default=False)
 @click.option("--save/--no-save", default=False)
+@click.option(
+    "--calibrate",
+    is_flag=True,
+    help="Run camera calibration using 4 AprilTags and exit.",
+)
 def main(
-    satellite, contour, stats, midi, hand_tracking, uid, preprocess, save, args=None
+    satellite,
+    contour,
+    stats,
+    midi,
+    hand_tracking,
+    uid,
+    preprocess,
+    save,
+    calibrate,
+    args=None,
 ):
     logging.basicConfig(
         level=logging.INFO,
@@ -184,6 +199,10 @@ def main(
     """
     with open(Path(__file__).parent / "input.json") as f:
         input_dict = json.load(f)
+
+    if calibrate:
+        vcl.interactivity.calibration.run_calibration()
+        return 0
 
     data_dir = input_dict.get("basepath")
     data_dir = Path(data_dir)

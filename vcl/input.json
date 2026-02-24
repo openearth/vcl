@@ -3,14 +3,96 @@
     "crs": "EPSG:28992",
     "common": {
         "basemap": "ahn-photo-merged_6000x4000_fit.tif",
-        "bathymetry": "ahn-merged-dsm-1-to-2.tif",
+        "bathymetry": "ahn-merged-dtm-max-15-1-to-2-v4.tif",
         "extent": "extent_1_to_2.gpkg",
-        "layers": {},
+        "layers": {
+            "aangepast_bouwen": "260220_strategie kaarten/260219 Exports/260219_Aangepast bouwen.png",
+            "bescherming": "260220_strategie kaarten/260219 Exports/260219_Bescherming vitale objecten en infra.png",
+            "compartiment": "260220_strategie kaarten/260219 Exports/260219_Compartimentering.png",
+            "d_T100_000": "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000.png",
+            "d_T100": "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.png",
+            "c_management": "260220_strategie kaarten/260219 Exports/260219_Ondersteuning crisis management.png",
+            "risico_zone": "260220_strategie kaarten/260219 Exports/260219_Risicozonering.png",
+            "risico_zone_20": "260220_strategie kaarten/260219 Exports/260219_Risicozonering excl >20cm.png",
+            "schuilen": "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren.png"
+        },
         "animations": {},
         "interactivity": {},
         "stats": {},
-        "particles": {
-        },
-        "extra_info": {}
+        "particles": {},
+        "extra_info": {
+            "aangepast_bouwen": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "bescherming": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "compartiment": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "d_T100_000": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "d_T100": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "c_management": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "risico_zone": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "risico_zone_20": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            },
+            "schuilen": {
+                "extent": [
+                    80584.62,
+                    420429.645,
+                    106889.340,
+                    438427.469
+                ]
+            }
+        }
     }
 }
