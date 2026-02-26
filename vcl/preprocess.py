@@ -171,7 +171,9 @@ def preprocess_common(
                 file_path=layer_path, layer=layer, extra_info=extra_info
             )
         elif file_extension == ".tif":
-            layer_data = preprocess_tif()
+            layer_data = preprocess_tif(
+                file_path=layer_path, layer=layer, extra_info=extra_info
+            )
         elif file_extension == ".nc":
             layer_data = preprocess_nc()
         elif file_extension in [".shp", ".gpkg", ".geojson"]:
@@ -206,9 +208,13 @@ def preprocess_common(
         assert (base_path / file_dir).is_dir(), f"Directory {file_dir} does not exist."
         animation_data = []
         for layer_path in sorted(file_dir.glob("*")):
-            year = layer_path.stem[:4].split("_")[0]
+            year = layer_path.stem.split("_")[0]
             if layer_path.suffix == ".png":
                 layer_data = preprocess_png(
+                    file_path=layer_path, layer=layer, extra_info=extra_info
+                )
+            elif layer_path.suffix == ".tif":
+                layer_data = preprocess_tif(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
             animation_data.append({"frame": layer_data, "text": year})
@@ -300,9 +306,6 @@ def preprocess_essentials(
     bathymetry = rasterio.open(base_path / datasets["bathymetry"])
 
     basemap, basemap_bounds = vcl.data.create_shaded_image(basemap, bathymetry)
-    print(extent)
-    print(basemap_bounds)
-    print(angle)
 
     basemap = vcl.data.rotate_and_crop_array(
         array=basemap,
@@ -395,7 +398,7 @@ def preprocess_png(file_path: Path, layer: str, extra_info: dict):
     return filled_data
 
 
-def preprocess_tif():
+def preprocess_tif(file_path: Path, layer: str, extra_info: dict):
     """Preprocess TIF/GeoTIFF raster files.
 
     Placeholder function for TIF file processing. Currently not implemented.
@@ -407,7 +410,32 @@ def preprocess_tif():
         This function needs to be implemented to handle GeoTIFF preprocessing.
         Implementation should follow the pattern of preprocess_png().
     """
-    return
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
+        with rasterio.open(file_path) as src:
+            bounds = src.bounds
+            data = src.read()
+
+    cropped_data = vcl.data.rotate_and_crop_array(
+        array=np.transpose(data, (1, 2, 0)),
+        array_extent=bounds,
+        center_point=extra_info["mid_point"],
+        angle=extra_info["angle"],
+        crop_extent=extra_info["extent"],
+        crs=extra_info["crs"],
+    )
+    extent_bbox = extra_info["extent"].bounds
+    cropped_bounds = (
+        max(bounds[0], extent_bbox[0]),
+        max(bounds[1], extent_bbox[1]),
+        min(bounds[2], extent_bbox[2]),
+        min(bounds[3], extent_bbox[3]),
+    )
+
+    filled_data = vcl.data.fill_array_to_bbox(
+        array=cropped_data, array_extent=cropped_bounds, bbox=extent_bbox
+    )
+    return filled_data
 
 
 def preprocess_nc(file_path: Path, layer: str, extra_info: dict):

@@ -480,7 +480,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         Renders the frame image and associated text overlay.
         """
         now = pygame.time.get_ticks()
-        frame_time = 1000
+        frame_time = 100
         if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
             frame_time = 3000
         if now - self.animation_update_time > frame_time:

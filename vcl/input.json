@@ -2,7 +2,7 @@
     "basepath": "/Users/hemert/data/vcl/ijsselmonde/",
     "crs": "EPSG:28992",
     "common": {
-        "basemap": "ahn-photo-merged_6000x4000_fit.tif",
+        "basemap": "basemap.tif",
         "bathymetry": "ahn-merged-dtm-max-15-1-to-2-v4.tif",
         "extent": "extent_1_to_2.gpkg",
         "layers": {
@@ -14,10 +14,17 @@
             "c_management": "260220_strategie kaarten/260219 Exports/260219_Ondersteuning crisis management.png",
             "risico_zone": "260220_strategie kaarten/260219 Exports/260219_Risicozonering.png",
             "risico_zone_20": "260220_strategie kaarten/260219 Exports/260219_Risicozonering excl >20cm.png",
-            "schuilen": "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren.png"
+            "schuilen": "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren.png",
+            "d_T100_000_noord": "overstromingen/117103/T+07d 00:00:00_117103_dataset0168_rgba.tif",
+            "d_T100_000_zuid": "overstromingen/117106/T+07d 00:00:00_117106_dataset0168_rgba.tif"
         },
-        "animations": {},
-        "interactivity": {},
+        "animations": {
+            "d_T100_000_noord": "overstromingen/117103/",
+            "d_T100_000_zuid": "overstromingen/117106/"
+        },
+        "interactivity": {
+            "overstromingen": "breach_locations.gpkg"
+        },
         "stats": {},
         "particles": {},
         "extra_info": {

@@ -118,6 +118,7 @@ def make_listen_sockets():
     socket1.setsockopt(zmq.CONFLATE, 1)
     socket1.connect("tcp://localhost:5556")
     socket1.connect("tcp://localhost:5557")
+    socket1.connect("tcp://localhost:5558")
     socket1.subscribe("maps")
 
     socket2 = context.socket(zmq.SUB)
@@ -207,24 +208,27 @@ def displaymap(data_path):
         "risico_zone": {"type": "RGB", "alpha": 0.8},
         "risico_zone_20": {"type": "RGB", "alpha": 0.8},
         "schuilen": {"type": "RGB", "alpha": 0.8},
+        "d_T100_000_noord": {"type": "RGB"},
+        "d_T100_000_zuid": {"type": "RGB"},
     }
-
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
     socket_hands = sockets["hands"]
-
-    display = DisplayMap.DisplayMap(
-        datasets=datasets,
-        start_year="1970",
-        flow_data={},
-        animations_data=datasets[""]["animations"],
-        dataset_kwargs=dataset_kwargs,
-        bg_layer="basemap",
-        mask_layer=None,
-        i_max=127,
-        aspect_ratio=1920 / 1080,
-    )
+    try:
+        display = DisplayMap.DisplayMap(
+            datasets=datasets,
+            start_year="1970",
+            flow_data={},
+            animations_data=datasets[""]["animations"],
+            dataset_kwargs=dataset_kwargs,
+            bg_layer="basemap",
+            mask_layer=None,
+            i_max=127,
+            aspect_ratio=1920 / 1080,
+        )
+    except Exception as e:
+        print(e)
     coords = None
     while True:
         socks = dict(poller.poll(10))
@@ -539,6 +543,8 @@ def keyboard_publisher():
                     change_layer("risico_zone_20,layer")
                 elif event.key == pygame.K_9:
                     change_layer("schuilen,layer")
+                elif event.key == pygame.K_0:
+                    change_layer("d_T100_000_zuid,layer")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_q:

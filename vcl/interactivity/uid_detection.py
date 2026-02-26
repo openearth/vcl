@@ -43,6 +43,14 @@ def specify_eez(point, gdf: gpd.GeoDataFrame):
         return
 
 
+def specifiy_breach_location(point, gdf: gpd.GeoDataFrame):
+    point = shapely.Point(point)
+    if gdf.intersects(point).any():
+        return gdf[gdf.intersects(point)]["location"].values[0]
+    else:
+        return
+
+
 def main(socket: zmq.Socket = None, extent=None, datasets={}):
     # Initialize components
     try:
@@ -55,9 +63,13 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
     action_manager = ActionManager()
 
     # Define some sample actions
-    def on_land_detection(uid, context):
-        eez = specify_eez(context["map_coords"], datasets["eez"])
-        socket.send_string(f"uid {eez}_detection")
+    def on_T10_000(uid, context):
+        location = specifiy_breach_location(
+            context["map_coords"], datasets["overstromingen"]
+        )
+        socket.send_string(f"maps d_T100_000_{location},layer")
+        time.sleep(0.1)
+        socket.send_string(f"maps animation,layer")
         # print(f"*** HELLO WORLD DETECTED *** at {context['center']}")
 
     def on_land_info(uid, context):
@@ -73,9 +85,9 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
         socket.send_string(f"hands {center[0]},{center[1]}")
 
     def on_stop(uid, context):
-        socket.send_string(f"hands -1,-1")
+        socket.send_string(f"maps None,layer")
 
-    action_manager.register_action("0", on_land_detection)
+    action_manager.register_action("0", on_T10_000)
     action_manager.register_action("1", on_land_info)
     action_manager.register_action("2", on_slice_change)
     action_manager.register_action("3", on_land_height)
@@ -83,7 +95,6 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
     action_manager.register_lost_action("3", on_stop)
 
     # Register actions (Example IDs - these would be the content of your QR codes)
-    action_manager.register_action("LAND_DETECTION", on_land_detection)
     action_manager.register_action("LAND_INFO", on_land_info)
     action_manager.register_action("STOP", on_stop)
 
@@ -102,7 +113,7 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
 
     last_triggered = {}
     last_positions = {"3": (0.5, 0.5)}
-    trigger_cooldowns = {"2": 0.05, "3": 2}
+    trigger_cooldowns = {"0": np.inf, "2": 0.05, "3": 2}
 
     # State for persistence tracking: {id: first_observed_time}
     active_tags = {}
@@ -184,6 +195,7 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
                         action_manager.execute_lost_action(identifier, context)
                         # Remove from last_seen to avoid re-triggering
                         del active_tags[identifier]
+                        del last_triggered[identifier]
 
             # Draw detections
             frame = draw_detections(frame, detections)
