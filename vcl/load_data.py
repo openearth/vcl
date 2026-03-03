@@ -2,12 +2,13 @@ from pathlib import Path
 
 import geopandas as gpd
 import matplotlib.image as mpimg
-import numpy as np
 import rasterio
 import rioxarray as rxr
 import xarray as xr
 
 from typing import Union
+
+import vcl.serialize
 
 
 def load():
@@ -37,5 +38,9 @@ def load():
 
 
 def load_preprocessed(data_path: Union[str, Path]):
-    datasets = np.load(data_path, allow_pickle=True)
-    return datasets
+    """Load preprocessed VCL data from a compressed zarr store.
+
+    Args:
+        data_path: Directory path previously written by ``vcl.serialize.save``.
+    """
+    return vcl.serialize.load(data_path)

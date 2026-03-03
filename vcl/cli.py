@@ -47,6 +47,7 @@ import vcl.interactivity.calibration
 # import vcl.display
 import vcl.load_data
 import vcl.preprocess
+import vcl.serialize
 
 
 def make_sockets():
@@ -216,17 +217,10 @@ def main(
         input_file = Path(__file__).parent / "input.json"
         datasets = vcl.preprocess.preprocess(input_file=input_file)
         if save:
-            # np.save(
-            #     data_dir / "preprocessed-data.npy",
-            #     datasets,
-            #     allow_pickle=True,
-            # )
-            with open(data_dir / "preprocessed-data.npy", "wb") as f:
-                pickle.dump(datasets, f, protocol=4)
-    # else:
-    #     datasets = vcl.load_data.load_preprocessed()
+            save_path = data_dir / "preprocessed-data"
+            vcl.serialize.save(datasets, save_path)
 
-    datasets = data_dir / "preprocessed-data.npy"
+    datasets = data_dir / "preprocessed-data"
 
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)

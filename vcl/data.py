@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import rasterio
+
 import rioxarray as rxr
 import scipy
 import shapely
@@ -569,12 +570,15 @@ def fill_array_to_bbox(
     array: np.ndarray, array_extent: Union[tuple, list], bbox: Union[tuple, list]
 ):
     """
-    Pads a raster array with NaNs to fit a specified bounding box, preserving spatial resolution.
+    Pads a raster array to fit a specified bounding box, preserving spatial resolution.
+
+    The fill value is NaN for floating-point dtypes and 0 for integer dtypes so
+    that uint8 image arrays are not unnecessarily promoted to float32.
 
     :param array: Input raster data as a NumPy array (2D or 3D).
     :param array_extent: Tuple or list defining the spatial extent of the array (min_x, min_y, max_x, max_y).
     :param bbox: Target bounding box (min_x, min_y, max_x, max_y) to fill the array into.
-    :return: A new array padded with NaNs to match the bounding box.
+    :return: A new array padded to match the bounding box, in the same dtype as the input.
     """
 
     res_x = (array_extent[2] - array_extent[0]) / array.shape[1]
@@ -586,9 +590,10 @@ def fill_array_to_bbox(
     new_width = np.clip(new_width, a_min=array.shape[1], a_max=None)
     new_height = np.clip(new_height, a_min=array.shape[0], a_max=None)
 
-    # Create empty array filled with NaNs
+    # Use NaN for float dtypes, 0 for integer/uint8 dtypes — preserves source dtype
+    fill_value = np.nan if np.issubdtype(array.dtype, np.floating) else 0
     filled_array = np.full(
-        (new_height, new_width, array.shape[-1]), np.nan, dtype=np.float32
+        (new_height, new_width, array.shape[-1]), fill_value, dtype=array.dtype
     )
 
     # Calculate offset of original raster within new raster
