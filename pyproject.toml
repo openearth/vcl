@@ -37,7 +37,8 @@ dependencies = [
     "zmq>=0.0.0",
     "rasterio==1.4.3",
     "pyproj==3.6.1",
-    "rioxarray==0.15.0" 
+    "rioxarray==0.15.0",
+    "zarr>=2.18.3",
 ]
 
 [project.optional-dependencies]
