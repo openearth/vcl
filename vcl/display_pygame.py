@@ -599,7 +599,7 @@ def keyboard_publisher():
                 elif event.key == pygame.K_e:
                     change_layer("30,tide")
                 elif event.key == pygame.K_d:
-                    change_layer("doorbraaklocaties,layer")
+                    change_layer("doorbraaklocaties,overlay")
                 elif event.key == pygame.K_o:
                     change_year(2050)
                 elif event.key == pygame.K_p:
