@@ -361,9 +361,9 @@ class DisplayMap(PygameWindow.PygameWindow):
             (0, 0, 0),
         )
         text_bottom_rect = text_bottom.get_rect(
-            bottomright=(
+            topright=(
                 self.img_width + self.x_pos - 10,
-                self.img_height + self.y_pos - 10,
+                self.y_pos + 10,
             )
         )
 

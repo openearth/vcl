@@ -15,17 +15,98 @@
             "risico_zone": "260220_strategie kaarten/260219 Exports/260219_Risicozonering.png",
             "risico_zone_20": "260220_strategie kaarten/260219 Exports/260219_Risicozonering excl >20cm.png",
             "schuilen": "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren.png",
+            "doorbraaklocaties": "breach_locations.png",
+            "d_T1000_noord": "overstromingen/116043/T+07d 00:00:00_116043_dataset0168_rgba.tif",
+            "d_T1000_zuid": "overstromingen/116060/T+07d 00:00:00_116060_dataset0168_rgba.tif",
+            "d_T1000_oost": "overstromingen/116054/T+07d 00:00:00_116054_dataset0168_rgba.tif",
+            "d_T1000_west": "overstromingen/116083/T+07d 00:00:00_116083_dataset0168_rgba.tif",
+            "d_T1000_barendrecht": "overstromingen/116091/T+07d 00:00:00_116091_dataset0168_rgba.tif",
+            "d_T10_000_noord": "overstromingen/116044/T+07d 00:00:00_116044_dataset0168_rgba.tif",
+            "d_T10_000_zuid": "overstromingen/116062/T+07d 00:00:00_116062_dataset0168_rgba.tif",
+            "d_T10_000_oost": "overstromingen/116055/T+07d 00:00:00_116055_dataset0168_rgba.tif",
+            "d_T10_000_west": "overstromingen/116084/T+07d 00:00:00_116084_dataset0168_rgba.tif",
+            "d_T10_000_barendrecht": "overstromingen/116092/T+07d 00:00:00_116092_dataset0168_rgba.tif",
+            "d_T100_000_1_noord": "overstromingen/116045/T+07d 00:00:00_116045_dataset0168_rgba.tif",
+            "d_T100_000_1_zuid": "overstromingen/116064/T+07d 00:00:00_116064_dataset0168_rgba.tif",
+            "d_T100_000_1_oost": "overstromingen/116056/T+07d 00:00:00_116056_dataset0168_rgba.tif",
+            "d_T100_000_1_west": "overstromingen/116085/T+07d 00:00:00_116085_dataset0168_rgba.tif",
+            "d_T100_000_1_barendrecht": "overstromingen/116093/T+07d 00:00:00_116093_dataset0168_rgba.tif",
             "d_T100_000_noord": "overstromingen/117103/T+07d 00:00:00_117103_dataset0168_rgba.tif",
-            "d_T100_000_zuid": "overstromingen/117106/T+07d 00:00:00_117106_dataset0168_rgba.tif"
+            "d_T100_000_zuid": "overstromingen/117106/T+07d 00:00:00_117106_dataset0168_rgba.tif",
+            "d_T100_000_oost": "overstromingen/117104/T+07d 00:00:00_117104_dataset0168_rgba.tif",
+            "d_T100_000_west": "overstromingen/117111/T+07d 00:00:00_117111_dataset0168_rgba.tif"
         },
         "animations": {
+            "d_T1000_noord": "overstromingen/116043",
+            "d_T1000_zuid": "overstromingen/116060",
+            "d_T1000_oost": "overstromingen/116054",
+            "d_T1000_west": "overstromingen/116083",
+            "d_T1000_barendrecht": "overstromingen/116091",
+            "d_T10_000_noord": "overstromingen/116044",
+            "d_T10_000_zuid": "overstromingen/116062",
+            "d_T10_000_oost": "overstromingen/116055",
+            "d_T10_000_west": "overstromingen/116084",
+            "d_T10_000_barendrecht": "overstromingen/116092",
+            "d_T100_000_1_noord": "overstromingen/116045",
+            "d_T100_000_1_zuid": "overstromingen/116064",
+            "d_T100_000_1_oost": "overstromingen/116056",
+            "d_T100_000_1_west": "overstromingen/116085",
+            "d_T100_000_1_barendrecht": "overstromingen/116093",
             "d_T100_000_noord": "overstromingen/117103/",
-            "d_T100_000_zuid": "overstromingen/117106/"
+            "d_T100_000_zuid": "overstromingen/117106/",
+            "d_T100_000_oost": "overstromingen/117104",
+            "d_T100_000_west": "overstromingen/117111"
         },
         "interactivity": {
             "overstromingen": "breach_locations.gpkg"
         },
-        "stats": {},
+        "stats": {
+            "aangepast_bouwen": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Aangepast bouwen_Legend.png"
+                ]
+            },
+            "bescherming": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Bescherming vitale objecten en infra_Legend.png"
+                ]
+            },
+            "compartiment": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Compartimentering_Legend.png"
+                ]
+            },
+            "d_T100_000": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100_Legend.png"
+                ]
+            },
+            "c_management": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Ondersteuning crisis management_Legend.png"
+                ]
+            },
+            "risico_zone": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Risicozonering_Legend.png"
+                ]
+            },
+            "risico_zone_20": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Risicozonering_Legend.png"
+                ]
+            },
+            "schuilen": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren_Legend.png"
+                ]
+            }
+        },
         "particles": {},
         "extra_info": {
             "aangepast_bouwen": {
@@ -98,6 +179,14 @@
                     420429.645,
                     106889.340,
                     438427.469
+                ]
+            },
+            "doorbraaklocaties": {
+                "extent": [
+                    80426.73778848,
+                    423869.18094709,
+                    106716.73778848,
+                    437014.62546309
                 ]
             }
         }

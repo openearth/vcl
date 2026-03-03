@@ -62,41 +62,32 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
     detector = Detector()
     action_manager = ActionManager()
 
+    uid_to_event = {"0": "1000", "1": "10_000", "2": "100_000_1", "3": "100_000"}
+
     # Define some sample actions
-    def on_T10_000(uid, context):
+    def on_flood_event(uid, context):
         location = specifiy_breach_location(
             context["map_coords"], datasets["overstromingen"]
         )
-        socket.send_string(f"maps d_T100_000_{location},layer")
-        time.sleep(0.1)
+        if location is None:
+            return
+        event = uid_to_event[uid]
+        socket.send_string(f"maps d_T{event}_{location},layer")
+        time.sleep(0.01)
         socket.send_string(f"maps animation,layer")
-        # print(f"*** HELLO WORLD DETECTED *** at {context['center']}")
-
-    def on_land_info(uid, context):
-        eez = specify_eez(context["map_coords"], datasets["eez"])
-        socket.send_string(f"uid {eez}_info")
-
-    def on_slice_change(uid, context):
-        i = context["center"][0]
-        socket.send_string(f"slice {i}")
-
-    def on_land_height(uid, context):
-        center = context["center"]
-        socket.send_string(f"hands {center[0]},{center[1]}")
 
     def on_stop(uid, context):
         socket.send_string(f"maps None,layer")
 
-    action_manager.register_action("0", on_T10_000)
-    action_manager.register_action("1", on_land_info)
-    action_manager.register_action("2", on_slice_change)
-    action_manager.register_action("3", on_land_height)
+    action_manager.register_action("0", on_flood_event)
+    action_manager.register_action("1", on_flood_event)
+    action_manager.register_action("2", on_flood_event)
+    action_manager.register_action("3", on_flood_event)
 
+    action_manager.register_lost_action("0", on_stop)
+    action_manager.register_lost_action("1", on_stop)
+    action_manager.register_lost_action("2", on_stop)
     action_manager.register_lost_action("3", on_stop)
-
-    # Register actions (Example IDs - these would be the content of your QR codes)
-    action_manager.register_action("LAND_INFO", on_land_info)
-    action_manager.register_action("STOP", on_stop)
 
     print("Starting Main Loop. Press 'q' to exit.")
 
@@ -112,8 +103,12 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
     H_table_to_map, _ = cv2.findHomography(TABLE_POINTS, MAP_POINTS)
 
     last_triggered = {}
-    last_positions = {"3": (0.5, 0.5)}
-    trigger_cooldowns = {"0": np.inf, "2": 0.05, "3": 2}
+    last_positions = {"0": (0, 0), "1": (0, 0), "2": (0, 0), "3": (0.5, 0.5)}
+    trigger_cooldowns = {"0": np.inf, "1": np.inf, "2": np.inf, "3": np.inf}
+    # If a tag moves more than this normalised distance, reset its trigger so
+    # the action fires again at the new location (relevant for infinite-cooldown
+    # tags like "0" that would otherwise never re-trigger).
+    movement_retrigger_thresholds = {"0": 0.05, "1": 0.05, "2": 0.05, "3": 0.05}
 
     # State for persistence tracking: {id: first_observed_time}
     active_tags = {}
@@ -136,49 +131,53 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
                 identifier = str(d["id"])
                 current_ids.add(identifier)
 
-                # Update active_tags start time if new
-                # if identifier not in active_tags:
+                center = d["center"]
+
+                # Normalize center to [0, 1] range
+                center = (
+                    center[0] / camera.frame_size[0],
+                    center[1] / camera.frame_size[1],
+                )
+
+                # Update active_tags timestamp
                 active_tags[identifier] = current_time
                 trigger_cooldown = trigger_cooldowns.get(identifier, 2.0)
+                retrigger_dist = movement_retrigger_thresholds.get(identifier, 1)
 
-                # Check cooldown
-                if identifier not in last_triggered or (
-                    current_time - last_triggered[identifier] > trigger_cooldown
-                ):
-                    # Context can include bbox, frame, timestamp, etc.
-                    context = {
-                        "bbox": d["bbox"],
-                        "center": d["center"],
-                        "timestamp": current_time,
-                    }
-
-                    center = d["center"]
-
-                    # Normalize center
-                    center = (
-                        center[0] / camera.frame_size[0],
-                        center[1] / camera.frame_size[1],
+                last_pos = last_positions.get(identifier)
+                distance = (
+                    np.sqrt(
+                        (center[0] - last_pos[0]) ** 2 + (center[1] - last_pos[1]) ** 2
                     )
+                    if last_pos is not None
+                    else None
+                )
 
+                cooldown_expired = identifier not in last_triggered or (
+                    current_time - last_triggered[identifier] > trigger_cooldown
+                )
+                # Re-trigger when the tag moves significantly (e.g. placed at a new spot)
+                moved_to_new_location = (
+                    distance is not None and distance > retrigger_dist
+                )
+
+                if cooldown_expired or moved_to_new_location:
                     map_coords = cv2.perspectiveTransform(
                         np.array([[[center[0], center[1]]]]), H_table_to_map
                     )[0][0]
                     map_x, map_y = map_coords
-                    context["center"] = center
-                    context["map_coords"] = (map_x, map_y)
-
-                    if identifier in last_positions:
-                        last_pos = last_positions[identifier]
-                        distance = np.sqrt(
-                            (center[0] - last_pos[0]) ** 2
-                            + (center[1] - last_pos[1]) ** 2
-                        )
-                        if distance < 0.05:
-                            action_manager.execute_action(identifier, context)
-                        last_positions[identifier] = center
-                    else:
-                        action_manager.execute_action(identifier, context)
+                    context = {
+                        "bbox": d["bbox"],
+                        "center": center,
+                        "map_coords": (map_x, map_y),
+                        "timestamp": current_time,
+                    }
+                    action_manager.execute_action(identifier, context)
                     last_triggered[identifier] = current_time
+
+                # Always keep last_positions up to date so the next frame's
+                # distance calculation is accurate
+                last_positions[identifier] = center
 
             # Check for lost tags
             for identifier in list(active_tags.keys()):

@@ -199,6 +199,7 @@ def displaymap(data_path):
 
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
+        "bathymetry": {"type": "CMAP"},
         "aangepast_bouwen": {"type": "RGB", "alpha": 0.8},
         "bescherming": {"type": "RGB", "alpha": 0.8},
         "compartiment": {"type": "RGB", "alpha": 0.8},
@@ -208,8 +209,26 @@ def displaymap(data_path):
         "risico_zone": {"type": "RGB", "alpha": 0.8},
         "risico_zone_20": {"type": "RGB", "alpha": 0.8},
         "schuilen": {"type": "RGB", "alpha": 0.8},
+        "doorbraaklocaties": {"type": "RGB"},
+        "d_T1000_noord": {"type": "RGB"},
+        "d_T1000_zuid": {"type": "RGB"},
+        "d_T1000_oost": {"type": "RGB"},
+        "d_T1000_west": {"type": "RGB"},
+        "d_T1000_barendrecht": {"type": "RGB"},
+        "d_T10_000_noord": {"type": "RGB"},
+        "d_T10_000_zuid": {"type": "RGB"},
+        "d_T10_000_oost": {"type": "RGB"},
+        "d_T10_000_west": {"type": "RGB"},
+        "d_T10_000_barendrecht": {"type": "RGB"},
+        "d_T100_000_1_noord": {"type": "RGB"},
+        "d_T100_000_1_zuid": {"type": "RGB"},
+        "d_T100_000_1_oost": {"type": "RGB"},
+        "d_T100_000_1_west": {"type": "RGB"},
+        "d_T100_000_1_barendrecht": {"type": "RGB"},
         "d_T100_000_noord": {"type": "RGB"},
         "d_T100_000_zuid": {"type": "RGB"},
+        "d_T100_000_oost": {"type": "RGB"},
+        "d_T100_000_west": {"type": "RGB"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -440,6 +459,34 @@ def keyboard_publisher():
                 current_overlay = text
                 current_overlays.append(text)
 
+    overstromingen = collections.deque(
+        [
+            "d_T1000_noord",
+            "d_T1000_zuid",
+            "d_T1000_oost",
+            "d_T1000_west",
+            "d_T1000_barendrecht",
+            "d_T10_000_noord",
+            "d_T10_000_zuid",
+            "d_T10_000_oost",
+            "d_T10_000_west",
+            "d_T10_000_barendrecht",
+            "d_T100_000_1_noord",
+            "d_T100_000_1_zuid",
+            "d_T100_000_1_oost",
+            "d_T100_000_1_west",
+            "d_T100_000_1_barendrecht",
+            "d_T100_000_noord",
+            "d_T100_000_zuid",
+            "d_T100_000_oost",
+            "d_T100_000_west",
+        ]
+    )
+
+    collection_type_mapping = {layer: "overstroming" for layer in overstromingen}
+
+    cycles = {"overstroming": overstromingen}
+
     def cycle_collection(cycle):
         global current_layer, current_overlays
 
@@ -461,8 +508,6 @@ def keyboard_publisher():
             layer_type = layer.split(",")[1]
         else:
             return
-
-        print(current_overlays, current_overlay)
 
         collection_type = collection_type_mapping.get(layer_name, None)
 
@@ -544,15 +589,17 @@ def keyboard_publisher():
                 elif event.key == pygame.K_9:
                     change_layer("schuilen,layer")
                 elif event.key == pygame.K_0:
-                    change_layer("d_T100_000_zuid,layer")
+                    change_layer(f"{overstromingen[0]},layer")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
+                elif event.key == pygame.K_s:
+                    change_layer("bathymetry,layer")
                 elif event.key == pygame.K_q:
                     change_layer("20,tide")
                 elif event.key == pygame.K_e:
                     change_layer("30,tide")
-                elif event.key == pygame.K_i:
-                    change_year(2023)
+                elif event.key == pygame.K_d:
+                    change_layer("doorbraaklocaties,layer")
                 elif event.key == pygame.K_o:
                     change_year(2050)
                 elif event.key == pygame.K_p:

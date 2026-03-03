@@ -273,14 +273,13 @@ class PygameWindow:
         if norm is None:
             # vmin, vmax = np.nanpercentile(array, [0, 1])
             vmin, vmax = np.nanmin(array), np.nanmax(array)
-            vmax = 0
-            vmin = -1000
             norm = Normalize(vmin=vmin, vmax=vmax)
         rgba_array = np.zeros((array.shape[0], array.shape[1], 4), dtype=np.uint8)
 
         nan_mask = np.isnan(array)
         if isinstance(cmap, matplotlib.colors.ListedColormap):
-            normalized_array = array.astype(np.int16)
+            # normalized_array = array.astype(np.int16)
+            normalized_array = norm(array)
         else:
             normalized_array = norm(array)
         normalized_array_no_nan = normalized_array[~nan_mask]
