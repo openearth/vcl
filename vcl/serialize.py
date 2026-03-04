@@ -22,15 +22,22 @@ import json
 import logging
 import pickle
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Iterable, Tuple
 
 import numpy as np
 import zarr
-from numcodecs import Blosc
+from zarr.codecs import Blosc
+
+import warnings
+
+warnings.filterwarnings(
+    "ignore", message="Numcodecs codecs are not in the Zarr version 3 specification"
+)
+
 
 logger = logging.getLogger(__name__)
 
-_CODEC = Blosc(cname="lz4", clevel=5, shuffle=Blosc.BITSHUFFLE)
+_CODEC = zarr.codecs.Zstd(level=3)
 _ARRAY_SENTINEL = "__zarr_array__"
 
 
@@ -105,50 +112,99 @@ def _from_skeleton(skeleton: Any, zarr_store: zarr.Group) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def save(datasets: dict, output_path: Union[str, Path]) -> None:
-    """Save *datasets* to *output_path* using Zarr + pickle.
-
-    Args:
-        datasets: Nested dict returned by ``vcl.preprocess.preprocess``.
-        output_path: Destination directory path (created if necessary).
-            Conventionally ``<data_dir>/preprocessed-data``.
+def _choose_chunk_shape(
+    shape: Iterable[int], dtype: np.dtype, target_chunk_bytes: int = 2 * 1024 * 1024
+) -> Tuple[int, ...]:
     """
+    Heuristic: pick a regular chunk shape with product near target bytes,
+    keeping full length on the last axis and shrinking earlier axes.
+    This works well for arrays accessed by trailing-axis slices.
+    """
+    shape = tuple(int(s) for s in shape)
+    itemsize = np.dtype(dtype).itemsize
+    if itemsize == 0:
+        itemsize = 1
+
+    # Start with full shape and shrink from the front until we fit near the target.
+    chunks = list(shape)
+
+    def chunk_nbytes(chunks_):
+        n = 1
+        for c in chunks_:
+            n *= max(1, c)
+        return n * itemsize
+
+    # Cap each dimension at its size (obvious) and at least 1.
+    for i, s in enumerate(chunks):
+        chunks[i] = max(1, min(s, s))
+
+    # If already small, just return shape (won't over-chunk tiny arrays)
+    if chunk_nbytes(chunks) <= target_chunk_bytes:
+        return tuple(chunks)
+
+    # Iteratively reduce from leading dims (except keep last axis larger for cache-friendly reads)
+    i = 0
+    while chunk_nbytes(chunks) > target_chunk_bytes and any(c > 1 for c in chunks[:-1]):
+        if i < len(chunks) - 1:
+            if chunks[i] > 1:
+                chunks[i] = np.ceil(chunks[i] / 2)
+        else:
+            # If we reached the last axis and still too big, halve it as well
+            if chunks[i] > 1:
+                chunks[i] = np.ceil(chunks[i] / 2)
+        i = (i + 1) % len(chunks)
+
+    # Ensure no zero
+    chunks = [max(1, int(c)) for c in chunks]
+    return tuple(chunks)
+
+
+def save(datasets: dict, output_path: Union[str, Path]) -> None:
+    """Save *datasets* to *output_path* using Zarr v3 + pickle."""
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # 1. Walk the tree and extract arrays
-    arrays: list = []
+    # 1) Walk the tree and extract arrays
+    arrays: list[np.ndarray] = []
     skeleton = _to_skeleton(datasets, arrays)
 
-    # 2. Write arrays to zarr with compression
+    # 2) Write arrays to Zarr v3 with compression
     zarr_path = output_path / "arrays.zarr"
-    store = zarr.open(str(zarr_path), mode="w")
+    store = zarr.open(str(zarr_path), mode="w", zarr_version=3)
 
     total_before = 0
     total_after = 0
     for i, arr in enumerate(arrays):
         key = _make_zarr_key(i)
+
+        chunk_shape = _choose_chunk_shape(arr.shape, arr.dtype)
+
         z = store.require_dataset(
             key,
             shape=arr.shape,
             dtype=arr.dtype,
-            compressor=_CODEC,
-            chunks=True,
+            compressors=[_CODEC],  # Change 'codecs' to 'compressors'
+            chunks=chunk_shape,  # Note: 'chunk_shape' is often just 'chunks' in many Zarr 3.x builds
+            fill_value=None,
             overwrite=True,
         )
-        z[:] = arr
+
+        z[...] = arr
         total_before += arr.nbytes
-        total_after += z.nbytes_stored
+        try:
+            total_after += z.nbytes_stored()  # available in recent v3 alphas
+        except AttributeError:
+            pass
 
     ratio = total_before / total_after if total_after else float("inf")
     logger.info(
         "Zarr arrays: %.1f MB → %.1f MB (%.1fx compression)",
         total_before / 1e6,
-        total_after / 1e6,
+        (total_after / 1e6) if total_after else 0.0,
         ratio,
     )
 
-    # 3. Pickle the skeleton (contains all non-array objects)
+    # 3) Pickle the skeleton (contains all non-array objects)
     meta_path = output_path / "meta.pkl"
     with open(meta_path, "wb") as f:
         pickle.dump(skeleton, f, protocol=4)
