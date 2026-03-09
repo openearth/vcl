@@ -39,6 +39,8 @@ dependencies = [
     "pyproj==3.6.1",
     "rioxarray==0.15.0",
     "zarr>=3.0.1",
+    "rtmidi>=2.5.0",
+    "python-rtmidi>=1.5.8",
 ]
 
 [project.optional-dependencies]

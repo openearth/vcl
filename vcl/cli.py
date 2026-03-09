@@ -138,7 +138,6 @@ def test(datasets):
 @click.option("--hand_tracking/--no-hand_tracking", default=False)
 @click.option("--uid/--no-uid", default=False)
 @click.option("--preprocess/--no-preprocess", default=False)
-@click.option("--save/--no-save", default=False)
 @click.option(
     "--calibrate",
     is_flag=True,
@@ -152,7 +151,6 @@ def main(
     hand_tracking,
     uid,
     preprocess,
-    save,
     calibrate,
     args=None,
 ):
@@ -216,9 +214,8 @@ def main(
     if preprocess:
         input_file = Path(__file__).parent / "input.json"
         datasets = vcl.preprocess.preprocess(input_file=input_file)
-        if save:
-            save_path = data_dir / "preprocessed-data"
-            vcl.serialize.save(datasets, save_path)
+        save_path = data_dir / "preprocessed-data"
+        vcl.serialize.save(datasets, save_path)
 
     datasets = data_dir / "preprocessed-data"
 

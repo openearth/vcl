@@ -2,7 +2,7 @@
     "basepath": "/Users/hemert/data/vcl/ijsselmonde/",
     "crs": "EPSG:28992",
     "common": {
-        "basemap": "basemap.tif",
+        "basemap": "ahn-photo-merged_6000x4000_fit.tif",
         "bathymetry": "ahn-merged-dtm-max-15-1-to-2-v4.tif",
         "extent": "extent_1_to_2.gpkg",
         "layers": {
@@ -63,47 +63,142 @@
         "stats": {
             "aangepast_bouwen": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Aangepast bouwen_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide3.png"
                 ]
             },
             "bescherming": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Bescherming vitale objecten en infra_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide4.png"
                 ]
             },
             "compartiment": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Compartimentering_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide5.png"
                 ]
             },
             "d_T100_000": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide1.png"
                 ]
             },
             "d_T100": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide1.png"
                 ]
             },
             "c_management": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Ondersteuning crisis management_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide7.png"
                 ]
             },
             "risico_zone": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Risicozonering_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide2.png"
                 ]
             },
             "risico_zone_20": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Risicozonering_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide2.png"
                 ]
             },
             "schuilen": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren_Legend.png"
+                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide6.png"
+                ]
+            },
+            "d_T1000_noord": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T1000_zuid": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T1000_oost": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T1000_west": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T1000_barendrecht": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T10_000_noord": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T10_000_zuid": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T10_000_oost": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T10_000_west": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T10_000_barendrecht": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_1_noord": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_1_zuid": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_1_oost": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_1_west": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_1_barendrecht": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_noord": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_zuid": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_oost": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_west": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
                 ]
             }
         },

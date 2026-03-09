@@ -251,7 +251,7 @@ def create_shaded_image(sat_extent, bodem):
     ls = LightSource(azdeg=315, altdeg=45)
 
     # Add shade to scaled image
-    img_shade = ls.shade_rgb(sat_scaled, bodem, vert_exag=2, blend_mode="soft")
+    img_shade = ls.shade_rgb(sat_scaled, bodem, vert_exag=30, blend_mode="soft")
     img_shade = img_shade * 255
     img_shade = img_shade.astype(np.uint8)
 

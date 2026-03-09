@@ -459,6 +459,8 @@ def keyboard_publisher():
                 current_overlay = text
                 current_overlays.append(text)
 
+    waterdiepte = collections.deque(["d_T100_000", "d_T100"])
+    risico_zone = collections.deque(["risico_zone", "risico_zone_20"])
     overstromingen = collections.deque(
         [
             "d_T1000_noord",
@@ -483,9 +485,17 @@ def keyboard_publisher():
         ]
     )
 
-    collection_type_mapping = {layer: "overstroming" for layer in overstromingen}
+    collection_type_mapping = (
+        {layer: "overstroming" for layer in overstromingen}
+        | {layer: "waterdiepte" for layer in waterdiepte}
+        | {layer: "risico_zone" for layer in risico_zone}
+    )
 
-    cycles = {"overstroming": overstromingen}
+    cycles = {
+        "overstroming": overstromingen,
+        "waterdiepte": waterdiepte,
+        "risico_zone": risico_zone,
+    }
 
     def cycle_collection(cycle):
         global current_layer, current_overlays
@@ -571,33 +581,28 @@ def keyboard_publisher():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
-                    change_layer("aangepast_bouwen,layer")
+                    change_layer("bathymetry,layer")
                 elif event.key == pygame.K_2:
-                    change_layer(f"bescherming,layer")
+                    change_layer(f"{waterdiepte[0]},layer")
                 elif event.key == pygame.K_3:
-                    change_layer("compartiment,layer")
+                    change_layer(f"{risico_zone[0]},layer")
                 elif event.key == pygame.K_4:
-                    change_layer("d_T100_000,layer")
+                    change_layer("aangepast_bouwen,layer")
                 elif event.key == pygame.K_5:
-                    change_layer("d_T100,layer")
+                    change_layer("bescherming,layer")
                 elif event.key == pygame.K_6:
-                    change_layer("c_management,layer")
+                    change_layer("compartiment,layer")
                 elif event.key == pygame.K_7:
-                    change_layer("risico_zone,layer")
-                elif event.key == pygame.K_8:
-                    change_layer("risico_zone_20,layer")
-                elif event.key == pygame.K_9:
                     change_layer("schuilen,layer")
+                elif event.key == pygame.K_8:
+                    change_layer("c_management,layer")
+
                 elif event.key == pygame.K_0:
                     change_layer(f"{overstromingen[0]},layer")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_s:
                     change_layer("bathymetry,layer")
-                elif event.key == pygame.K_q:
-                    change_layer("20,tide")
-                elif event.key == pygame.K_e:
-                    change_layer("30,tide")
                 elif event.key == pygame.K_d:
                     change_layer("doorbraaklocaties,overlay")
                 elif event.key == pygame.K_o:
@@ -765,7 +770,6 @@ def midi_board(data_path):
         The function runs until the MIDI BANK button is pressed (sysex message).
         Uses exception handling to ignore unmapped controls gracefully.
     """
-    datasets = load_preprocessed(data_path=data_path)
     # import ipdb
 
     # ipdb.set_trace()
@@ -774,7 +778,6 @@ def midi_board(data_path):
     socket = context.socket(zmq.PUB)
     socket.setsockopt(zmq.CONFLATE, 1)
     socket.bind("tcp://*:5556")
-
     # Number of values for the sliders on midi board (0-127)
     n_slider_values = 128
 
@@ -816,36 +819,43 @@ def midi_board(data_path):
                 current_overlay = text
                 current_overlays.append(text)
 
-    nature_track = collections.deque(
+    waterdiepte = collections.deque(["d_T100_000", "d_T100"])
+    risico_zone = collections.deque(["risico_zone", "risico_zone_20"])
+    overstromingen = collections.deque(
         [
-            "hp_distribution_MPA",
-            "hp_distribution_OWF",
-            "approach_2",
-            "cod_MPA",
-            "cod_survey",
-            "hp_data",
-            "kittiwake_feeding",
-            "kittiwake_presence",
-            "kittiwake_presence_g",
-            "oyster_presence",
-            "oyster_presence_g",
-            "seagrass_presence",
-            "seagrass_presence_g",
+            "d_T1000_noord",
+            "d_T1000_zuid",
+            "d_T1000_oost",
+            "d_T1000_west",
+            "d_T1000_barendrecht",
+            "d_T10_000_noord",
+            "d_T10_000_zuid",
+            "d_T10_000_oost",
+            "d_T10_000_west",
+            "d_T10_000_barendrecht",
+            "d_T100_000_1_noord",
+            "d_T100_000_1_zuid",
+            "d_T100_000_1_oost",
+            "d_T100_000_1_west",
+            "d_T100_000_1_barendrecht",
+            "d_T100_000_noord",
+            "d_T100_000_zuid",
+            "d_T100_000_oost",
+            "d_T100_000_west",
         ]
     )
-    fishing = collections.deque(["fishery", "fishery_catch"])
-    windfarms = collections.deque(["owf_2030", "owf_2040", "owf_all"])
 
-    collection_type_mapping_1 = {layer: "nature_track" for layer in nature_track}
-    collection_type_mapping_2 = {layer: "fishing" for layer in fishing}
-    # collection_type_mapping_3 = {layer: "owf" for layer in windfarms}
     collection_type_mapping = (
-        collection_type_mapping_1
-        | collection_type_mapping_2
-        # | collection_type_mapping_3
+        {layer: "overstroming" for layer in overstromingen}
+        | {layer: "waterdiepte" for layer in waterdiepte}
+        | {layer: "risico_zone" for layer in risico_zone}
     )
 
-    cycles = {"nature_track": nature_track, "fishing": fishing}
+    cycles = {
+        "overstroming": overstromingen,
+        "waterdiepte": waterdiepte,
+        "risico_zone": risico_zone,
+    }
 
     def cycle_collection(cycle):
         global current_layer, current_overlays
@@ -918,19 +928,19 @@ def midi_board(data_path):
     # Mapping from the midi control value to the function to update and the value to update to
     def get_midi_mapping():
         midi_mapping = {
-            1: {"function": change_layer, "value": "owf_2030,overlay"},
+            1: {"function": change_layer, "value": f"{overstromingen[0]},layer"},
             2: {"function": change_layer, "value": "ospar,overlay"},
             3: {"function": change_year, "value": ["2023", "2050", "2100"]},
             7: {"function": change_year, "value": ["2023", "2100"]},
             23: {"function": change_layer, "value": "bathymetry,layer"},
-            24: {"function": change_layer, "value": "navisafe,layer"},
-            25: {"function": change_layer, "value": f"{fishing[0]},layer"},
-            26: {"function": change_layer, "value": "windfarms,layer"},
-            # 27: {"function": change_layer, "value": f"{windfarms[0]},overlay"},
-            28: {"function": change_layer, "value": f"{nature_track[0]},layer"},
-            29: {"function": change_layer, "value": "vessel-traffic,overlay"},
-            30: {"function": change_layer, "value": "eez,overlay"},
-            31: {"function": change_layer, "value": "mask,mask"},
+            24: {"function": change_layer, "value": f"{waterdiepte[0]},layer"},
+            25: {"function": change_layer, "value": f"{risico_zone[0]},layer"},
+            26: {"function": change_layer, "value": "aangepast_bouwen,layer"},
+            27: {"function": change_layer, "value": f"bescherming,layer"},
+            28: {"function": change_layer, "value": f"compartiment,layer"},
+            29: {"function": change_layer, "value": "schuilen,layer"},
+            30: {"function": change_layer, "value": "c_management,layer"},
+            31: {"function": change_layer, "value": "doorbraaklocaties,overlay"},
             # 28: {"function": change_layer, "value": "GLG,layer"},
             # 31: {"function": change_layer, "value": ",layer"},
             # 31: {"function": change_layer, "value": "difference,layer"},
