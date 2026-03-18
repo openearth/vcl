@@ -9,7 +9,7 @@ Classes:
     PygameWindow: Base class for creating pygame windows with dataset visualization.
 """
 
-from typing import Optional, Tuple, Union, List
+from typing import Optional, Tuple, Union, List, Literal
 
 import matplotlib as mpl
 import matplotlib.colors
@@ -320,6 +320,56 @@ class PygameWindow:
 
         self.x_pos = (self.screen_width - new_image_width) // 2
         self.y_pos = (self.screen_height - new_image_height) // 2
+
+    def draw_info_panel(
+        self,
+        colour,
+        border_colour,
+        screen_ratio,
+        position: Literal["left", "right", "top", "bottom"] = "right",
+    ):
+        if position == "right":
+            start_x = self.x_pos + (1 - screen_ratio) * self.img_width
+            start_y = self.y_pos
+            width = self.img_width * screen_ratio
+            height = self.img_height
+        elif position == "left":
+            start_x = self.x_pos
+            start_y = self.y_pos
+            width = self.img_width * screen_ratio
+            height = self.img_height
+        elif position == "top":
+            start_x = self.x_pos
+            start_y = self.y_pos
+            width = self.img_width
+            height = self.img_height * screen_ratio
+        elif position == "bottom":
+            start_x = self.x_pos
+            start_y = self.y_pos + (1 - screen_ratio) * self.img_height
+            width = self.img_width
+            height = self.img_height * screen_ratio
+
+        pygame.draw.rect(
+            self.screen,
+            colour,
+            (
+                start_x,
+                start_y,
+                width,
+                height,
+            ),
+        )
+        pygame.draw.rect(
+            self.screen,
+            border_colour,
+            (
+                start_x,
+                start_y,
+                width,
+                height,
+            ),
+            2,
+        )
 
     def draw_textbox(self, point, text, font):
         """

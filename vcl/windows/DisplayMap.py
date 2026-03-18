@@ -19,6 +19,68 @@ from vcl.utils import ArrowManager, pygame_utils
 from vcl.windows import PygameWindow
 
 
+def wrap_text(text, font, max_width):
+    """Return a list of lines where each line fits within max_width."""
+    words = text.split(" ")
+    lines = []
+    current = ""
+
+    for w in words:
+        test = w if current == "" else current + " " + w
+        if font.size(test)[0] <= max_width:
+            current = test
+        else:
+            if current:  # push current line
+                lines.append(current)
+            current = w  # start new line with this word
+
+            # If a single word is longer than max_width, hard-split it:
+            while font.size(current)[0] > max_width:
+                # find largest prefix that fits
+                for i in range(1, len(current) + 1):
+                    if font.size(current[:i])[0] > max_width:
+                        lines.append(current[: i - 1] + "-")
+                        current = current[i - 1 :]
+                        break
+
+    if current:
+        lines.append(current)
+    return lines
+
+
+def draw_textbox(
+    surface,
+    text,
+    font,
+    box_rect,
+    color=(240, 240, 240),
+    bg=(30, 30, 30),
+    padding=10,
+    line_spacing=4,
+):
+    # background
+    pygame.draw.rect(surface, bg, box_rect, border_radius=8)
+
+    inner = box_rect.inflate(-2 * padding, -2 * padding)
+    lines = wrap_text(text, font, inner.width)
+
+    line_h = font.get_linesize()
+    y = inner.top
+
+    # clip so text doesn't draw outside the box
+    old_clip = surface.get_clip()
+    surface.set_clip(box_rect)
+
+    for line in lines:
+        if y + line_h > inner.bottom:
+            break
+        img = font.render(line, True, color)
+        surface.blit(img, (inner.left, y))
+        y += line_h + line_spacing
+
+    surface.set_clip(old_clip)
+
+
 class DisplayMap(PygameWindow.PygameWindow):
     """
     Interactive map display window with zoom, pan, and animation capabilities.
@@ -561,6 +623,38 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         if self.show_mask:
             self.draw_layer(self.mask_layer)
+
+        self.draw_info_panel(
+            colour=(255, 255, 255),
+            border_colour=(0, 0, 0),
+            screen_ratio=1 / 10,
+            position="bottom",
+        )
+        self.draw_info_panel(
+            colour=(255, 255, 255),
+            border_colour=(0, 0, 0),
+            screen_ratio=1 / 8,
+            position="right",
+        )
+
+        padding = 10
+        text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        font = pygame.font.Font(None, 18)
+        text_surface = font.render(text, True, (0, 0, 0))
+
+        font = pygame.font.Font(None, 24)  # or a TTF path
+        box = pygame.Rect(
+            self.x_pos + self.img_width * (7 / 8),
+            self.y_pos,
+            self.img_width / 8,
+            self.img_height,
+        )  # tall/vertical
+        draw_textbox(self.screen, text, font, box)
+
+        # self.screen.blit(
+        #     text_surface,
+        #     (self.x_pos + self.img_width * (7 / 8) + padding, self.y_pos + padding),
+        # )
 
         self.draw_line()
         # pygame.draw.line(
