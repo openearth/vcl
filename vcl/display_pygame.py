@@ -1012,15 +1012,17 @@ def hand_tracker(data_path):
     socket_topic = "hands"
 
     extent = datasets[""]["extent"].bounds
-
-    hand_tracking.webcam_module(
-        device_index=0,
-        extent=extent,
-        socket=socket,
-        socket_topic=socket_topic,
-        max_number_of_hands=4,
-        calibrate=True,
-    )
+    try:
+        hand_tracking.webcam_module(
+            device_index=0,
+            extent=extent,
+            socket=socket,
+            socket_topic=socket_topic,
+            max_number_of_hands=4,
+            calibrate=True,
+        )
+    except Exception as e:
+        print(e)
 
 
 def uid_detector(data_path):

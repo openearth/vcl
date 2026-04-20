@@ -183,7 +183,7 @@ def webcam_module(
         min_detection_confidence=0.3,
         min_tracking_confidence=0.3,
     )
-
+    print("WIESMO")
     # Click detection state tracking
     hand_states = {}  # Dictionary to track state for each hand
 
