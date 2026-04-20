@@ -8,7 +8,7 @@ from typing import Union
 
 # Define reference points (top-left, top-right, bottom-right, bottom-left)
 CAMERA_POINTS = np.array(
-    [(0.05, 0.94), (0.99, 0.92), (0.89, 0.22), (0.14, 0.25)], dtype=np.float32
+    [(0.00, 0.82), (0.98, 0.82), (0.89, 0.11), (0.10, 0.11)], dtype=np.float32
 )
 TABLE_POINTS = np.array(
     [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], dtype=np.float32
@@ -472,8 +472,8 @@ def webcam_module(
                         f"Camera: ({camera_x:.2f}, {camera_y:.2f})",
                         (10, 30 + i * 60),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.6,
-                        (255, 0, 0),
+                        1,
+                        (0, 255, 0),
                         2,
                     )
                     cv2.putText(
