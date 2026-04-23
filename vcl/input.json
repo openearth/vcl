@@ -1,15 +1,36 @@
 {
     "basepath": "/Users/hemert/data/vcl/islandr/",
     "crs": "EPSG:28992",
+    "extent": "extent_1_to_2.gpkg",
     "common": {
         "basemap": "ahn-photo-merged_6000x4000_fit.tif",
         "bathymetry": "ahn-merged-dtm-1-to-2.tif",
-        "extent": "extent_1_to_2.gpkg",
         "layers": {},
         "animations": {},
         "interactivity": {},
         "stats": {},
         "particles": {},
         "extra_info": {}
+    },
+    "unique": {
+        "1970": {
+            "layers": {
+                "test-1": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-2": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-3": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-4": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-5": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-6": "ahn-photo-merged_6000x4000_fit.tif"
+            }
+        },
+        "2010": {
+            "layers": {
+                "test-1": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-2": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-3": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-4": "ahn-photo-merged_6000x4000_fit.tif",
+                "test-5": "ahn-photo-merged_6000x4000_fit.tif"
+            }
+        }
     }
 }

@@ -70,11 +70,11 @@ def preprocess(input_file: Union[str, Path]):
     assert "common" in input_dict.keys(), ValueError(
         "Input file must contain common layers"
     )
+    assert "extent" in input_dict.keys(), ValueError(
+        "Input file must contain an extent"
+    )
     assert "basemap" in input_dict["common"].keys(), ValueError(
         "basemap must be included in common layers"
-    )
-    assert "extent" in input_dict["common"].keys(), ValueError(
-        "extent must be included in common layers"
     )
     assert "bathymetry" in input_dict["common"].keys(), ValueError(
         "bathymetry must be included in common layers"
@@ -82,7 +82,12 @@ def preprocess(input_file: Union[str, Path]):
 
     base_path = input_dict.get("basepath")
     base_path = Path(base_path)
-    crs = input_dict.get("crs")
+    crs = input_dict.get("crs", "EPSG:4326")
+
+    extent = gpd.read_file(base_path / input_dict.get("extent")).iloc[0]["geometry"]
+    angle = vcl.data.compute_rotation_angle(extent)
+    mid_point = extent.centroid.coords[0]
+    base_info = {"extent": extent, "mid_point": mid_point, "angle": angle, "crs": crs}
 
     common_layers = input_dict.get("common")
     unique_layers = input_dict.get("unique")
@@ -92,10 +97,15 @@ def preprocess(input_file: Union[str, Path]):
         logger.info("Preprocessing common layers...")
         logger.info("-" * 60)
         preprocessed_common_datasets = preprocess_common(
-            common_layers, base_path=base_path, crs=crs
+            common_layers, base_path=base_path, base_info=base_info
         )
     if unique_layers:
-        preprocessed_unique_datasets = preprocess_unique(unique_layers)
+        logger.info("-" * 60)
+        logger.info("Preprocessing unique layers...")
+        logger.info("-" * 60)
+        preprocessed_unique_datasets = preprocess_unique(
+            unique_layers, base_path=base_path, base_info=base_info
+        )
 
     preprocessed_datasets = {}
     if unique_layers:
@@ -111,7 +121,10 @@ def preprocess(input_file: Union[str, Path]):
 
 
 def preprocess_common(
-    datasets, base_path: Union[str, Path] = "", crs: str = "EPSG:4326"
+    datasets,
+    base_path: Union[str, Path] = "",
+    base_info: dict = {},
+    process_essentials: bool = True,
 ):
     """Preprocess common layers that are shared across all time periods.
 
@@ -145,17 +158,15 @@ def preprocess_common(
     # Create dictionary to store processed data and values
     preprocessed = {}
 
-    extent = gpd.read_file(base_path / datasets["extent"]).iloc[0]["geometry"]
-    angle = vcl.data.compute_rotation_angle(extent)
-    mid_point = extent.centroid.coords[0]
-
     logger.info("Preprocessing basemap and bathymetry...")
-    preprocessed = preprocess_essentials(
-        datasets=datasets, preprocessed=preprocessed, base_path=base_path, crs=crs
-    )
-
-    extra_info = {"extent": extent, "mid_point": mid_point, "angle": angle, "crs": crs}
-    extra_info = datasets.get("extra_info", {}) | extra_info
+    if process_essentials:
+        preprocessed = preprocess_essentials(
+            datasets=datasets,
+            preprocessed=preprocessed,
+            base_path=base_path,
+            base_info=base_info,
+        )
+    extra_info = datasets.get("extra_info", {}) | base_info
 
     logger.info("Preprocessing layers...")
     pbar = tqdm(datasets["layers"], unit="layer")
@@ -241,7 +252,7 @@ def preprocess_common(
     return preprocessed
 
 
-def preprocess_unique(datasets):
+def preprocess_unique(datasets, base_path: Union[str, Path], base_info: dict = None):
     """Preprocess unique layers that vary across different time periods.
 
     This function creates a structure for year-specific data. Currently a placeholder
@@ -258,18 +269,38 @@ def preprocess_unique(datasets):
         This is currently a stub implementation. Year-specific preprocessing
         logic should be added here as needed.
     """
-    preprocessed_datasets = {}
-    for year in datasets.keys():
-        preprocessed_datasets[year] = {}
+    REQUIRED = [
+        "layers",
+        "animations",
+        "interactivity",
+        "stats",
+        "particles",
+        "extra_info",
+    ]
 
-    return preprocessed_datasets
+    preprocessed = {}
+    logger.info("Preprocessing years...")
+    pbar = tqdm(datasets.keys(), unit="year")
+    for year in pbar:
+        pbar.set_description(f"Processing: {year}")
+        for k in REQUIRED:
+            datasets[year].setdefault(k, {})
+
+        preprocessed[year] = preprocess_common(
+            datasets[year],
+            base_path=base_path,
+            base_info=base_info,
+            process_essentials=False,
+        )
+
+    return preprocessed
 
 
 def preprocess_essentials(
     datasets: dict,
     preprocessed: dict,
     base_path: Union[str, Path] = "",
-    crs: str = "EPSG:4326",
+    base_info: dict = {},
 ):
     """Preprocess essential layers required for all visualizations.
 
@@ -296,8 +327,9 @@ def preprocess_essentials(
     """
     base_path = Path(base_path)
 
-    extent = gpd.read_file(base_path / datasets["extent"]).iloc[0]["geometry"]
-    preprocessed["extent"] = extent
+    crs = base_info.get("crs", "EPSG:4326")
+    extent = base_info.get("extent")
+
     angle = vcl.data.compute_rotation_angle(extent)
     mid_point = extent.centroid.coords[0]
 

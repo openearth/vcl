@@ -200,6 +200,7 @@ def displaymap(data_path):
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
         "bathymetry": {"type": "CMAP"},
+        "test-1": {"type": "RGB"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -210,7 +211,7 @@ def displaymap(data_path):
             datasets=datasets,
             start_year="1970",
             flow_data={},
-            animations_data=datasets[""]["animations"],
+            animations_data=datasets["1970"]["animations"],
             dataset_kwargs=dataset_kwargs,
             bg_layer="basemap",
             mask_layer=None,
@@ -570,6 +571,10 @@ def keyboard_publisher():
 
                 elif event.key == pygame.K_0:
                     change_layer(f"{overstromingen[0]},layer")
+                elif event.key == pygame.K_g:
+                    change_year(1970)
+                elif event.key == pygame.K_h:
+                    change_year(2010)
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_s:
