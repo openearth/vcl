@@ -201,6 +201,9 @@ def displaymap(data_path):
         "basemap": {"type": "RGB"},
         "bathymetry": {"type": "CMAP"},
         "test-1": {"type": "RGB"},
+        "contamination": {"type": "RGB"},
+        "ground_cover": {"type": "RGB"},
+        "treat_water": {"type": "RGB"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -215,7 +218,7 @@ def displaymap(data_path):
             dataset_kwargs=dataset_kwargs,
             bg_layer="basemap",
             mask_layer=None,
-            i_max=127,
+            i_max=len(datasets["1970"]["animations"]["contamination"]) - 1,
             aspect_ratio=1920 / 1080,
         )
     except Exception as e:
@@ -540,7 +543,7 @@ def keyboard_publisher():
     keys_held = {}  # Dictionary to track held keys
     # --- Main Loop -
     slice_index = 0
-    max_slices = 300
+    max_slices = 268
     # max_slices = 300
 
     R_runnig = False
@@ -555,11 +558,11 @@ def keyboard_publisher():
                 if event.key == pygame.K_1:
                     change_layer("bathymetry,layer")
                 elif event.key == pygame.K_2:
-                    change_layer(f"{waterdiepte[0]},layer")
+                    change_layer(f"contamination,layer")
                 elif event.key == pygame.K_3:
-                    change_layer(f"{risico_zone[0]},layer")
+                    change_layer(f"ground_cover,layer")
                 elif event.key == pygame.K_4:
-                    change_layer("aangepast_bouwen,layer")
+                    change_layer("treat_water,layer")
                 elif event.key == pygame.K_5:
                     change_layer("bescherming,layer")
                 elif event.key == pygame.K_6:
@@ -1020,17 +1023,17 @@ def uid_detector(data_path):
         Publishes to port 5558. Exceptions are caught and printed but don't
         terminate the module.
     """
-    datasets = load_preprocessed(data_path=data_path)
-    context = zmq.Context()
-    socket = context.socket(zmq.PUB)
-    socket.setsockopt(zmq.CONFLATE, 1)
-    socket.bind("tcp://*:5558")
-
-    extent = datasets[""]["extent"].bounds
-
     try:
+        datasets = load_preprocessed(data_path=data_path)
+        context = zmq.Context()
+        socket = context.socket(zmq.PUB)
+        socket.setsockopt(zmq.CONFLATE, 1)
+        socket.bind("tcp://*:5558")
+
+        extent = datasets["1970"]["extent"].bounds
+
         uid_detection.main(
-            socket=socket, extent=extent, datasets=datasets[""]["interactivity"]
+            socket=socket, extent=extent, datasets=datasets["1970"]["interactivity"]
         )
     except Exception as e:
         print(e)

@@ -497,6 +497,25 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         self.i = np.clip(i, 0, self.i_max)
 
+    def draw_animation_frame(self):
+        """
+        Update and render the current animation frame.
+
+        Advances animation frames at 1 second intervals, with a 3 second pause
+        on the final frame. Loops back to start after completion.
+        Renders the frame image and associated text overlay.
+        """
+        frame_surface = self.create_pygame_surface_from_rgb(
+            self.animation_data[self.current_layer][self.i]["frame"]
+        )
+        frame_surface = pygame.transform.scale(
+            frame_surface, (self.img_width, self.img_height)
+        )
+        self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
+
+        frame_text = self.animation_data[self.current_layer][self.i]["text"]
+        self.bottom_text = frame_text
+
     def change_year(self, year):
         """
         Change the displayed year/time period.
@@ -542,7 +561,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         Renders the frame image and associated text overlay.
         """
         now = pygame.time.get_ticks()
-        frame_time = 200
+        frame_time = 50
         if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
             frame_time = 3000
         if now - self.animation_update_time > frame_time:
@@ -613,6 +632,8 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_layer(self.current_layer)
         if self.show_animation:
             self.update_animation()
+        if self.current_layer in self.animation_data:
+            self.draw_animation_frame()
         for overlay in self.overlays:
             self.draw_layer(overlay)
 
@@ -656,7 +677,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         #     (self.x_pos + self.img_width * (7 / 8) + padding, self.y_pos + padding),
         # )
 
-        self.draw_line()
+        # self.draw_line()
         # pygame.draw.line(
         #     self.screen,
         #     (0, 0, 0),

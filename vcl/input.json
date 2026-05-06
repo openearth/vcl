@@ -4,10 +4,20 @@
     "extent": "extent_1_to_2.gpkg",
     "common": {
         "basemap": "ahn-photo-merged_6000x4000_fit.tif",
-        "bathymetry": "ahn-merged-dtm-1-to-2.tif",
-        "layers": {},
-        "animations": {},
-        "interactivity": {},
+        "bathymetry": "ahn-merged-dtm-of-interest.tif",
+        "layers": {
+            "contamination": "animations/frames/png/1983_frame.tif",
+            "ground_cover": "animations/ground_cover/frames/1983_frame.tif",
+            "treat_water": "animations/treat_water/frames/1983_frame.tif"
+        },
+        "animations": {
+            "contamination": "animations/frames/png",
+            "ground_cover": "animations/ground_cover/frames",
+            "treat_water": "animations/treat_water/frames"
+        },
+        "interactivity": {
+            "slider": "slider_polygon_big.gpkg"
+        },
         "stats": {},
         "particles": {},
         "extra_info": {}

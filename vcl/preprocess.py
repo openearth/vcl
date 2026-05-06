@@ -110,10 +110,13 @@ def preprocess(input_file: Union[str, Path]):
     preprocessed_datasets = {}
     if unique_layers:
         for year in preprocessed_unique_datasets.keys():
-            preprocessed_datasets[year] = {
-                **preprocessed_common_datasets,
-                **preprocessed_unique_datasets[year],
+
+            preprocessed_datasets[year] = preprocessed_common_datasets | {
+                k: v
+                for k, v in preprocessed_unique_datasets[year].items()
+                if not (isinstance(v, dict) and v == {})
             }
+
     else:
         preprocessed_datasets[""] = preprocessed_common_datasets
 
@@ -224,11 +227,12 @@ def preprocess_common(
                 layer_data = preprocess_png(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
+                animation_data.append({"frame": layer_data, "text": year})
             elif layer_path.suffix == ".tif":
                 layer_data = preprocess_tif(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
-            animation_data.append({"frame": layer_data, "text": year})
+                animation_data.append({"frame": layer_data, "text": year})
         preprocessed["animations"][layer] = animation_data
 
     logger.info("Preprocessing particles...")
@@ -359,6 +363,7 @@ def preprocess_essentials(
 
     preprocessed["basemap"] = basemap
     preprocessed["bathymetry"] = bathymetry
+    preprocessed["extent"] = extent
 
     return preprocessed
 

@@ -51,6 +51,18 @@ def specifiy_breach_location(point, gdf: gpd.GeoDataFrame):
         return
 
 
+def specify_slider_position(point, gdf: gpd.GeoDataFrame):
+    point = shapely.Point(point)
+    if gdf.intersects(point).any():
+        xmin, ymin, xmax, ymax = gdf.total_bounds
+        slider_position = (point.x - xmin) / (xmax - xmin)
+        slider_position = np.clip(slider_position, a_min=0, a_max=1)
+        slice_index = int(slider_position * 268)
+        return slice_index
+    else:
+        return
+
+
 def main(socket: zmq.Socket = None, extent=None, datasets={}):
     # Initialize components
     try:
@@ -66,9 +78,7 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
 
     # Define some sample actions
     def on_flood_event(uid, context):
-        location = specifiy_breach_location(
-            context["map_coords"], datasets["overstromingen"]
-        )
+        location = specifiy_breach_location(context["map_coords"], datasets["slider"])
         if location is None:
             return
         event = uid_to_event[uid]
@@ -76,15 +86,25 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
         time.sleep(0.01)
         socket.send_string(f"maps animation,layer")
 
+    def on_slider_change(uid, context):
+        try:
+            slice_index = specify_slider_position(
+                context["map_coords"], datasets["slider"]
+            )
+            if slice_index is not None:
+                socket.send_string(f"slice {slice_index}")
+        except Exception as e:
+            print(e)
+
     def on_stop(uid, context):
         socket.send_string(f"maps None,layer")
 
-    action_manager.register_action("0", on_flood_event)
+    action_manager.register_action("0", on_slider_change)
     action_manager.register_action("1", on_flood_event)
     action_manager.register_action("2", on_flood_event)
     action_manager.register_action("3", on_flood_event)
 
-    action_manager.register_lost_action("0", on_stop)
+    # action_manager.register_lost_action("0", on_stop)
     action_manager.register_lost_action("1", on_stop)
     action_manager.register_lost_action("2", on_stop)
     action_manager.register_lost_action("3", on_stop)
@@ -104,7 +124,7 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
 
     last_triggered = {}
     last_positions = {"0": (0, 0), "1": (0, 0), "2": (0, 0), "3": (0.5, 0.5)}
-    trigger_cooldowns = {"0": np.inf, "1": np.inf, "2": np.inf, "3": np.inf}
+    trigger_cooldowns = {"0": 0.05, "1": np.inf, "2": np.inf, "3": np.inf}
     # If a tag moves more than this normalised distance, reset its trigger so
     # the action fires again at the new location (relevant for infinite-cooldown
     # tags like "0" that would otherwise never re-trigger).
