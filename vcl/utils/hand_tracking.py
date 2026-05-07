@@ -8,7 +8,7 @@ from typing import Union
 
 # Define reference points (top-left, top-right, bottom-right, bottom-left)
 CAMERA_POINTS = np.array(
-    [(0.00, 0.82), (0.98, 0.82), (0.89, 0.11), (0.10, 0.11)], dtype=np.float32
+    [(0.00, 0.76), (0.98, 0.76), (0.91, 0.02), (0.08, 0.02)], dtype=np.float32
 )
 TABLE_POINTS = np.array(
     [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], dtype=np.float32
