@@ -213,11 +213,12 @@ def preprocess_common(
                 layer_data = preprocess_png(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
+                animation_data.append({"frame": layer_data, "text": year})
             elif layer_path.suffix == ".tif":
                 layer_data = preprocess_tif(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
-            animation_data.append({"frame": layer_data, "text": year})
+                animation_data.append({"frame": layer_data, "text": year})
         preprocessed["animations"][layer] = animation_data
 
     logger.info("Preprocessing particles...")
