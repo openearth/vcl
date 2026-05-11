@@ -200,10 +200,10 @@ def displaymap(data_path):
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
         "bathymetry": {"type": "CMAP"},
-        "test-1": {"type": "RGB"},
         "contamination": {"type": "RGB"},
         "ground_cover": {"type": "RGB"},
         "treat_water": {"type": "RGB"},
+        "1911": {"type": "RGB"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -212,13 +212,13 @@ def displaymap(data_path):
     try:
         display = DisplayMap.DisplayMap(
             datasets=datasets,
-            start_year="1970",
+            start_year="",
             flow_data={},
-            animations_data=datasets["1970"]["animations"],
+            animations_data=datasets[""]["animations"],
             dataset_kwargs=dataset_kwargs,
             bg_layer="basemap",
             mask_layer=None,
-            i_max=len(datasets["1970"]["animations"]["contamination"]) - 1,
+            i_max=len(datasets[""]["animations"]["contamination"]) - 1,
             aspect_ratio=1920 / 1080,
         )
     except Exception as e:
@@ -564,7 +564,7 @@ def keyboard_publisher():
                 elif event.key == pygame.K_4:
                     change_layer("treat_water,layer")
                 elif event.key == pygame.K_5:
-                    change_layer("bescherming,layer")
+                    change_layer("1911,layer")
                 elif event.key == pygame.K_6:
                     change_layer("compartiment,layer")
                 elif event.key == pygame.K_7:
@@ -1030,10 +1030,10 @@ def uid_detector(data_path):
         socket.setsockopt(zmq.CONFLATE, 1)
         socket.bind("tcp://*:5558")
 
-        extent = datasets["1970"]["extent"].bounds
+        extent = datasets[""]["extent"].bounds
 
         uid_detection.main(
-            socket=socket, extent=extent, datasets=datasets["1970"]["interactivity"]
+            socket=socket, extent=extent, datasets=datasets[""]["interactivity"]
         )
     except Exception as e:
         print(e)

@@ -53,7 +53,7 @@ def specifiy_breach_location(point, gdf: gpd.GeoDataFrame):
 
 def specify_slider_position(point, gdf: gpd.GeoDataFrame):
     point = shapely.Point(point)
-    if gdf.intersects(point).any():
+    if gdf.buffer(50).intersects(point).any():
         xmin, ymin, xmax, ymax = gdf.total_bounds
         slider_position = (point.x - xmin) / (xmax - xmin)
         slider_position = np.clip(slider_position, a_min=0, a_max=1)

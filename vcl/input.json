@@ -8,7 +8,8 @@
         "layers": {
             "contamination": "animations/frames/png/1983_frame.tif",
             "ground_cover": "animations/ground_cover/frames/1983_frame.tif",
-            "treat_water": "animations/treat_water/frames/1983_frame.tif"
+            "treat_water": "animations/treat_water/frames/1983_frame.tif",
+            "1911": "maps/1911.png"
         },
         "animations": {
             "contamination": "animations/frames/png",
@@ -22,25 +23,5 @@
         "particles": {},
         "extra_info": {}
     },
-    "unique": {
-        "1970": {
-            "layers": {
-                "test-1": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-2": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-3": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-4": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-5": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-6": "ahn-photo-merged_6000x4000_fit.tif"
-            }
-        },
-        "2010": {
-            "layers": {
-                "test-1": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-2": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-3": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-4": "ahn-photo-merged_6000x4000_fit.tif",
-                "test-5": "ahn-photo-merged_6000x4000_fit.tif"
-            }
-        }
-    }
+    "unique": {}
 }
