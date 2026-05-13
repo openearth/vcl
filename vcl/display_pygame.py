@@ -204,6 +204,13 @@ def displaymap(data_path):
         "ground_cover": {"type": "RGB"},
         "treat_water": {"type": "RGB"},
         "1911": {"type": "RGB"},
+        "1913": {"type": "RGB"},
+        "1942": {"type": "RGB"},
+        "1967": {"type": "RGB"},
+        "2009": {"type": "RGB"},
+        "energy_park": {"type": "RGB"},
+        "housing": {"type": "RGB"},
+        "innovation_hub": {"type": "RGB"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -218,7 +225,7 @@ def displaymap(data_path):
             dataset_kwargs=dataset_kwargs,
             bg_layer="basemap",
             mask_layer=None,
-            i_max=len(datasets[""]["animations"]["contamination"]) - 1,
+            i_max=338,
             aspect_ratio=1920 / 1080,
         )
     except Exception as e:
@@ -238,6 +245,8 @@ def displaymap(data_path):
                 display.display_overlay(layer)
             elif view_type == "mask":
                 display.display_mask()
+            elif view_type == "scenario":
+                display.change_scenario(layer)
             else:
                 display.change_layer(layer)
 
@@ -245,6 +254,9 @@ def displaymap(data_path):
             topic, message = socket_slice.recv(zmq.DONTWAIT).split()
             slice_index = float(message)
             display.change_line_index(slice_index)
+            year = str(display.index_to_year(min_year=1911, max_year=2250))
+            if year in dataset_kwargs:
+                display.change_layer(year)
 
         if socket_year in socks and socks[socket_year] == zmq.POLLIN:
             topic, message = socket_year.recv(zmq.DONTWAIT).split()
@@ -434,7 +446,7 @@ def keyboard_publisher():
                 current_overlay = text
                 current_overlays.append(text)
 
-    waterdiepte = collections.deque(["d_T100_000", "d_T100"])
+    solutions = collections.deque(["energy_park", "housing", "innovation_hub"])
     risico_zone = collections.deque(["risico_zone", "risico_zone_20"])
     overstromingen = collections.deque(
         [
@@ -462,13 +474,13 @@ def keyboard_publisher():
 
     collection_type_mapping = (
         {layer: "overstroming" for layer in overstromingen}
-        | {layer: "waterdiepte" for layer in waterdiepte}
+        | {layer: "solutions" for layer in solutions}
         | {layer: "risico_zone" for layer in risico_zone}
     )
 
     cycles = {
         "overstroming": overstromingen,
-        "waterdiepte": waterdiepte,
+        "solutions": solutions,
         "risico_zone": risico_zone,
     }
 
@@ -543,7 +555,7 @@ def keyboard_publisher():
     keys_held = {}  # Dictionary to track held keys
     # --- Main Loop -
     slice_index = 0
-    max_slices = 268
+    max_slices = 338
     # max_slices = 300
 
     R_runnig = False
@@ -566,14 +578,16 @@ def keyboard_publisher():
                 elif event.key == pygame.K_5:
                     change_layer("1911,layer")
                 elif event.key == pygame.K_6:
-                    change_layer("compartiment,layer")
+                    change_layer("1913,layer")
                 elif event.key == pygame.K_7:
-                    change_layer("schuilen,layer")
+                    change_layer("1942,layer")
                 elif event.key == pygame.K_8:
-                    change_layer("c_management,layer")
-
+                    change_layer("1967,layer")
+                elif event.key == pygame.K_9:
+                    change_layer("2009,layer")
                 elif event.key == pygame.K_0:
-                    change_layer(f"{overstromingen[0]},layer")
+                    change_layer(f"{solutions[0]},layer")
+
                 elif event.key == pygame.K_g:
                     change_year(1970)
                 elif event.key == pygame.K_h:

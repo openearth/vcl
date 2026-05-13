@@ -53,11 +53,11 @@ def specifiy_breach_location(point, gdf: gpd.GeoDataFrame):
 
 def specify_slider_position(point, gdf: gpd.GeoDataFrame):
     point = shapely.Point(point)
-    if gdf.buffer(50).intersects(point).any():
+    if gdf.buffer(100).intersects(point).any():
         xmin, ymin, xmax, ymax = gdf.total_bounds
         slider_position = (point.x - xmin) / (xmax - xmin)
         slider_position = np.clip(slider_position, a_min=0, a_max=1)
-        slice_index = int(slider_position * 268)
+        slice_index = int(slider_position * 338)
         return slice_index
     else:
         return
@@ -74,7 +74,12 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
     detector = Detector()
     action_manager = ActionManager()
 
-    uid_to_event = {"0": "1000", "1": "10_000", "2": "100_000_1", "3": "100_000"}
+    uid_to_event = {
+        "0": "1000",
+        "1": "contamination",
+        "2": "ground_cover",
+        "3": "treat_water",
+    }
 
     # Define some sample actions
     def on_flood_event(uid, context):
@@ -85,6 +90,10 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
         socket.send_string(f"maps d_T{event}_{location},layer")
         time.sleep(0.01)
         socket.send_string(f"maps animation,layer")
+
+    def on_scenario_event(uid, context):
+        event = uid_to_event[uid]
+        socket.send_string(f"maps {event},scenario")
 
     def on_slider_change(uid, context):
         try:
@@ -97,15 +106,15 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
             print(e)
 
     def on_stop(uid, context):
-        socket.send_string(f"maps None,layer")
+        socket.send_string(f"maps contamination,scenario")
 
     action_manager.register_action("0", on_slider_change)
-    action_manager.register_action("1", on_flood_event)
-    action_manager.register_action("2", on_flood_event)
-    action_manager.register_action("3", on_flood_event)
+    action_manager.register_action("1", on_scenario_event)
+    action_manager.register_action("2", on_scenario_event)
+    action_manager.register_action("3", on_scenario_event)
 
     # action_manager.register_lost_action("0", on_stop)
-    action_manager.register_lost_action("1", on_stop)
+    # action_manager.register_lost_action("1", on_stop)
     action_manager.register_lost_action("2", on_stop)
     action_manager.register_lost_action("3", on_stop)
 

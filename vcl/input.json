@@ -9,7 +9,14 @@
             "contamination": "animations/frames/png/1983_frame.tif",
             "ground_cover": "animations/ground_cover/frames/1983_frame.tif",
             "treat_water": "animations/treat_water/frames/1983_frame.tif",
-            "1911": "maps/1911.png"
+            "1911": "maps/1911.png",
+            "1913": "maps/1913.png",
+            "1942": "maps/1942.png",
+            "1967": "maps/1967.png",
+            "2009": "maps/2009.png",
+            "energy_park": "maps/energy_park.png",
+            "housing": "maps/housing.png",
+            "innovation_hub": "maps/innovation_hub.png"
         },
         "animations": {
             "contamination": "animations/frames/png",

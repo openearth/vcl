@@ -174,6 +174,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.pan_start_pos = None
         self.pan_offset = pygame.Vector2(0, 0)
         self.total_pan_offset = pygame.Vector2(0, 0)
+        self.current_scenario = "contamination"
 
         self.bottom_text = None
         self.hand_tracking = None
@@ -417,6 +418,8 @@ class DisplayMap(PygameWindow.PygameWindow):
         else:
             text = self.bottom_text
 
+        text = str(self.index_to_year(min_year=1911, max_year=2250))
+
         text_bottom = self.font.render(
             text,
             True,
@@ -494,7 +497,6 @@ class DisplayMap(PygameWindow.PygameWindow):
                 i = int(i)
             elif i >= 0 and i < 1:
                 i = int(i * self.i_max)
-
         self.i = np.clip(i, 0, self.i_max)
 
     def draw_animation_frame(self):
@@ -506,14 +508,14 @@ class DisplayMap(PygameWindow.PygameWindow):
         Renders the frame image and associated text overlay.
         """
         frame_surface = self.create_pygame_surface_from_rgb(
-            self.animation_data[self.current_layer][self.i]["frame"]
+            self.animation_data[self.current_scenario][self.i - 72]["frame"]
         )
         frame_surface = pygame.transform.scale(
             frame_surface, (self.img_width, self.img_height)
         )
         self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
 
-        frame_text = self.animation_data[self.current_layer][self.i]["text"]
+        frame_text = self.animation_data[self.current_scenario][self.i - 72]["text"]
         self.bottom_text = frame_text
 
     def change_year(self, year):
@@ -525,6 +527,13 @@ class DisplayMap(PygameWindow.PygameWindow):
         """
         if year in self.datasets.keys():
             self.current_year = year
+
+    def change_scenario(self, scenario):
+        self.current_scenario = scenario
+
+    def index_to_year(self, min_year, max_year):
+        year = min_year + int((max_year - min_year) * self.i / self.i_max)
+        return year
 
     def change_alpha(self, layer, alpha):
         """
@@ -626,14 +635,30 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.go_fullscreen()
         self.adjust_aspect_ratio()
         self.screen.fill((0, 0, 0))
+
+        year = self.index_to_year(min_year=1911, max_year=2250)
+
         if self.bg_layer in self.dataset_kwargs:
             self.draw_layer(self.bg_layer)
         if self.current_layer in self.dataset_kwargs and not self.show_animation:
             self.draw_layer(self.current_layer)
         if self.show_animation:
             self.update_animation()
-        if self.current_layer in self.animation_data:
+        # if self.current_layer in self.animation_data:
+        #     self.draw_animation_frame()
+        if year >= 2022:
+            # self.current_scenario = "contamination"
+            rect_surface = pygame.Surface(
+                (self.img_width, self.img_height), pygame.SRCALPHA
+            )
+            pygame.draw.rect(
+                rect_surface,
+                (255, 255, 255, 180),  # 128 = 50% transparency
+                (0, 0, self.img_width, self.img_height),
+            )
+            self.screen.blit(rect_surface, (self.x_pos, self.y_pos))
             self.draw_animation_frame()
+
         for overlay in self.overlays:
             self.draw_layer(overlay)
 

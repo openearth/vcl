@@ -7,6 +7,31 @@ from vcl.interactivity.uid_detector import Detector
 from vcl.config import save_camera_points
 
 
+def order_corners(pts):
+    pts = np.array(pts, dtype=np.float32)
+
+    # Compute centroid
+    cx = np.mean(pts[:, 0])
+    cy = np.mean(pts[:, 1])
+
+    # Compute angle of each point relative to centroid
+    angles = np.arctan2(pts[:, 1] - cy, pts[:, 0] - cx)
+
+    # Sort points by angle (counter‑clockwise)
+    sorted_idx = np.argsort(angles)
+    pts = pts[sorted_idx]
+
+    # After sorting CCW, identify top-left as the point with smallest (x+y)
+    s = pts.sum(axis=1)
+    tl_idx = np.argmin(s)
+
+    # Rotate array so that TL is first
+    ordered = np.roll(pts, -tl_idx, axis=0)
+
+    # Now order is TL, TR, BR, BL
+    return ordered.tolist()
+
+
 def get_calibration_corner(tag_id, bbox):
     """
     Tag 0 -> top-left corner
@@ -26,6 +51,17 @@ def get_calibration_corner(tag_id, bbox):
     return None
 
 
+clicked_points = []
+
+
+def mouse_callback(event, x, y, flags, param):
+    global clicked_points
+    if event == cv2.EVENT_LBUTTONDOWN:
+        if len(clicked_points) < 4:
+            clicked_points.append((x, y))
+            print(f"Clicked point {len(clicked_points)}: {(x, y)}")
+
+
 def run_calibration(source=0):
     """
     Run the webcam calibration script.
@@ -41,6 +77,7 @@ def run_calibration(source=0):
     print("  Tag 3: Bottom-Left")
     print("Press 'c' to capture the points and store them.")
     print("Press 'q' or 'ESC' to abort without saving.")
+    global clicked_points
 
     try:
         camera = Camera(source=source)
@@ -53,128 +90,61 @@ def run_calibration(source=0):
     detector = Detector()
 
     try:
+        cv2.namedWindow("Calibration")
+        cv2.setMouseCallback("Calibration", mouse_callback)
+
         while True:
             ret, frame = camera.cap.read()
             if not ret:
                 break
 
-            # frame = cv2.flip(frame, 1)
-            # frame = cv2.resize(frame, camera.frame_size)
             h, w, _ = frame.shape
 
-            detections = detector.detect(frame)
-            calibration_points = {}
+            # Draw clicked points
+            for p in clicked_points:
+                cv2.circle(frame, p, 6, (0, 0, 255), -1)
 
-            for d in detections:
-                tag_id = d["id"]
-                bbox = d["bbox"]
-
-                corner = get_calibration_corner(tag_id, bbox)
-                if corner:
-                    calibration_points[tag_id] = corner
-
-                cv2.polylines(frame, [bbox], True, (0, 255, 0), 2)
-
-                if corner:
-                    cv2.circle(frame, corner, 5, (0, 0, 255), -1)
-                    cv2.putText(
-                        frame,
-                        f"ID {tag_id} (Corner)",
-                        (corner[0] - 10, corner[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 0, 255),
-                        2,
-                    )
-                else:
-                    cv2.putText(
-                        frame,
-                        f"Ignored ID {tag_id}",
-                        (bbox[0][0], bbox[0][1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (128, 128, 128),
-                        2,
-                    )
-
-            required_ids = {0, 1, 2, 3}
-            detected_required = set(calibration_points.keys())
-
-            if required_ids.issubset(detected_required):
-                sorted_pixels = [
-                    calibration_points[0],
-                    calibration_points[1],
-                    calibration_points[2],
-                    calibration_points[3],
-                ]
-                cv2.polylines(
-                    frame,
-                    [np.array(sorted_pixels, dtype=np.int32)],
-                    True,
-                    (255, 255, 0),
-                    2,
-                )
+            # Draw polygon in the clicked order
+            if len(clicked_points) == 4:
+                poly = np.array(clicked_points, dtype=np.int32)
+                cv2.polylines(frame, [poly], True, (255, 255, 0), 2)
                 cv2.putText(
                     frame,
-                    "4 TAGS DETECTED - PRESS 'c' to CAPTURE",
+                    "Press 'c' to save",
                     (50, 50),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     1,
                     (0, 255, 255),
                     2,
                 )
-            else:
-                missing = required_ids - detected_required
-                cv2.putText(
-                    frame,
-                    f"Missing Tags: {missing}",
-                    (50, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    (0, 0, 255),
-                    2,
-                )
 
-            cv2.imshow("Calibration - Press 'c' to capture, 'q' to abort", frame)
+            cv2.putText(
+                frame,
+                "Click 4 corners (TL, TR, BR, BL)",
+                (50, h - 20),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 255),
+                2,
+            )
+
+            cv2.imshow("Calibration", frame)
 
             key = cv2.waitKey(1) & 0xFF
-            if key == ord("q") or key == 27:  # ESC
-                print("Aborted calibration.")
+
+            if key == ord("q"):
+                print("Aborted.")
                 break
-            elif key == ord("c"):
-                if required_ids.issubset(detected_required):
-                    sorted_pixels = [
-                        calibration_points[0],
-                        calibration_points[1],
-                        calibration_points[2],
-                        calibration_points[3],
-                    ]
-                    # Normalize points (0-1) across the resized frame dim
-                    normalized_points = [
-                        (float(x) / w, float(y) / h) for (x, y) in sorted_pixels
-                    ]
 
-                    save_camera_points(normalized_points)
-                    print(f"Captured points: {normalized_points}")
-                    print("Calibration completed successfully!")
+            if key == ord("r"):
+                clicked_points = []
+                print("Reset points.")
 
-                    cv2.putText(
-                        frame,
-                        "SAVED!",
-                        (w // 2 - 100, h // 2),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        2,
-                        (0, 255, 0),
-                        4,
-                    )
-                    cv2.imshow(
-                        "Calibration - Press 'c' to capture, 'q' to abort", frame
-                    )
-                    cv2.waitKey(1500)
-                    break
-                else:
-                    missing = required_ids - detected_required
-                    print(f"Need tags 0, 1, 2, and 3. Missing: {missing}")
+            if key == ord("c") and len(clicked_points) == 4:
+                normalized = [(x / w, y / h) for (x, y) in clicked_points]
+                save_camera_points(normalized)
+                print("Saved:", normalized)
+                break
 
     finally:
         camera.release()
