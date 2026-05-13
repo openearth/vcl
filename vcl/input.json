@@ -16,6 +16,8 @@
             "risico_zone_20": "260220_strategie kaarten/260219 Exports/260219_Risicozonering excl20cm.png",
             "schuilen": "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren.png",
             "doorbraaklocaties": "breach_locations.png",
+            "overview": "260220_strategie kaarten/overview_clean.png",
+            "overview_tags": "260220_strategie kaarten/overview_tags.png",
             "d_T1000_noord": "overstromingen/116043/T+07d 00:00:00_116043_dataset0168_rgba.tif",
             "d_T1000_zuid": "overstromingen/116060/T+07d 00:00:00_116060_dataset0168_rgba.tif",
             "d_T1000_oost": "overstromingen/116054/T+07d 00:00:00_116054_dataset0168_rgba.tif",
@@ -185,6 +187,16 @@
                     "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
                 ]
             },
+            "d_T100_000_1_vp": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
+            "d_T100_000_1_hw": {
+                "image": [
+                    "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
+                ]
+            },
             "d_T100_000_noord": {
                 "image": [
                     "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000_Legend.png"
@@ -230,6 +242,22 @@
                     420429.645,
                     106889.340,
                     438427.469
+                ]
+            },
+            "overview": {
+                "extent": [
+                    80421,
+                    423205,
+                    106712,
+                    437377
+                ]
+            },
+            "overview_tags": {
+                "extent": [
+                    80421,
+                    423205,
+                    106712,
+                    437377
                 ]
             },
             "d_T100_000": {

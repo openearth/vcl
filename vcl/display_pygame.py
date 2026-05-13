@@ -209,6 +209,8 @@ def displaymap(data_path):
         "risico_zone": {"type": "RGB", "alpha": 0.8},
         "risico_zone_20": {"type": "RGB", "alpha": 0.8},
         "schuilen": {"type": "RGB", "alpha": 0.8},
+        "overview": {"type": "RGB"},
+        "overview_tags": {"type": "RGB"},
         "doorbraaklocaties": {"type": "RGB"},
         "d_T1000_noord": {"type": "RGB"},
         "d_T1000_zuid": {"type": "RGB"},
@@ -463,6 +465,7 @@ def keyboard_publisher():
 
     waterdiepte = collections.deque(["d_T100_000", "d_T100"])
     risico_zone = collections.deque(["risico_zone", "risico_zone_20"])
+    overviews = collections.deque(["overview", "overview_tags"])
     overstromingen = collections.deque(
         [
             "d_T1000_noord",
@@ -493,12 +496,14 @@ def keyboard_publisher():
         {layer: "overstroming" for layer in overstromingen}
         | {layer: "waterdiepte" for layer in waterdiepte}
         | {layer: "risico_zone" for layer in risico_zone}
+        | {layer: "overviews" for layer in overviews}
     )
 
     cycles = {
         "overstroming": overstromingen,
         "waterdiepte": waterdiepte,
         "risico_zone": risico_zone,
+        "overviews": overviews,
     }
 
     def cycle_collection(cycle):
@@ -610,7 +615,7 @@ def keyboard_publisher():
                 elif event.key == pygame.K_d:
                     change_layer("doorbraaklocaties,overlay")
                 elif event.key == pygame.K_o:
-                    change_year(2050)
+                    change_layer(f"{overviews[0]},layer")
                 elif event.key == pygame.K_p:
                     change_year(2100)
                 elif event.key == pygame.K_m:

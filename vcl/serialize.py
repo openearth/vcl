@@ -170,26 +170,28 @@ def save(datasets: dict, output_path: Union[str, Path]) -> None:
 
     # 2) Write arrays to Zarr v3 with compression
     zarr_path = output_path / "arrays.zarr"
-    store = zarr.open(str(zarr_path), mode="w", zarr_version=3)
+    store = zarr.open_group(str(zarr_path), mode="w")
 
     total_before = 0
     total_after = 0
+
     for i, arr in enumerate(arrays):
         key = _make_zarr_key(i)
-
         chunk_shape = _choose_chunk_shape(arr.shape, arr.dtype)
 
-        z = store.require_dataset(
-            key,
+        # Zarr v3 uses create_array(), not require_dataset()
+        z = store.create_array(
+            name=key,
             shape=arr.shape,
             dtype=arr.dtype,
-            compressors=[_CODEC],  # Change 'codecs' to 'compressors'
-            chunks=chunk_shape,  # Note: 'chunk_shape' is often just 'chunks' in many Zarr 3.x builds
+            chunks=chunk_shape,
+            compressor=_CODEC,
             fill_value=None,
             overwrite=True,
         )
 
         z[...] = arr
+
         total_before += arr.nbytes
         try:
             total_after += z.nbytes_stored()  # available in recent v3 alphas
