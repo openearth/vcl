@@ -6,15 +6,15 @@
         "bathymetry": "ahn-merged-dtm-max-15-1-to-2-v4.tif",
         "extent": "extent_1_to_2.gpkg",
         "layers": {
-            "aangepast_bouwen": "260220_strategie kaarten/260219 Exports/260219_Aangepast bouwen.png",
-            "bescherming": "260220_strategie kaarten/260219 Exports/260219_Bescherming vitale objecten en infra.png",
-            "compartiment": "260220_strategie kaarten/260219 Exports/260219_Compartimentering.png",
-            "d_T100_000": "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.000.png",
-            "d_T100": "260220_strategie kaarten/260219 Exports/260219_Maximale waterdiepte_T100.png",
-            "c_management": "260220_strategie kaarten/260219 Exports/260219_Ondersteuning crisis management.png",
-            "risico_zone": "260220_strategie kaarten/260219 Exports/260219_Risicozonering.png",
+            "aangepast_bouwen": "260220_strategie kaarten/260513 Exports/260513_Aangepast bouwen.jpg",
+            "bescherming": "260220_strategie kaarten/260513 Exports/260513_Bescherming vitale objecten en infra.jpg",
+            "compartiment": "260220_strategie kaarten/260513 Exports/260513_Compartimentering.jpg",
+            "d_T100_000": "260220_strategie kaarten/260513 Exports/260513_Maximale waterdiepte_T100.000.jpg",
+            "d_T100": "260220_strategie kaarten/260513 Exports/260513_Maximale waterdiepte_T100.jpg",
+            "c_management": "260220_strategie kaarten/260513 Exports/260513_Ondersteuning crisis management.jpg",
+            "risico_zone": "260220_strategie kaarten/260513 Exports/260513_Risicozonering.jpg",
             "risico_zone_20": "260220_strategie kaarten/260219 Exports/260219_Risicozonering excl20cm.png",
-            "schuilen": "260220_strategie kaarten/260219 Exports/260219_Schuillen en evacueren.png",
+            "schuilen": "260220_strategie kaarten/260513 Exports/260513_Schuillen en evacueren.jpg",
             "doorbraaklocaties": "breach_locations.png",
             "overview": "260220_strategie kaarten/overview_clean.png",
             "overview_tags": "260220_strategie kaarten/overview_tags.png",
@@ -69,47 +69,47 @@
         "stats": {
             "aangepast_bouwen": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide3.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Aangepast bouwen_legenda.jpg"
                 ]
             },
             "bescherming": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide4.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Bescherming vitale objecten en infra_legenda.jpg"
                 ]
             },
             "compartiment": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide5.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Compartimentering_legenda.jpg"
                 ]
             },
             "d_T100_000": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide1.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Maximale waterdiepte_T100.000_legenda.jpg"
                 ]
             },
             "d_T100": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide1.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Maximale waterdiepte_T100_legenda.jpg"
                 ]
             },
             "c_management": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide7.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Ondersteuning crisis management_legenda.jpg"
                 ]
             },
             "risico_zone": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide2.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Risicozonering_legenda.jpg"
                 ]
             },
             "risico_zone_20": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide2.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Risicozonering_legenda.jpg"
                 ]
             },
             "schuilen": {
                 "image": [
-                    "260220_strategie kaarten/260219 Exports/Legenda voor watertafel/Slide6.png"
+                    "260220_strategie kaarten/260513 Exports/260513_Schuillen en evacueren_legenda.jpg"
                 ]
             },
             "d_T1000_noord": {

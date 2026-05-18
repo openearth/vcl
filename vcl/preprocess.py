@@ -166,7 +166,7 @@ def preprocess_common(
         layer_path = base_path / layer_path
         file_extension = layer_path.suffix
 
-        if file_extension == ".png":
+        if file_extension == ".png" or file_extension == ".jpg":
             layer_data = preprocess_png(
                 file_path=layer_path, layer=layer, extra_info=extra_info
             )
