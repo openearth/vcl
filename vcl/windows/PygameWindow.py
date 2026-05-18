@@ -109,7 +109,7 @@ class PygameWindow:
         self.show_animation = False
 
         self.adjust_aspect_ratio()
-        self.font = pygame.font.Font(None, 96)
+        self.font = pygame.font.Font(None, 72)
 
         pygame.mixer.init()
 

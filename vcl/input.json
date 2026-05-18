@@ -4,7 +4,7 @@
     "extent": "extent_1_to_2.gpkg",
     "common": {
         "basemap": "ahn-photo-merged_6000x4000_fit.tif",
-        "bathymetry": "ahn-merged-dtm-of-interest.tif",
+        "bathymetry": "ahn-merged-dsm-1-to-2.tif",
         "layers": {
             "contamination": "animations/frames/png/1983_frame.tif",
             "ground_cover": "animations/ground_cover/frames/1983_frame.tif",
