@@ -111,6 +111,14 @@ class PygameWindow:
         self.adjust_aspect_ratio()
         self.font = pygame.font.Font(None, 72)
 
+        self.panels = {}
+        self.convert_panels_to_surfaces()
+        self.panel_current = None
+        self.panel_next = None
+        self.panel_phase = "idle"  # idle / cover / reveal
+        self.panel_progress = 0.0
+        self.panel_speed = 4.0
+
         pygame.mixer.init()
 
     def prepare_surface_dict(self):
@@ -200,6 +208,12 @@ class PygameWindow:
                                 array=array, cmap=cmap, norm=norm
                             )
                         )
+
+    def convert_panels_to_surfaces(self):
+        for year, dataset_dict in self.datasets.items():
+            for panel_name, panel_path in dataset_dict["panels"].items():
+                panel_image = pygame.image.load(panel_path).convert_alpha()
+                self.panels[panel_name] = panel_image
 
     def create_pygame_surface_from_rgb(self, array: np.ndarray):
         """
@@ -321,12 +335,79 @@ class PygameWindow:
         self.x_pos = (self.screen_width - new_image_width) // 2
         self.y_pos = (self.screen_height - new_image_height) // 2
 
+    def start_panel_transition(self, new_surface):
+        if self.panel_phase == "idle":
+            self.panel_next = new_surface
+            self.panel_phase = "cover"
+            self.panel_progress = 0.0
+
+    def draw_info_panel_r(self, dt, screen_ratio, position="right"):
+        # --- compute panel rect (your existing logic) ---
+        if position == "right":
+            start_x = self.x_pos + (1 - screen_ratio) * self.img_width
+            start_y = self.y_pos
+            width = self.img_width * screen_ratio
+            height = self.img_height
+        # (keep your other cases unchanged)
+
+        rect = pygame.Rect(start_x, start_y, width, height)
+
+        # --- scale images ---
+        if self.panel_current is not None:
+            current = pygame.transform.smoothscale(self.panel_current, rect.size)
+        else:
+            current = None
+
+        if self.panel_next is not None:
+            next_img = pygame.transform.smoothscale(self.panel_next, rect.size)
+        else:
+            next_img = None
+
+        # --- update animation ---
+        if self.panel_phase in ("cover", "reveal"):
+            self.panel_progress += self.panel_speed * dt
+
+            if self.panel_progress >= 1.0:
+                self.panel_progress = 0.0
+
+                if self.panel_phase == "cover":
+                    # swap images
+                    self.panel_current = self.panel_next
+                    self.panel_next = None
+                    self.panel_phase = "reveal"
+                else:
+                    self.panel_phase = "idle"
+
+        # --- draw ---
+        if self.panel_phase == "idle":
+            if current:
+                self.screen.blit(current, rect.topleft)
+
+        elif self.panel_phase == "cover":
+            if current:
+                self.screen.blit(current, rect.topleft)
+
+            w = int(rect.width * self.panel_progress)
+            pygame.draw.rect(
+                self.screen, (255, 255, 255), (rect.left, rect.top, w, rect.height)
+            )
+
+        elif self.panel_phase == "reveal":
+            pygame.draw.rect(self.screen, (255, 255, 255), rect)
+
+            if current:
+                w = int(rect.width * self.panel_progress)
+                if w > 0:
+                    area = pygame.Rect(0, 0, w, rect.height)
+                    self.screen.blit(current, rect.topleft, area)
+
     def draw_info_panel(
         self,
         colour,
         border_colour,
         screen_ratio,
         position: Literal["left", "right", "top", "bottom"] = "right",
+        image=None,
     ):
         if position == "right":
             start_x = self.x_pos + (1 - screen_ratio) * self.img_width
@@ -349,16 +430,24 @@ class PygameWindow:
             width = self.img_width
             height = self.img_height * screen_ratio
 
-        pygame.draw.rect(
-            self.screen,
-            colour,
-            (
-                start_x,
-                start_y,
-                width,
-                height,
-            ),
-        )
+        if image is None:
+            pygame.draw.rect(
+                self.screen,
+                colour,
+                (
+                    start_x,
+                    start_y,
+                    width,
+                    height,
+                ),
+            )
+        else:
+            # scale image to panel size
+            panel_img = pygame.transform.smoothscale(image, (int(width), int(height)))
+
+            # draw image
+            self.screen.blit(panel_img, (start_x, start_y))
+
         pygame.draw.rect(
             self.screen,
             border_colour,

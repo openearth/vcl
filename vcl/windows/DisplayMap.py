@@ -174,10 +174,19 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.pan_start_pos = None
         self.pan_offset = pygame.Vector2(0, 0)
         self.total_pan_offset = pygame.Vector2(0, 0)
-        self.current_scenario = "contamination"
+        self.current_scenario = "None"
+        self.current_measure = "contamination"
 
         self.bottom_text = None
         self.hand_tracking = None
+
+        self.panel_image_1 = pygame.image.load(
+            "/Users/hemert/data/vcl/islandr/panels/Energy - Destoy contaminated Trees & Plants.png"
+        ).convert_alpha()
+
+        self.panel_image_2 = pygame.image.load(
+            "/Users/hemert/data/vcl/islandr/panels/Innovation hub- Soil cap + Ds. Contam. T&P.png"
+        ).convert_alpha()
 
     def draw_line(self):
         """
@@ -499,7 +508,7 @@ class DisplayMap(PygameWindow.PygameWindow):
                 i = int(i * self.i_max)
         self.i = np.clip(i, 0, self.i_max)
 
-    def draw_animation_frame(self):
+    def draw_animation_frame(self, alpha=255):
         """
         Update and render the current animation frame.
 
@@ -508,14 +517,15 @@ class DisplayMap(PygameWindow.PygameWindow):
         Renders the frame image and associated text overlay.
         """
         frame_surface = self.create_pygame_surface_from_rgb(
-            self.animation_data[self.current_scenario][self.i - 72]["frame"]
+            self.animation_data[self.current_measure][self.i - 72]["frame"]
         )
         frame_surface = pygame.transform.scale(
             frame_surface, (self.img_width, self.img_height)
         )
+        frame_surface.set_alpha(alpha)
         self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
 
-        frame_text = self.animation_data[self.current_scenario][self.i - 72]["text"]
+        frame_text = self.animation_data[self.current_measure][self.i - 72]["text"]
         self.bottom_text = frame_text
 
     def change_year(self, year):
@@ -530,6 +540,9 @@ class DisplayMap(PygameWindow.PygameWindow):
 
     def change_scenario(self, scenario):
         self.current_scenario = scenario
+
+    def change_measure(self, measure):
+        self.current_measure = measure
 
     def index_to_year(self, min_year, max_year):
         year = min_year + int((max_year - min_year) * self.i / self.i_max)
@@ -646,7 +659,7 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.update_animation()
         # if self.current_layer in self.animation_data:
         #     self.draw_animation_frame()
-        if year >= 2022:
+        if year >= 2022 and self.current_scenario == "None":
             # self.current_scenario = "contamination"
             rect_surface = pygame.Surface(
                 (self.img_width, self.img_height), pygame.SRCALPHA
@@ -658,6 +671,16 @@ class DisplayMap(PygameWindow.PygameWindow):
             )
             self.screen.blit(rect_surface, (self.x_pos, self.y_pos))
             self.draw_animation_frame()
+        elif year >= 2022 and self.current_scenario != "None":
+            self.draw_animation_frame(alpha=100)
+
+            self.draw_layer(self.current_layer)
+
+            self.draw_info_panel_r(
+                self.clock.tick(60) / 1000,
+                screen_ratio=1 / 8,
+                position="right",
+            )
 
         for overlay in self.overlays:
             self.draw_layer(overlay)
@@ -681,26 +704,8 @@ class DisplayMap(PygameWindow.PygameWindow):
             border_colour=(0, 0, 0),
             screen_ratio=1 / 8,
             position="right",
+            image=self.panels["none_treat_water"],
         )
-
-        padding = 10
-        text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        font = pygame.font.Font(None, 18)
-        text_surface = font.render(text, True, (0, 0, 0))
-
-        font = pygame.font.Font(None, 24)  # or a TTF path
-        box = pygame.Rect(
-            self.x_pos + self.img_width * (7 / 8),
-            self.y_pos,
-            self.img_width / 8,
-            self.img_height,
-        )  # tall/vertical
-        draw_textbox(self.screen, text, font, box)
-
-        # self.screen.blit(
-        #     text_surface,
-        #     (self.x_pos + self.img_width * (7 / 8) + padding, self.y_pos + padding),
-        # )
 
         # self.draw_line()
         # pygame.draw.line(

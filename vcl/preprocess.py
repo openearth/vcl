@@ -213,6 +213,14 @@ def preprocess_common(
                     data = plt.imread(base_path / layer_path)
                     preprocessed["stats"][layer].append(("image", data))
 
+    logger.info("Preprocessing panels...")
+    preprocessed["panels"] = {}
+    panel_paths = (base_path / datasets["panels"]["directory"]).glob("*.png")
+    pbar = tqdm(panel_paths, unit="layer")
+    for layer in pbar:
+        pbar.set_description(f"Processing: {layer}")
+        preprocessed["panels"][layer.stem] = layer
+
     logger.info("Preprocessing animations...")
     pbar = tqdm(datasets["animations"], unit="layer")
     preprocessed["animations"] = {}

@@ -19,6 +19,7 @@ Communication:
     - 5558: UID detection results
 """
 
+import bisect
 import collections
 import concurrent.futures
 import os
@@ -193,6 +194,8 @@ def displaymap(data_path):
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
+    global current_layer
+
     from matplotlib.colors import Normalize
 
     norm = Normalize(vmin=-4000, vmax=0)
@@ -212,6 +215,13 @@ def displaymap(data_path):
         "housing": {"type": "RGB"},
         "innovation_hub": {"type": "RGB"},
     }
+
+    available_years = sorted(int(k) for k in dataset_kwargs.keys() if str(k).isdigit())
+
+    def get_closest_year(y):
+        idx = bisect.bisect_right(available_years, y) - 1
+        return str(available_years[max(idx, 0)])
+
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
@@ -231,6 +241,13 @@ def displaymap(data_path):
     except Exception as e:
         print(e)
     coords = None
+
+    panel_1 = pygame.image.load(
+        "/Users/hemert/data/vcl/islandr/panels/Energy - Destoy contaminated Trees & Plants.png"
+    ).convert_alpha()
+    panel_2 = pygame.image.load(
+        "/Users/hemert/data/vcl/islandr/panels/Innovation hub- Soil cap + Ds. Contam. T&P.png"
+    ).convert_alpha()
     while True:
         socks = dict(poller.poll(10))
         # If slider sends message, update vertical line
@@ -247,6 +264,12 @@ def displaymap(data_path):
                 display.display_mask()
             elif view_type == "scenario":
                 display.change_scenario(layer)
+                if layer == "treat_water":
+                    display.start_panel_transition(panel_2)
+                elif layer == "ground_cover":
+                    display.start_panel_transition(panel_1)
+            elif view_type == "measure":
+                display.change_measure(layer)
             else:
                 display.change_layer(layer)
 
@@ -254,9 +277,12 @@ def displaymap(data_path):
             topic, message = socket_slice.recv(zmq.DONTWAIT).split()
             slice_index = float(message)
             display.change_line_index(slice_index)
-            year = str(display.index_to_year(min_year=1911, max_year=2250))
-            if year in dataset_kwargs:
-                display.change_layer(year)
+            year = display.index_to_year(min_year=1911, max_year=2250)
+            closest_year = get_closest_year(year)
+
+            if closest_year != current_layer:
+                display.change_layer(closest_year)
+                current_layer = closest_year
 
         if socket_year in socks and socks[socket_year] == zmq.POLLIN:
             topic, message = socket_year.recv(zmq.DONTWAIT).split()

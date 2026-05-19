@@ -95,6 +95,10 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
         event = uid_to_event[uid]
         socket.send_string(f"maps {event},scenario")
 
+    def on_measure_event(uid, context):
+        event = uid_to_event[uid]
+        socket.send_string(f"maps {event},measure")
+
     def on_slider_change(uid, context):
         try:
             slice_index = specify_slider_position(
@@ -106,7 +110,7 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
             print(e)
 
     def on_stop(uid, context):
-        socket.send_string(f"maps contamination,scenario")
+        socket.send_string(f"maps None,scenario")
 
     action_manager.register_action("0", on_slider_change)
     action_manager.register_action("1", on_scenario_event)

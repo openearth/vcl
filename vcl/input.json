@@ -27,6 +27,9 @@
             "slider": "slider_polygon_big.gpkg"
         },
         "stats": {},
+        "panels": {
+            "directory": "panels"
+        },
         "particles": {},
         "extra_info": {}
     },
