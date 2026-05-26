@@ -125,10 +125,10 @@ def displaymap(datasets):
             "cmap": bathymetry_cmap,
             "norm": norm,
         },
-        "fishery": {"type": "RGB", "text": "Fishing effort", "alpha": 0.6},
-        "fishing_catch": {"type": "RGB", "text": "Fishing catch", "alpha": 0.6},
+        "fishery": {"type": "RGB", "text": "Fishing effort", "alpha": 0.8},
+        "fishing_catch": {"type": "RGB", "text": "Fishing catch", "alpha": 0.8},
         "navisafe": {"type": "RGB", "text": "Navisafe"},
-        "vessel-traffic": {"type": "RGB", "text": "Vessel traffic", "alpha": 0.7},
+        "vessel-traffic": {"type": "RGB", "text": "Vessel traffic"},
         "windfarms": {"type": "RGB", "text": "Windfarms", "cmap": windfarm_cmap},
         "mask": {
             "type": "CMAP",
@@ -155,7 +155,9 @@ def displaymap(datasets):
         "oyster_presence_g": {"type": "RGB", "text": "Oyster presence (grid)"},
         "seagrass_presence": {"type": "RGB", "text": "Seagrass presence"},
         "seagrass_presence_g": {"type": "RGB", "text": "Seagrass presence (grid)"},
+        "oysters": {"type": "RGB", "text": ""},
         "approach_2": {"type": "RGB", "text": "Ecological importance"},
+        "multi_use": {"type": "RGB", "text": ""},
         "owf_2030": {"type": "RGB", "text": ""},
         "owf_2040": {"type": "RGB", "text": ""},
         "owf_all": {"type": "RGB", "text": ""},
@@ -166,17 +168,20 @@ def displaymap(datasets):
     socket_year = sockets["year"]
     socket_hands = sockets["hands"]
 
-    display = DisplayMap.DisplayMap(
-        datasets=datasets,
-        start_year="1970",
-        flow_data=datasets[""]["particles"]["current"],
-        animations_data=datasets[""]["animations"],
-        dataset_kwargs=dataset_kwargs,
-        bg_layer="basemap",
-        mask_layer="mask",
-        i_max=127,
-        aspect_ratio=1920 / 1080,
-    )
+    try:
+        display = DisplayMap.DisplayMap(
+            datasets=datasets,
+            start_year="1970",
+            flow_data=datasets[""]["particles"]["current"],
+            animations_data=datasets[""]["animations"],
+            dataset_kwargs=dataset_kwargs,
+            bg_layer="basemap",
+            mask_layer="mask",
+            i_max=127,
+            aspect_ratio=1920 / 1080,
+        )
+    except Exception as e:
+        print(e)
     coords = None
     while True:
         socks = dict(poller.poll(10))
@@ -328,6 +333,7 @@ def keyboard_publisher():
             "oyster_presence_g",
             "seagrass_presence",
             "seagrass_presence_g",
+            "oysters",
         ]
     )
     fishing = collections.deque(["fishery", "fishery_catch"])
@@ -366,7 +372,7 @@ def keyboard_publisher():
         else:
             return
 
-        print(current_overlays, current_overlay)
+        # print(current_overlays, current_overlay)
 
         collection_type = collection_type_mapping.get(layer_name, None)
 
@@ -442,11 +448,13 @@ def keyboard_publisher():
                 elif event.key == pygame.K_6:
                     change_layer(f"{nature_track[0]},layer")
                 elif event.key == pygame.K_7:
-                    change_layer("vessel-traffic,overlay")
+                    change_layer("vessel-traffic,layer")
                 elif event.key == pygame.K_8:
                     change_layer("eez,overlay")
                 elif event.key == pygame.K_9:
                     change_layer("ospar,overlay")
+                elif event.key == pygame.K_0:
+                    change_layer("multi_use,layer")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_q:

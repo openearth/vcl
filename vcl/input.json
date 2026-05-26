@@ -8,7 +8,7 @@
         "layers": {
             "fishery": "fishing-effort.png",
             "fishing_catch": "fishing-catch.png",
-            "navisafe": "all_vessel_through_cargo_algorithm_nolabels.png",
+            "navisafe": "NaviSafev2.png",
             "windfarms": "windfarm_map.png",
             "owf_2030": "2030_windfarm_map.png",
             "owf_2040": "2040_windfarm_map.png",
@@ -26,7 +26,9 @@
             "seagrass_presence": "nature-track/GNSBI_Drafts_for_Deltares/Seagrass_Presence_FinalDraft.png",
             "seagrass_presence_g": "nature-track/GNSBI_Drafts_for_Deltares/Seagrass_Presence_Gridded0.05_FinalDraft.png",
             "approach_2": "nature-track/GNSBI_Drafts_for_Deltares/Approach2_Gridded.png",
-            "vessel-traffic": "vessel-traffic.png",
+            "vessel-traffic": "Vessel_density.png",
+            "oysters": "combined_oysters.png",
+            "multi_use": "GNSBI_Multiusev2_inclOWE.png",
             "eez": "eez.png",
             "ospar": "ospar_regions.png",
             "mask": "mask-layer.gpkg"
@@ -42,7 +44,7 @@
             },
             "navisafe": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/Slide8.png"
+                    "info-sheets/map-factsheets/map-factsheets/NaviSafe_Legend.png"
                 ]
             },
             "windfarms": {
@@ -70,14 +72,24 @@
                     "info-sheets/map-factsheets/Slide6.png"
                 ]
             },
+            "oysters": {
+                "image": [
+                    "info-sheets/map-factsheets/map-factsheets/Legend_Oyster.png"
+                ]
+            },
             "vessel-traffic": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/Slide7.png"
+                    "info-sheets/map-factsheets/map-factsheets/Legend_vessel_densityv1.png"
                 ]
             },
             "approach_2": {
                 "image": [
                     "info-sheets/map-factsheets/map-factsheets/Slide5.png"
+                ]
+            },
+            "multi_use": {
+                "image": [
+                    "info-sheets/map-factsheets/map-factsheets/Legend_Multiuse.png"
                 ]
             },
             "eez": {
@@ -108,10 +120,10 @@
             },
             "navisafe": {
                 "extent": [
-                    -10.6653646,
-                    48.4315936,
-                    10.7078265,
-                    63.5439509
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
                 ]
             },
             "cod_MPA": {
@@ -219,6 +231,30 @@
                 ]
             },
             "windfarms": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "oysters": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "multi_use": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "vessel-traffic": {
                 "extent": [
                     -15.19886427,
                     47.55220244,
