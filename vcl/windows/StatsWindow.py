@@ -120,6 +120,8 @@ class StatsWindow:
                     default_kwargs = {"autopct": "%1.1f%%", "startangle": 90}
                 elif plot_type == "histogram":
                     default_kwargs = {"bins": 20, "color": "lightgray"}
+                elif plot_type == "image":
+                    default_kwargs = {"aspect": "auto"}
 
                 dataset_kwargs[layer][plot_type] = default_kwargs | kwargs_dict
 
@@ -214,6 +216,7 @@ class StatsWindow:
         ax.imshow(img, **kwargs)
         ax.set_title(title_text)
         ax.set_axis_off()
+        ax.margins(0)
 
     def plot_layer(self):
         """
@@ -227,7 +230,8 @@ class StatsWindow:
             ax.remove()
         n_plots = len(self.datasets[self.current_layer])
 
-        gs = plt.GridSpec(1, n_plots, figure=self.fig, hspace=0.3, wspace=0.3)
+        # gs = plt.GridSpec(1, n_plots, figure=self.fig, hspace=0.3, wspace=0.3)
+        gs = plt.GridSpec(1, n_plots, figure=self.fig, wspace=0.0, hspace=0.0)
 
         self.axes = []
         for i in range(n_plots):
@@ -243,7 +247,8 @@ class StatsWindow:
                 self.plot_image(data, ax)
 
         self.fig.set_facecolor("white")
-        self.fig.tight_layout()
+        self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
+        # self.fig.tight_layout()
         self.fig.canvas.draw()
 
     def change_layer(self, layer):

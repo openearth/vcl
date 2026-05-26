@@ -174,7 +174,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.pan_start_pos = None
         self.pan_offset = pygame.Vector2(0, 0)
         self.total_pan_offset = pygame.Vector2(0, 0)
-        self.current_scenario = "None"
+        self.current_scenario = "none"
         self.current_measure = "contamination"
 
         self.bottom_text = None
@@ -540,9 +540,13 @@ class DisplayMap(PygameWindow.PygameWindow):
 
     def change_scenario(self, scenario):
         self.current_scenario = scenario
+        new_panel_name = f"{self.current_scenario}_{self.current_measure}"
+        self.start_panel_transition(new_panel_name)
 
     def change_measure(self, measure):
         self.current_measure = measure
+        new_panel_name = f"{self.current_scenario}_{self.current_measure}"
+        self.start_panel_transition(new_panel_name)
 
     def index_to_year(self, min_year, max_year):
         year = min_year + int((max_year - min_year) * self.i / self.i_max)
@@ -605,6 +609,11 @@ class DisplayMap(PygameWindow.PygameWindow):
         ]
         self.bottom_text = frame_text
 
+    def start_panel_transition(self, new_panel_name):
+        if new_panel_name in self.panels:
+            new_panel = self.panels[new_panel_name]
+            super().start_panel_transition(new_panel)
+
     def start_hand_tracking(self, coords):
         """
         Enable hand tracking visualization at specified coordinates.
@@ -659,7 +668,7 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.update_animation()
         # if self.current_layer in self.animation_data:
         #     self.draw_animation_frame()
-        if year >= 2022 and self.current_scenario == "None":
+        if year >= 2022 and self.current_scenario == "none":
             # self.current_scenario = "contamination"
             rect_surface = pygame.Surface(
                 (self.img_width, self.img_height), pygame.SRCALPHA
@@ -671,10 +680,11 @@ class DisplayMap(PygameWindow.PygameWindow):
             )
             self.screen.blit(rect_surface, (self.x_pos, self.y_pos))
             self.draw_animation_frame()
-        elif year >= 2022 and self.current_scenario != "None":
+        elif year >= 2022 and self.current_scenario != "none":
             self.draw_animation_frame(alpha=100)
 
             self.draw_layer(self.current_layer)
+            self.draw_layer(self.current_scenario)
 
             self.draw_info_panel_r(
                 self.clock.tick(60) / 1000,
@@ -699,13 +709,13 @@ class DisplayMap(PygameWindow.PygameWindow):
             screen_ratio=1 / 10,
             position="bottom",
         )
-        self.draw_info_panel(
-            colour=(255, 255, 255),
-            border_colour=(0, 0, 0),
-            screen_ratio=1 / 8,
-            position="right",
-            image=self.panels["none_treat_water"],
-        )
+        # self.draw_info_panel(
+        #     colour=(255, 255, 255),
+        #     border_colour=(0, 0, 0),
+        #     screen_ratio=1 / 8,
+        #     position="right",
+        #     image=self.panels["none_treat_water"],
+        # )
 
         # self.draw_line()
         # pygame.draw.line(

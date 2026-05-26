@@ -76,20 +76,10 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
 
     uid_to_event = {
         "0": "1000",
-        "1": "contamination",
-        "2": "ground_cover",
-        "3": "treat_water",
+        "1": "housing",
+        "2": "innovation_hub",
+        "3": "energy_park",
     }
-
-    # Define some sample actions
-    def on_flood_event(uid, context):
-        location = specifiy_breach_location(context["map_coords"], datasets["slider"])
-        if location is None:
-            return
-        event = uid_to_event[uid]
-        socket.send_string(f"maps d_T{event}_{location},layer")
-        time.sleep(0.01)
-        socket.send_string(f"maps animation,layer")
 
     def on_scenario_event(uid, context):
         event = uid_to_event[uid]
@@ -109,18 +99,27 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
         except Exception as e:
             print(e)
 
-    def on_stop(uid, context):
-        socket.send_string(f"maps None,scenario")
+    def on_stop_scenario(uid, context):
+        socket.send_string(f"maps none,scenario")
+
+    def on_stop_measure(uid, context):
+        socket.send_string(f"maps, contamination,measure")
 
     action_manager.register_action("0", on_slider_change)
     action_manager.register_action("1", on_scenario_event)
     action_manager.register_action("2", on_scenario_event)
     action_manager.register_action("3", on_scenario_event)
+    action_manager.register_action("4", on_measure_event)
+    action_manager.register_action("5", on_measure_event)
+    action_manager.register_action("6", on_measure_event)
 
     # action_manager.register_lost_action("0", on_stop)
-    # action_manager.register_lost_action("1", on_stop)
-    action_manager.register_lost_action("2", on_stop)
-    action_manager.register_lost_action("3", on_stop)
+    # action_manager.register_lost_action("1", on_stop_scenario)
+    # action_manager.register_lost_action("2", on_stop_scenario)
+    # action_manager.register_lost_action("3", on_stop_scenario)
+    # action_manager.register_lost_action("1", on_stop_measure)
+    # action_manager.register_lost_action("2", on_stop_measure)
+    # action_manager.register_lost_action("3", on_stop_measure)
 
     print("Starting Main Loop. Press 'q' to exit.")
 
@@ -145,7 +144,7 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
 
     # State for persistence tracking: {id: first_observed_time}
     active_tags = {}
-    PERSISTENCE_THRESHOLD = 3.0  # seconds
+    PERSISTENCE_THRESHOLD = 1.5  # seconds
 
     try:
         while True:

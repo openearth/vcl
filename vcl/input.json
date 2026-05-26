@@ -26,7 +26,48 @@
         "interactivity": {
             "slider": "slider_polygon_big.gpkg"
         },
-        "stats": {},
+        "stats": {
+            "1911": {
+                "image": [
+                    "screens/Slide3.jpg"
+                ]
+            },
+            "1913": {
+                "image": [
+                    "screens/Slide4.jpg"
+                ]
+            },
+            "1942": {
+                "image": [
+                    "screens/Slide5.jpg"
+                ]
+            },
+            "1967": {
+                "image": [
+                    "screens/Slide6.jpg"
+                ]
+            },
+            "1983": {
+                "image": [
+                    "screens/Slide7.jpg"
+                ]
+            },
+            "2008": {
+                "image": [
+                    "screens/Slide8.jpg"
+                ]
+            },
+            "2009": {
+                "image": [
+                    "screens/Slide9.jpg"
+                ]
+            },
+            "2014": {
+                "image": [
+                    "screens/Slide10.jpg"
+                ]
+            }
+        },
         "panels": {
             "directory": "panels"
         },

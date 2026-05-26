@@ -32,6 +32,7 @@ import geopandas as gpd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mido
+import numpy as np
 
 # import pywinctl as gw
 import pygame
@@ -328,10 +329,16 @@ def displaystats(data_path):
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
 
-    # dataset_kwargs = {
-    #     "fishery": {"image": {"title": ""}},
-    #     "fishing_catch": {"image": {"title": ""}},
-    # }
+    global current_layer
+
+    dataset_kwargs = {
+        "1911": {"image": {"title": ""}},
+        "1913": {"image": {"title": ""}},
+        "1942": {"image": {"title": ""}},
+        "1967": {"image": {"title": ""}},
+        "2009": {"image": {"title": ""}},
+    }
+
     display = StatsWindow.StatsWindow(
         datasets[""]["stats"],
         dataset_kwargs={},
@@ -346,6 +353,16 @@ def displaystats(data_path):
         ],
     )
 
+    available_years = sorted(int(k) for k in dataset_kwargs.keys() if str(k).isdigit())
+
+    def get_closest_year(y):
+        idx = bisect.bisect_right(available_years, y) - 1
+        return str(available_years[max(idx, 0)])
+
+    def index_to_year(index, min_year, max_year):
+        year = min_year + int((max_year - min_year) * index / 338)
+        return year
+
     while True:
         socks = dict(poller.poll(10))
         # If slider sends message, update vertical line
@@ -354,6 +371,16 @@ def displaystats(data_path):
             message = message.decode("utf-8")
             layer, view_type = message.split(",")
             display.change_layer(layer)
+        if socket_slice in socks and socks[socket_slice] == zmq.POLLIN:
+            topic, message = socket_slice.recv(zmq.DONTWAIT).split()
+            slice_index = float(message)
+            slice_index = np.clip(slice_index, 0, 338)
+            year = index_to_year(slice_index, min_year=1911, max_year=2250)
+            closest_year = get_closest_year(year)
+
+            if closest_year != current_layer:
+                display.change_layer(closest_year)
+                current_layer = closest_year
         if socket_uid in socks and socks[socket_uid] == zmq.POLLIN:
             try:
                 topic, coords = socket_uid.recv(zmq.DONTWAIT).split()
