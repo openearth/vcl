@@ -9,11 +9,18 @@
             "contamination": "animations/frames/png/1983_frame.tif",
             "ground_cover": "animations/ground_cover/frames/1983_frame.tif",
             "treat_water": "animations/treat_water/frames/1983_frame.tif",
+            "destroy_plants": "animations/destroy_plants/frames/1983_frame.tif",
             "1911": "maps/1911.png",
             "1913": "maps/1913.png",
             "1942": "maps/1942.png",
             "1967": "maps/1967.png",
+            "1983_on": "maps/1983_on.png",
+            "1983_off": "maps/1983_off.png",
+            "2008": "maps/2008.png",
             "2009": "maps/2009.png",
+            "2014": "maps/2014.png",
+            "2018": "maps/2018.png",
+            "2022_lines": "maps/2022.png",
             "energy_park": "maps/energy_park.png",
             "housing": "maps/housing.png",
             "innovation_hub": "maps/innovation_hub.png"
@@ -21,7 +28,8 @@
         "animations": {
             "contamination": "animations/frames/png",
             "ground_cover": "animations/ground_cover/frames",
-            "treat_water": "animations/treat_water/frames"
+            "treat_water": "animations/treat_water/frames",
+            "destroy_plants": "animations/destroy_plants/frames"
         },
         "interactivity": {
             "slider": "slider_polygon_big.gpkg"

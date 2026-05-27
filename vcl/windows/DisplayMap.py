@@ -161,6 +161,17 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         self.flow_data = flow_data
         self.animation_data = animations_data
+        self.animation_data["1983"] = [
+            {
+                "frame": self.datasets[self.current_year]["1983_on"],
+            },
+            {
+                "frame": self.datasets[self.current_year]["1983_off"],
+            },
+        ]
+        self.animation_frame = 0
+        self.animation_update_time = pygame.time.get_ticks()
+
         self.i = 0
         self.i_max = i_max
         self.overlays = []
@@ -180,13 +191,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.bottom_text = None
         self.hand_tracking = None
 
-        self.panel_image_1 = pygame.image.load(
-            "/Users/hemert/data/vcl/islandr/panels/Energy - Destoy contaminated Trees & Plants.png"
-        ).convert_alpha()
-
-        self.panel_image_2 = pygame.image.load(
-            "/Users/hemert/data/vcl/islandr/panels/Innovation hub- Soil cap + Ds. Contam. T&P.png"
-        ).convert_alpha()
+        self.panel_current = self.panels["contamination"]
 
     def draw_line(self):
         """
@@ -578,7 +583,9 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.show_animation = False
             self.bottom_text = None
 
-    def update_animation(self):
+    def update_animation(
+        self, frame_time=50, final_frame_time=3000, show_text=False, animation_data=None
+    ):
         """
         Update and render the current animation frame.
 
@@ -587,27 +594,26 @@ class DisplayMap(PygameWindow.PygameWindow):
         Renders the frame image and associated text overlay.
         """
         now = pygame.time.get_ticks()
-        frame_time = 50
-        if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
-            frame_time = 3000
+        if animation_data is None:
+            animation_data = self.animation_data[self.current_layer]
+
+        if self.animation_frame == len(animation_data) - 1:
+            frame_time = final_frame_time
         if now - self.animation_update_time > frame_time:
-            self.animation_frame = (self.animation_frame + 1) % len(
-                self.animation_data[self.current_layer]
-            )
+            self.animation_frame = (self.animation_frame + 1) % len(animation_data)
             self.animation_update_time = now
 
         frame_surface = self.create_pygame_surface_from_rgb(
-            self.animation_data[self.current_layer][self.animation_frame]["frame"]
+            animation_data[self.animation_frame]["frame"]
         )
         frame_surface = pygame.transform.scale(
             frame_surface, (self.img_width, self.img_height)
         )
         self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
 
-        frame_text = self.animation_data[self.current_layer][self.animation_frame][
-            "text"
-        ]
-        self.bottom_text = frame_text
+        if show_text:
+            frame_text = animation_data[self.animation_frame]["text"]
+            self.bottom_text = frame_text
 
     def start_panel_transition(self, new_panel_name):
         if new_panel_name in self.panels:
@@ -668,7 +674,36 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.update_animation()
         # if self.current_layer in self.animation_data:
         #     self.draw_animation_frame()
-        if year >= 2022 and self.current_scenario == "none":
+        if year >= 1983 and year < 2006:
+            rect_surface = pygame.Surface(
+                (self.img_width, self.img_height), pygame.SRCALPHA
+            )
+            pygame.draw.rect(
+                rect_surface,
+                (255, 255, 255, 180),  # 128 = 50% transparency
+                (0, 0, self.img_width, self.img_height),
+            )
+            self.screen.blit(rect_surface, (self.x_pos, self.y_pos))
+            self.update_animation(
+                frame_time=1000,
+                final_frame_time=1000,
+                animation_data=self.animation_data["1983"],
+            )
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio=1 / 8,
+                position="right",
+            )
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio=1 / 8,
+                position="right",
+                image=self.panels["1983 - 2005"],
+            )
+
+        elif year >= 2022 and self.current_scenario == "none":
             # self.current_scenario = "contamination"
             rect_surface = pygame.Surface(
                 (self.img_width, self.img_height), pygame.SRCALPHA
@@ -679,7 +714,21 @@ class DisplayMap(PygameWindow.PygameWindow):
                 (0, 0, self.img_width, self.img_height),
             )
             self.screen.blit(rect_surface, (self.x_pos, self.y_pos))
+            self.draw_layer("2022_lines")
             self.draw_animation_frame()
+
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio=1 / 8,
+                position="right",
+            )
+
+            self.draw_info_panel_r(
+                self.clock.tick(60) / 1000,
+                screen_ratio=1 / 8,
+                position="right",
+            )
         elif year >= 2022 and self.current_scenario != "none":
             self.draw_animation_frame(alpha=100)
 
@@ -691,6 +740,21 @@ class DisplayMap(PygameWindow.PygameWindow):
                 screen_ratio=1 / 8,
                 position="right",
             )
+        elif year < 1983 and year >= 2006 and year < 2022:
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio=1 / 8,
+                position="right",
+            )
+            if self.current_layer in self.panels:
+                self.draw_info_panel(
+                    colour=(255, 255, 255),
+                    border_colour=(0, 0, 0),
+                    screen_ratio=1 / 8,
+                    position="right",
+                    image=self.panels[self.current_layer],
+                )
 
         for overlay in self.overlays:
             self.draw_layer(overlay)

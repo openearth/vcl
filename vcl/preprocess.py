@@ -216,7 +216,7 @@ def preprocess_common(
     logger.info("Preprocessing panels...")
     preprocessed["panels"] = {}
     panel_paths = (base_path / datasets["panels"]["directory"]).glob("*.png")
-    pbar = tqdm(panel_paths, unit="layer")
+    pbar = tqdm(list(panel_paths), unit="layer")
     for layer in pbar:
         pbar.set_description(f"Processing: {layer}")
         preprocessed["panels"][layer.stem] = layer

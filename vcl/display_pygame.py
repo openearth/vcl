@@ -211,7 +211,13 @@ def displaymap(data_path):
         "1913": {"type": "RGB"},
         "1942": {"type": "RGB"},
         "1967": {"type": "RGB"},
+        "1983_on": {"type": "RGB"},
+        "1983_off": {"type": "RGB"},
+        "2008": {"type": "RGB"},
         "2009": {"type": "RGB"},
+        "2014": {"type": "RGB"},
+        "2018": {"type": "RGB"},
+        "2022_lines": {"type": "RGB"},
         "energy_park": {"type": "RGB"},
         "housing": {"type": "RGB"},
         "innovation_hub": {"type": "RGB"},
@@ -243,12 +249,6 @@ def displaymap(data_path):
         print(e)
     coords = None
 
-    panel_1 = pygame.image.load(
-        "/Users/hemert/data/vcl/islandr/panels/Energy - Destoy contaminated Trees & Plants.png"
-    ).convert_alpha()
-    panel_2 = pygame.image.load(
-        "/Users/hemert/data/vcl/islandr/panels/Innovation hub- Soil cap + Ds. Contam. T&P.png"
-    ).convert_alpha()
     while True:
         socks = dict(poller.poll(10))
         # If slider sends message, update vertical line
@@ -265,10 +265,6 @@ def displaymap(data_path):
                 display.display_mask()
             elif view_type == "scenario":
                 display.change_scenario(layer)
-                if layer == "treat_water":
-                    display.start_panel_transition(panel_2)
-                elif layer == "ground_cover":
-                    display.start_panel_transition(panel_1)
             elif view_type == "measure":
                 display.change_measure(layer)
             else:
