@@ -146,7 +146,7 @@ def preprocess_common(
     preprocessed = {}
 
     extent = gpd.read_file(base_path / datasets["extent"]).iloc[0]["geometry"]
-    angle = vcl.data.compute_rotation_angle(extent)
+    angle = vcl.data.compute_rotation_angle(extent) - 90
     mid_point = extent.centroid.coords[0]
 
     logger.info("Preprocessing basemap and bathymetry...")
@@ -299,7 +299,7 @@ def preprocess_essentials(
 
     extent = gpd.read_file(base_path / datasets["extent"]).iloc[0]["geometry"]
     preprocessed["extent"] = extent
-    angle = vcl.data.compute_rotation_angle(extent)
+    angle = vcl.data.compute_rotation_angle(extent) - 90
     mid_point = extent.centroid.coords[0]
 
     basemap = rasterio.open(base_path / datasets["basemap"])

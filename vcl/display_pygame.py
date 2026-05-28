@@ -200,39 +200,7 @@ def displaymap(data_path):
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
         "bathymetry": {"type": "CMAP"},
-        "aangepast_bouwen": {"type": "RGB", "alpha": 1.0},
-        "bescherming": {"type": "RGB", "alpha": 1.0},
-        "compartiment": {"type": "RGB", "alpha": 1.0},
-        "d_T100_000": {"type": "RGB", "alpha": 1.0},
-        "d_T100": {"type": "RGB", "alpha": 1.0},
-        "c_management": {"type": "RGB", "alpha": 1.0},
-        "risico_zone": {"type": "RGB", "alpha": 1.0},
-        "risico_zone_20": {"type": "RGB", "alpha": 1.0},
-        "schuilen": {"type": "RGB", "alpha": 1.0},
-        "overview": {"type": "RGB"},
-        "overview_tags": {"type": "RGB"},
-        "doorbraaklocaties": {"type": "RGB"},
-        "d_T1000_noord": {"type": "RGB"},
-        "d_T1000_zuid": {"type": "RGB"},
-        "d_T1000_oost": {"type": "RGB"},
-        "d_T1000_west": {"type": "RGB"},
-        "d_T1000_barendrecht": {"type": "RGB"},
-        "d_T10_000_noord": {"type": "RGB"},
-        "d_T10_000_zuid": {"type": "RGB"},
-        "d_T10_000_oost": {"type": "RGB"},
-        "d_T10_000_west": {"type": "RGB"},
-        "d_T10_000_barendrecht": {"type": "RGB"},
-        "d_T100_000_1_noord": {"type": "RGB"},
-        "d_T100_000_1_zuid": {"type": "RGB"},
-        "d_T100_000_1_oost": {"type": "RGB"},
-        "d_T100_000_1_west": {"type": "RGB"},
-        "d_T100_000_1_barendrecht": {"type": "RGB"},
-        "d_T100_000_1_vp": {"type": "RGB"},
-        "d_T100_000_1_hw": {"type": "RGB"},
-        "d_T100_000_noord": {"type": "RGB"},
-        "d_T100_000_zuid": {"type": "RGB"},
-        "d_T100_000_oost": {"type": "RGB"},
-        "d_T100_000_west": {"type": "RGB"},
+        "map_1": {"type": "RGB", "alpha": 1.0},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -592,7 +560,7 @@ def keyboard_publisher():
                 if event.key == pygame.K_1:
                     change_layer("bathymetry,layer")
                 elif event.key == pygame.K_2:
-                    change_layer(f"{waterdiepte[0]},layer")
+                    change_layer("map_1,layer")
                 elif event.key == pygame.K_3:
                     change_layer(f"{risico_zone[0]},layer")
                 elif event.key == pygame.K_4:
