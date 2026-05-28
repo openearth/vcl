@@ -201,6 +201,7 @@ def displaymap(data_path):
         "basemap": {"type": "RGB"},
         "bathymetry": {"type": "CMAP"},
         "map_1": {"type": "RGB", "alpha": 1.0},
+        "map_2": {"type": "RGB", "alpha": 1.0},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -562,7 +563,7 @@ def keyboard_publisher():
                 elif event.key == pygame.K_2:
                     change_layer("map_1,layer")
                 elif event.key == pygame.K_3:
-                    change_layer(f"{risico_zone[0]},layer")
+                    change_layer("map_2,layer")
                 elif event.key == pygame.K_4:
                     change_layer("aangepast_bouwen,layer")
                 elif event.key == pygame.K_5:

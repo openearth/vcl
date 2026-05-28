@@ -6,7 +6,8 @@
         "bathymetry": "ahn-merged-dtm-smooth-v4.tif",
         "extent": "extent-1-to-2.gpkg",
         "layers": {
-            "map_1": "overgangsvariant_zoutgehalte_08.png"
+            "map_1": "overgangsvariant_zoutgehalte_08.png",
+            "map_2": "waterdepth_step_08.png"
         },
         "animations": {},
         "interactivity": {},
@@ -14,6 +15,14 @@
         "particles": {},
         "extra_info": {
             "map_1": {
+                "extent": [
+                    55077.61673008,
+                    417573.00376074,
+                    70125.8822952,
+                    430311.89705176
+                ]
+            },
+            "map_2": {
                 "extent": [
                     55077.61673008,
                     417573.00376074,
