@@ -740,7 +740,7 @@ class DisplayMap(PygameWindow.PygameWindow):
                 screen_ratio=1 / 8,
                 position="right",
             )
-        elif year < 1983 and year >= 2006 and year < 2022:
+        elif year < 1983 or (year >= 2006 and year < 2022):
             self.draw_info_panel(
                 colour=(255, 255, 255),
                 border_colour=(0, 0, 0),

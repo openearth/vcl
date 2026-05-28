@@ -74,6 +74,34 @@
                 "image": [
                     "screens/Slide10.jpg"
                 ]
+            },
+            "2018": {
+                "image": [
+                    "screens/Slide12.jpg",
+                    "screens/Slide13.jpg",
+                    "screens/Slide14.jpg",
+                    "screens/Slide15.jpg",
+                    "screens/Slide16.jpg",
+                    "screens/Slide17.jpg"
+                ]
+            },
+            "housing": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide28.jpg"
+                ]
+            },
+            "innovation_hub": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide30.jpg"
+                ]
+            },
+            "energy_park": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide32.jpg"
+                ]
             }
         },
         "panels": {

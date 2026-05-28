@@ -10,6 +10,7 @@ Classes:
 
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib import animation
 import numpy as np
 import seaborn as sns
 
@@ -64,6 +65,7 @@ class StatsWindow:
         self.dataset_kwargs = self.supplement_dataset_kwargs(dataset_kwargs)
         self.overlay_layers = overlay_layers
         self.layers_to_ignore = layers_to_ignore
+        self._anims = {}
 
         self.fig, self.axes = plt.subplots(num="Virtual Climate Lab - Info screen")
         self.fig.tight_layout()
@@ -212,25 +214,122 @@ class StatsWindow:
         kwargs = self.dataset_kwargs[self.current_layer].get("image", {})
 
         title_text = kwargs.pop("title", "")
+        kwargs.pop("multiple", None)  # handled in plot_layer for multi-image cases
+        kwargs.pop("interval_s", None)
 
         ax.imshow(img, **kwargs)
         ax.set_title(title_text)
         ax.set_axis_off()
         ax.margins(0)
 
+    def plot_image_sequence(self, frames, ax, *, interval_s=5.0, mode="sequence"):
+        """
+        Animate a list/array of images on a single axis.
+
+        mode:
+        - "sequence": play once, then freeze on last frame
+        - "loop": keep looping
+        """
+        # Normalize frames to a list of arrays
+        if isinstance(frames, np.ndarray) and frames.ndim >= 3:
+            # could be (N,H,W) or (N,H,W,C)
+            if frames.ndim in (3, 4):
+                frames_list = [frames[i] for i in range(frames.shape[0])]
+            else:
+                raise ValueError(f"Unsupported frames array shape: {frames.shape}")
+        else:
+            frames_list = list(frames)
+
+        if len(frames_list) == 0:
+            return
+
+        kwargs = self.dataset_kwargs[self.current_layer].get("image", {}).copy()
+        title_text = kwargs.pop("title", "")
+        kwargs.pop("multiple", None)  # handled here
+        interval_s = float(kwargs.pop("interval_s", interval_s))
+        interval_ms = int(interval_s * 1000)
+
+        # Draw first frame
+        im = ax.imshow(frames_list[0], **kwargs)
+        ax.set_title(title_text)
+        ax.set_axis_off()
+        ax.margins(0)
+
+        n = len(frames_list)
+        loop = mode == "loop"
+
+        def update(i):
+            im.set_data(frames_list[i])
+
+            # If playing once: stop right after last frame is drawn
+            if (not loop) and i == (n - 1):
+                # Stop the timer so it freezes on the last frame
+                anim.event_source.stop()
+            return (im,)
+
+        anim = animation.FuncAnimation(
+            self.fig,
+            update,
+            frames=range(n),
+            interval=interval_ms,
+            blit=True,  # safer across backends
+            repeat=loop,
+        )
+
+        # Keep reference alive (otherwise matplotlib may GC it)
+        self._anims[ax] = anim
+
     def plot_layer(self):
         """
         Plot all visualizations for the current layer.
 
-        Clears existing axes, creates a horizontal grid of subplots,
-        and renders each plot type (piechart, histogram, image) for
-        the current layer. Sets background to white.
+        If multiple images exist and dataset_kwargs[layer]["image"]["multiple"] is:
+        - "panel": show as multiple subplots (current behavior)
+        - "sequence": animate once on one subplot, then freeze
+        - "loop": animate continuously on one subplot
         """
+        # Remove old axes
         for ax in self.fig.get_axes():
             ax.remove()
-        n_plots = len(self.datasets[self.current_layer])
 
-        # gs = plt.GridSpec(1, n_plots, figure=self.fig, hspace=0.3, wspace=0.3)
+        # Stop/forget old animations (optional but clean)
+        if hasattr(self, "_anims"):
+            self._anims.clear()
+
+        layer_items = list(
+            self.datasets[self.current_layer]
+        )  # list of (plot_type, data)
+
+        # Determine multiple-image behavior for this layer
+        image_kwargs = self.dataset_kwargs[self.current_layer].get("image", {})
+        multiple_mode = image_kwargs.get(
+            "multiple", "panel"
+        )  # "panel" | "sequence" | "loop"
+
+        # Collect all image entries
+        image_indices = [
+            i for i, (plot_type, _) in enumerate(layer_items) if plot_type == "image"
+        ]
+
+        # If >1 image and mode is sequence/loop, collapse them into one animated entry
+        if len(image_indices) > 1 and multiple_mode in ("sequence", "loop"):
+            frames = [layer_items[i][1] for i in image_indices]
+
+            # Build a new list where the first image becomes an animated sequence, others removed
+            new_items = []
+            first_image_idx = image_indices[0]
+            for i, item in enumerate(layer_items):
+                if i == first_image_idx:
+                    new_items.append(("image_sequence", frames))
+                elif i in image_indices:
+                    continue
+                else:
+                    new_items.append(item)
+            layer_items = new_items
+
+        n_plots = len(layer_items)
+
+        # Create grid
         gs = plt.GridSpec(1, n_plots, figure=self.fig, wspace=0.0, hspace=0.0)
 
         self.axes = []
@@ -238,17 +337,26 @@ class StatsWindow:
             ax = self.fig.add_subplot(gs[0, i])
             self.axes.append(ax)
 
-        for ax, (plot_type, data) in zip(self.axes, self.datasets[self.current_layer]):
+        # Plot
+        for ax, (plot_type, data) in zip(self.axes, layer_items):
             if plot_type == "piechart":
                 self.plot_piechart(self.current_layer, ax)
+
             elif plot_type == "histogram":
                 self.plot_histogram(self.current_layer, ax)
+
             elif plot_type == "image":
                 self.plot_image(data, ax)
 
+            elif plot_type == "image_sequence":
+                interval_s = image_kwargs.get("interval_s", 5.0)
+                self.plot_image_sequence(
+                    data, ax, interval_s=interval_s, mode=multiple_mode
+                )
+
+        # Layout
         self.fig.set_facecolor("white")
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
-        # self.fig.tight_layout()
         self.fig.canvas.draw()
 
     def change_layer(self, layer):

@@ -145,6 +145,9 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
     # State for persistence tracking: {id: first_observed_time}
     active_tags = {}
     PERSISTENCE_THRESHOLD = 1.5  # seconds
+    SCENARIO_TAGS = {"1", "2", "3"}
+    scenario_last_seen = None
+    scenario_stopped = True  # assume stopped until we see one
 
     try:
         while True:
@@ -210,6 +213,24 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
                 # Always keep last_positions up to date so the next frame's
                 # distance calculation is accurate
                 last_positions[identifier] = center
+
+            # --- Scenario group stop logic (1/2/3) ---
+            scenario_present = any(t in current_ids for t in SCENARIO_TAGS)
+
+            if scenario_present:
+                scenario_last_seen = current_time
+                # If we were stopped, we are now "active" again
+                scenario_stopped = False
+            else:
+                # No scenario tags in frame this frame
+                if not scenario_stopped:
+                    # Start / continue the "missing" timer
+                    if scenario_last_seen is None:
+                        scenario_last_seen = current_time
+
+                    if (current_time - scenario_last_seen) > PERSISTENCE_THRESHOLD:
+                        on_stop_scenario(None, {"timestamp": current_time})
+                        scenario_stopped = True
 
             # Check for lost tags
             for identifier in list(active_tags.keys()):

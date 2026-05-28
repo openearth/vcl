@@ -332,21 +332,25 @@ def displaystats(data_path):
         "1913": {"image": {"title": ""}},
         "1942": {"image": {"title": ""}},
         "1967": {"image": {"title": ""}},
+        "1983": {"image": {"title": ""}},
+        "2008": {"image": {"title": ""}},
         "2009": {"image": {"title": ""}},
+        "2014": {"image": {"title": ""}},
+        "2018": {"image": {"title": "", "multiple": "sequence", "interval_s": 3.0}},
+        "housing": {"image": {"title": "", "multiple": "sequence", "interval_s": 1.0}},
+        "energy_park": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
     }
 
     display = StatsWindow.StatsWindow(
         datasets[""]["stats"],
-        dataset_kwargs={},
+        dataset_kwargs=dataset_kwargs,
         layers_to_ignore=["mask", "animation", "20", "30"],
-        overlay_layers=[
-            "eez",
-            "vessel-traffic",
-            "ospar",
-            "owf_2030",
-            "owf_2040",
-            "owf_all",
-        ],
+        overlay_layers=[],
     )
 
     available_years = sorted(int(k) for k in dataset_kwargs.keys() if str(k).isdigit())
@@ -366,6 +370,7 @@ def displaystats(data_path):
             topic, message = socket.recv(zmq.DONTWAIT).split()
             message = message.decode("utf-8")
             layer, view_type = message.split(",")
+            print(layer)
             display.change_layer(layer)
         if socket_slice in socks and socks[socket_slice] == zmq.POLLIN:
             topic, message = socket_slice.recv(zmq.DONTWAIT).split()
