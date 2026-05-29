@@ -79,6 +79,9 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
         "1": "housing",
         "2": "innovation_hub",
         "3": "energy_park",
+        "4": "ground_cover",
+        "5": "treat_water",
+        "6": "destroy_plants",
     }
 
     def on_scenario_event(uid, context):
@@ -87,7 +90,7 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
 
     def on_measure_event(uid, context):
         event = uid_to_event[uid]
-        socket.send_string(f"maps {event},measure")
+        socket.send_string(f"maps {event},add_measure")
 
     def on_slider_change(uid, context):
         try:
@@ -103,7 +106,8 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
         socket.send_string(f"maps none,scenario")
 
     def on_stop_measure(uid, context):
-        socket.send_string(f"maps, contamination,measure")
+        event = uid_to_event[uid]
+        socket.send_string(f"maps {event},remove_measure")
 
     action_manager.register_action("0", on_slider_change)
     action_manager.register_action("1", on_scenario_event)
@@ -117,9 +121,9 @@ def main(socket: zmq.Socket = None, extent=None, datasets={}):
     # action_manager.register_lost_action("1", on_stop_scenario)
     # action_manager.register_lost_action("2", on_stop_scenario)
     # action_manager.register_lost_action("3", on_stop_scenario)
-    # action_manager.register_lost_action("1", on_stop_measure)
-    # action_manager.register_lost_action("2", on_stop_measure)
-    # action_manager.register_lost_action("3", on_stop_measure)
+    action_manager.register_lost_action("4", on_stop_measure)
+    action_manager.register_lost_action("5", on_stop_measure)
+    action_manager.register_lost_action("6", on_stop_measure)
 
     print("Starting Main Loop. Press 'q' to exit.")
 

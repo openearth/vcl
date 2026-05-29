@@ -216,7 +216,7 @@ def displaymap(data_path):
         "2008": {"type": "RGB"},
         "2009": {"type": "RGB"},
         "2014": {"type": "RGB"},
-        "2018": {"type": "RGB"},
+        "2018_contamination": {"type": "RGB"},
         "2022_lines": {"type": "RGB"},
         "energy_park": {"type": "RGB"},
         "housing": {"type": "RGB"},
@@ -265,8 +265,13 @@ def displaymap(data_path):
                 display.display_mask()
             elif view_type == "scenario":
                 display.change_scenario(layer)
-            elif view_type == "measure":
-                display.change_measure(layer)
+            elif view_type == "add_measure":
+                try:
+                    display.add_measure(layer)
+                except Exception as e:
+                    print(e)
+            elif view_type == "remove_measure":
+                display.remove_measure(layer)
             else:
                 display.change_layer(layer)
 
@@ -337,11 +342,76 @@ def displaystats(data_path):
         "2009": {"image": {"title": ""}},
         "2014": {"image": {"title": ""}},
         "2018": {"image": {"title": "", "multiple": "sequence", "interval_s": 3.0}},
-        "housing": {"image": {"title": "", "multiple": "sequence", "interval_s": 1.0}},
-        "energy_park": {
+        "housing_contamination": {
             "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
         },
-        "innovation_hub": {
+        "housing_treat_water": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "housing_ground_cover": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "housing_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "housing_treat_water_ground_cover": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "housing_treat_water_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "housing_ground_cover_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "housing_treat_water_ground_cover_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_contamination": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_treat_water": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_ground_cover": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_treat_water_ground_cover": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_treat_water_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_ground_cover_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "energy_park_treat_water_ground_cover_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_contamination": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_treat_water": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_ground_cover": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_treat_water_ground_cover": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_treat_water_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_ground_cover_destroy_plants": {
+            "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
+        },
+        "innovation_hub_treat_water_ground_cover_destroy_plants": {
             "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
         },
     }
@@ -352,7 +422,7 @@ def displaystats(data_path):
         layers_to_ignore=["mask", "animation", "20", "30"],
         overlay_layers=[],
     )
-
+    closest_year = "1911"
     available_years = sorted(int(k) for k in dataset_kwargs.keys() if str(k).isdigit())
 
     def get_closest_year(y):
@@ -370,8 +440,16 @@ def displaystats(data_path):
             topic, message = socket.recv(zmq.DONTWAIT).split()
             message = message.decode("utf-8")
             layer, view_type = message.split(",")
-            print(layer)
-            display.change_layer(layer)
+            if view_type == "scenario":
+                display.change_scenario(layer)
+                if layer == "none":
+                    display.change_layer(closest_year)
+            elif view_type == "add_measure":
+                display.add_measure(layer)
+            elif view_type == "remove_measure":
+                display.remove_measure(layer)
+            else:
+                display.change_layer(layer)
         if socket_slice in socks and socks[socket_slice] == zmq.POLLIN:
             topic, message = socket_slice.recv(zmq.DONTWAIT).split()
             slice_index = float(message)
@@ -642,10 +720,10 @@ def keyboard_publisher():
                 elif event.key == pygame.K_0:
                     change_layer(f"{solutions[0]},layer")
 
-                elif event.key == pygame.K_g:
-                    change_year(1970)
-                elif event.key == pygame.K_h:
-                    change_year(2010)
+                # elif event.key == pygame.K_g:
+                #     change_year(1970)
+                # elif event.key == pygame.K_h:
+                #     change_year(2010)
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_s:
@@ -662,6 +740,22 @@ def keyboard_publisher():
                     cycle_collection("next")
                 elif event.key == pygame.K_b:
                     cycle_collection("prev")
+                elif event.key == pygame.K_z:
+                    socket.send_string(f"maps none,scenario")
+                elif event.key == pygame.K_x:
+                    socket.send_string(f"maps housing,scenario")
+                elif event.key == pygame.K_c:
+                    socket.send_string(f"maps energy_park,scenario")
+                elif event.key == pygame.K_v:
+                    socket.send_string(f"maps innovation_hub,scenario")
+                elif event.key == pygame.K_f:
+                    socket.send_string(f"maps treat_water,add_measure")
+                elif event.key == pygame.K_g:
+                    socket.send_string(f"maps treat_water,remove_measure")
+                elif event.key == pygame.K_h:
+                    socket.send_string(f"maps ground_cover,add_measure")
+                elif event.key == pygame.K_j:
+                    socket.send_string(f"maps ground_cover,remove_measure")
                 # elif event.key == pygame.K_RIGHT:
                 #     socket.send_string("slice R")
                 # elif event.key == pygame.K_LEFT:
@@ -1093,16 +1187,18 @@ def uid_detector(data_path):
     """
     try:
         datasets = load_preprocessed(data_path=data_path)
+        print("WUUMP")
         context = zmq.Context()
         socket = context.socket(zmq.PUB)
         socket.setsockopt(zmq.CONFLATE, 1)
         socket.bind("tcp://*:5558")
-
+        print("WUUMP")
         extent = datasets[""]["extent"].bounds
-
+        print("WUUMP")
         uid_detection.main(
             socket=socket, extent=extent, datasets=datasets[""]["interactivity"]
         )
+        print("WOOMP")
     except Exception as e:
         print(e)
 

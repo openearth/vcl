@@ -99,6 +99,16 @@ class StatsWindow:
         plt.axis("off")
         plt.show(block=False)
 
+        self.current_scenario = "none"
+        self.measure_order = [
+            "treat_water",
+            "ground_cover",
+            "destroy_plants",
+            "contamination",
+        ]
+        self._enabled_measures = set()
+        self.current_measure = "contamination"
+
     def supplement_dataset_kwargs(self, dataset_kwargs):
         """
         Supplement dataset kwargs with default plotting parameters.
@@ -170,6 +180,68 @@ class StatsWindow:
         plt.axis("off")
         plt.show(block=False)
 
+    def change_scenario(self, scenario):
+        if scenario == self.current_scenario:
+            return
+        self.current_scenario = scenario
+        new_image_name = f"{self.current_scenario}_{self.current_measure}"
+        if new_image_name in self.datasets:
+            self.change_layer(new_image_name)
+
+    def _recompute_current_measure(self):
+        """Rebuild current_measure with correct ordering + baseline rules."""
+        # only non-default measures (everything except "contamination")
+        ordered_non_default = [
+            m
+            for m in self.measure_order
+            if m != "contamination" and m in self._enabled_measures
+        ]
+
+        # If nothing enabled => baseline
+        self.current_measure = (
+            "_".join(ordered_non_default) if ordered_non_default else "contamination"
+        )
+
+    def add_measure(self, measure: str):
+        """Enable a measure. Adding any non-default measure removes baseline automatically."""
+        if measure not in self.measure_order:
+            raise ValueError(
+                f"Unknown measure '{measure}'. Must be one of {self.measure_order}"
+            )
+        if measure in self._enabled_measures:
+            return
+        if measure == "contamination":
+            # Interpreting "contamination" as "reset to baseline"
+            self._enabled_measures.clear()
+        else:
+            self._enabled_measures.add(measure)
+
+        self._recompute_current_measure()
+        new_image_name = f"{self.current_scenario}_{self.current_measure}"
+        if new_image_name in self.datasets:
+            self.change_layer(new_image_name, index=-1)
+
+    def remove_measure(self, measure: str):
+        """Disable a measure. 'contamination' cannot be removed."""
+        if measure not in self.measure_order:
+            raise ValueError(
+                f"Unknown measure '{measure}'. Must be one of {self.measure_order}"
+            )
+
+        if measure not in self._enabled_measures:
+            return
+
+        if measure == "contamination":
+            # Cannot remove baseline; no-op
+            return self.current_measure
+
+        self._enabled_measures.discard(measure)
+        self._recompute_current_measure()
+
+        new_image_name = f"{self.current_scenario}_{self.current_measure}"
+        if new_image_name in self.datasets:
+            self.change_layer(new_image_name, index=-1)
+
     def plot_piechart(self, layer, ax):
         """
         Plot a pie chart for the specified layer on the given axis.
@@ -211,7 +283,7 @@ class StatsWindow:
             ax: Matplotlib axis to draw on.
         """
         # img = self.datasets[layer]["image"]
-        kwargs = self.dataset_kwargs[self.current_layer].get("image", {})
+        kwargs = self.dataset_kwargs[self.current_layer].get("image", {}).copy()
 
         title_text = kwargs.pop("title", "")
         kwargs.pop("multiple", None)  # handled in plot_layer for multi-image cases
@@ -279,7 +351,7 @@ class StatsWindow:
         # Keep reference alive (otherwise matplotlib may GC it)
         self._anims[ax] = anim
 
-    def plot_layer(self):
+    def plot_layer(self, index=None):
         """
         Plot all visualizations for the current layer.
 
@@ -299,6 +371,9 @@ class StatsWindow:
         layer_items = list(
             self.datasets[self.current_layer]
         )  # list of (plot_type, data)
+
+        if index is not None:
+            layer_items = [layer_items[index]]
 
         # Determine multiple-image behavior for this layer
         image_kwargs = self.dataset_kwargs[self.current_layer].get("image", {})
@@ -359,7 +434,7 @@ class StatsWindow:
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
         self.fig.canvas.draw()
 
-    def change_layer(self, layer):
+    def change_layer(self, layer, index=None):
         """
         Change the displayed layer and update plots accordingly.
 
@@ -376,10 +451,10 @@ class StatsWindow:
                 and layer in self.overlay_layers
             ):
                 self.current_layer = layer
-                self.plot_layer()
+                self.plot_layer(index=index)
             elif layer in self.dataset_kwargs and layer not in self.overlay_layers:
                 self.current_layer = layer
-                self.plot_layer()
+                self.plot_layer(index=index)
             elif (
                 layer in self.dataset_kwargs
                 and layer in self.overlay_layers

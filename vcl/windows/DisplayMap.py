@@ -186,6 +186,14 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.pan_offset = pygame.Vector2(0, 0)
         self.total_pan_offset = pygame.Vector2(0, 0)
         self.current_scenario = "none"
+
+        self.measure_order = [
+            "treat_water",
+            "ground_cover",
+            "destroy_plants",
+            "contamination",
+        ]
+        self._enabled_measures = set()
         self.current_measure = "contamination"
 
         self.bottom_text = None
@@ -521,8 +529,12 @@ class DisplayMap(PygameWindow.PygameWindow):
         on the final frame. Loops back to start after completion.
         Renders the frame image and associated text overlay.
         """
+        try:
+            current_measure = self.first_measure
+        except Exception as e:
+            print(e)
         frame_surface = self.create_pygame_surface_from_rgb(
-            self.animation_data[self.current_measure][self.i - 72]["frame"]
+            self.animation_data[current_measure][self.i - 72]["frame"]
         )
         frame_surface = pygame.transform.scale(
             frame_surface, (self.img_width, self.img_height)
@@ -530,7 +542,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         frame_surface.set_alpha(alpha)
         self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
 
-        frame_text = self.animation_data[self.current_measure][self.i - 72]["text"]
+        frame_text = self.animation_data[current_measure][self.i - 72]["text"]
         self.bottom_text = frame_text
 
     def change_year(self, year):
@@ -550,6 +562,69 @@ class DisplayMap(PygameWindow.PygameWindow):
 
     def change_measure(self, measure):
         self.current_measure = measure
+        new_panel_name = f"{self.current_scenario}_{self.current_measure}"
+        self.start_panel_transition(new_panel_name)
+
+    @property
+    def first_measure(self):
+        for m in self.measure_order:
+            if m != "contamination" and m in self._enabled_measures:
+                return m
+        return "contamination"
+
+    @property
+    def enabled_measures(self):
+        return [m for m in self.measure_order if m in self._enabled_measures]
+
+    def _recompute_current_measure(self):
+        """Rebuild current_measure with correct ordering + baseline rules."""
+        # only non-default measures (everything except "contamination")
+        ordered_non_default = [
+            m
+            for m in self.measure_order
+            if m != "contamination" and m in self._enabled_measures
+        ]
+
+        # If nothing enabled => baseline
+        self.current_measure = (
+            "_".join(ordered_non_default) if ordered_non_default else "contamination"
+        )
+
+    def add_measure(self, measure: str):
+        """Enable a measure. Adding any non-default measure removes baseline automatically."""
+        if measure not in self.measure_order:
+            raise ValueError(
+                f"Unknown measure '{measure}'. Must be one of {self.measure_order}"
+            )
+        if measure in self._enabled_measures:
+            return
+        if measure == "contamination":
+            # Interpreting "contamination" as "reset to baseline"
+            self._enabled_measures.clear()
+        else:
+            self._enabled_measures.add(measure)
+
+        self._recompute_current_measure()
+        new_panel_name = f"{self.current_scenario}_{self.current_measure}"
+        self.start_panel_transition(new_panel_name)
+
+    def remove_measure(self, measure: str):
+        """Disable a measure. 'contamination' cannot be removed."""
+        if measure not in self.measure_order:
+            raise ValueError(
+                f"Unknown measure '{measure}'. Must be one of {self.measure_order}"
+            )
+
+        if measure not in self._enabled_measures:
+            return
+
+        if measure == "contamination":
+            # Cannot remove baseline; no-op
+            return self.current_measure
+
+        self._enabled_measures.discard(measure)
+        self._recompute_current_measure()
+
         new_panel_name = f"{self.current_scenario}_{self.current_measure}"
         self.start_panel_transition(new_panel_name)
 
@@ -734,12 +809,40 @@ class DisplayMap(PygameWindow.PygameWindow):
 
             self.draw_layer(self.current_layer)
             self.draw_layer(self.current_scenario)
+            self.draw_layer("2022_lines")
 
             self.draw_info_panel_r(
                 self.clock.tick(60) / 1000,
                 screen_ratio=1 / 8,
                 position="right",
             )
+        elif year >= 2018 and year < 2022:
+            rect_surface = pygame.Surface(
+                (self.img_width, self.img_height), pygame.SRCALPHA
+            )
+            pygame.draw.rect(
+                rect_surface,
+                (255, 255, 255, 180),  # 128 = 50% transparency
+                (0, 0, self.img_width, self.img_height),
+            )
+            self.screen.blit(rect_surface, (self.x_pos, self.y_pos))
+            self.draw_layer("2018_contamination")
+
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio=1 / 8,
+                position="right",
+            )
+
+            if self.current_layer in self.panels:
+                self.draw_info_panel(
+                    colour=(255, 255, 255),
+                    border_colour=(0, 0, 0),
+                    screen_ratio=1 / 8,
+                    position="right",
+                    image=self.panels["2018"],
+                )
         elif year < 1983 or (year >= 2006 and year < 2022):
             self.draw_info_panel(
                 colour=(255, 255, 255),

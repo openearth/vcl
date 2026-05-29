@@ -4,7 +4,7 @@
     "extent": "extent_1_to_2.gpkg",
     "common": {
         "basemap": "ahn-photo-merged_6000x4000_fit.tif",
-        "bathymetry": "ahn-merged-dsm-1-to-2.tif",
+        "bathymetry": "ahn-merged-dsm-1-to-2-v2.tif",
         "layers": {
             "contamination": "animations/frames/png/1983_frame.tif",
             "ground_cover": "animations/ground_cover/frames/1983_frame.tif",
@@ -19,7 +19,7 @@
             "2008": "maps/2008.png",
             "2009": "maps/2009.png",
             "2014": "maps/2014.png",
-            "2018": "maps/2018.png",
+            "2018_contamination": "maps/2018_contamination.png",
             "2022_lines": "maps/2022.png",
             "energy_park": "maps/energy_park.png",
             "housing": "maps/housing.png",
@@ -85,22 +85,148 @@
                     "screens/Slide17.jpg"
                 ]
             },
-            "housing": {
+            "housing_contamination": {
                 "image": [
                     "screens/Slide27.jpg",
                     "screens/Slide28.jpg"
                 ]
             },
-            "innovation_hub": {
+            "housing_treat_water": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide34.jpg"
+                ]
+            },
+            "housing_ground_cover": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide35.jpg"
+                ]
+            },
+            "housing_destroy_plants": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide36.jpg"
+                ]
+            },
+            "housing_treat_water_ground_cover": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide37.jpg"
+                ]
+            },
+            "housing_treat_water_destroy_plants": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide38.jpg"
+                ]
+            },
+            "housing_ground_cover_destroy_plants": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide39.jpg"
+                ]
+            },
+            "housing_treat_water_ground_cover_destroy_plants": {
+                "image": [
+                    "screens/Slide27.jpg",
+                    "screens/Slide40.jpg"
+                ]
+            },
+            "innovation_hub_contamination": {
                 "image": [
                     "screens/Slide29.jpg",
                     "screens/Slide30.jpg"
                 ]
             },
-            "energy_park": {
+            "innovation_hub_treat_water": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide42.jpg"
+                ]
+            },
+            "innovation_hub_ground_cover": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide43.jpg"
+                ]
+            },
+            "innovation_hub_destroy_plants": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide44.jpg"
+                ]
+            },
+            "innovation_hub_treat_water_ground_cover": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide45.jpg"
+                ]
+            },
+            "innovation_hub_treat_water_destroy_plants": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide46.jpg"
+                ]
+            },
+            "innovation_hub_ground_cover_destroy_plants": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide47.jpg"
+                ]
+            },
+            "innovation_hub_treat_water_ground_cover_destroy_plants": {
+                "image": [
+                    "screens/Slide29.jpg",
+                    "screens/Slide48.jpg"
+                ]
+            },
+            "energy_park_contamination": {
                 "image": [
                     "screens/Slide31.jpg",
                     "screens/Slide32.jpg"
+                ]
+            },
+            "energy_park_treat_water": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide50.jpg"
+                ]
+            },
+            "energy_park_ground_cover": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide51.jpg"
+                ]
+            },
+            "energy_park_destroy_plants": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide52.jpg"
+                ]
+            },
+            "energy_park_treat_water_ground_cover": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide53.jpg"
+                ]
+            },
+            "energy_park_treat_water_destroy_plants": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide54.jpg"
+                ]
+            },
+            "energy_park_ground_cover_destroy_plants": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide55.jpg"
+                ]
+            },
+            "energy_park_treat_water_ground_cover_destroy_plants": {
+                "image": [
+                    "screens/Slide31.jpg",
+                    "screens/Slide56.jpg"
                 ]
             }
         },
