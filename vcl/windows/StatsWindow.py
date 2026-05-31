@@ -10,9 +10,9 @@ Classes:
 
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib import animation
 import numpy as np
 import seaborn as sns
+from matplotlib import animation
 
 matplotlib.rcParams["toolbar"] = "None"
 

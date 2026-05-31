@@ -27,25 +27,22 @@ import sys
 import threading
 import time
 from pathlib import Path
-import geopandas as gpd
 
+import geopandas as gpd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mido
 import numpy as np
-
-# import pywinctl as gw
 import pygame
 import zmq
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgb
 
-import vcl.preprocess
+from vcl.interactivity import uid_detection
+from vcl.load_data import load_preprocessed
+from vcl.utils import hand_tracking
 
 # from vcl.windows import DisplayMap, DisplaySlice
 from vcl.windows import DisplayMap, DisplaySlice, StatsWindow
-from vcl.utils import hand_tracking
-from vcl.load_data import load_preprocessed
-from vcl.interactivity import uid_detection
 
 # Global state variables for layer management
 contour_show = False

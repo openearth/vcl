@@ -29,23 +29,16 @@ import concurrent.futures
 import json
 import logging
 import os
-import pickle
-import signal
 import sys
 import threading
-import time
 from pathlib import Path
 
 import click
 import numpy as np
 import zmq
 
-import vcl.data
 import vcl.display_pygame
 import vcl.interactivity.calibration
-
-# import vcl.display
-import vcl.load_data
 import vcl.preprocess
 import vcl.serialize
 

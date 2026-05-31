@@ -1,12 +1,14 @@
-import cv2
 import time
+
+import cv2
+import geopandas as gpd
 import numpy as np
 import shapely
-import geopandas as gpd
 import zmq
+
+from vcl.interactivity.actions import ActionManager
 from vcl.interactivity.camera import Camera
 from vcl.interactivity.uid_detector import Detector
-from vcl.interactivity.actions import ActionManager
 
 TABLE_POINTS = np.array(
     [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], dtype=np.float32

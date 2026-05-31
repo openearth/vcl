@@ -9,15 +9,23 @@ Classes:
     PygameWindow: Base class for creating pygame windows with dataset visualization.
 """
 
-from typing import Optional, Tuple, Union, List, Literal
+import sys
+from typing import List, Literal, Optional, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.colors
 import numpy as np
 import pygame
-import pywinctl as gw
 
-# import pygetwindow as gw
+if sys.platform == "win32":
+    import pygetwindow as gw
+elif sys.platform == "darwin":
+    import pywinctl as gw
+elif sys.platform.startswith("linux"):
+    import pywinctl as gw
+else:
+    raise NotImplementedError(f"Unsupported platform: {sys.platform}")
+
 from matplotlib.colors import Normalize
 from screeninfo import get_monitors
 
@@ -113,11 +121,15 @@ class PygameWindow:
 
         self.panels = {}
         self.convert_panels_to_surfaces()
-        self.panel_current = None
-        self.panel_next = None
-        self.panel_phase = "idle"  # idle / cover / reveal
+        self.panel_active = []  # list[pygame.Surface]
+        self.panel_pending = []  # list[pygame.Surface]
+        self.panel_index = 0
+        self.panel_timer = 0.0
+        self.panel_fps = 1.0  # how many panel switches per second in idle
+        self.panel_phase = "idle"  # "idle", "cover", "reveal"
         self.panel_progress = 0.0
-        self.panel_speed = 4.0
+        self.panel_speed = 4.0  # transition speed (0->1 per second)
+        self.panel_visible = None  # frozen panel shown during cover
 
         pygame.mixer.init()
 
@@ -335,35 +347,118 @@ class PygameWindow:
         self.x_pos = (self.screen_width - new_image_width) // 2
         self.y_pos = (self.screen_height - new_image_height) // 2
 
+    def set_info_panels(self, panels, fps=None):
+        """
+        Switch to a new set of info panels.
+
+        Parameters
+        ----------
+        panels : pygame.Surface | list[pygame.Surface] | tuple[pygame.Surface]
+            One or more panels to show.
+        fps : float | None
+            Alternation speed between multiple panels while idle.
+            If None, existing self.panel_fps is kept.
+        """
+        if panels is None:
+            panels = []
+        elif not isinstance(panels, (list, tuple)):
+            panels = [panels]
+        else:
+            panels = list(panels)
+
+        if fps is not None:
+            self.panel_fps = max(0.0, float(fps))
+
+        # No active panel yet -> just set immediately, no transition needed
+        if not self.panel_active:
+            self.panel_active = panels
+            self.panel_index = 0
+            self.panel_timer = 0.0
+            self.panel_phase = "idle"
+            self.panel_progress = 0.0
+            self.panel_pending = []
+            self.panel_visible = self.panel_active[0] if self.panel_active else None
+            return
+
+        # Freeze whatever is currently visible, then start transition
+        self.panel_visible = (
+            self.panel_active[self.panel_index] if self.panel_active else None
+        )
+        self.panel_pending = panels
+        self.panel_phase = "cover"
+        self.panel_progress = 0.0
+
     def start_panel_transition(self, new_surface):
         if self.panel_phase == "idle":
             self.panel_next = new_surface
             self.panel_phase = "cover"
             self.panel_progress = 0.0
 
-    def draw_info_panel_r(self, dt, screen_ratio, position="right"):
-        # --- compute panel rect (your existing logic) ---
+    def draw_info_panel_r(self, dt, screen_ratio, position="right", fps=None):
+        """
+        Draw info panel with support for:
+        - a single idle panel
+        - multiple idle panels alternating in a loop
+        - cover/reveal transition when switching to a new panel set
+
+        Parameters
+        ----------
+        dt : float
+            Delta time in seconds.
+        screen_ratio : float
+            Fraction of the image width/height used by panel.
+        position : str
+            Panel position ("right", keep your other cases unchanged).
+        fps : float | None
+            Optional override for idle alternation FPS.
+        """
+
+        # Optional override for alternation speed
+        if fps is not None:
+            self.panel_fps = max(0.0, float(fps))
+
+        # --- compute panel rect (keep your existing logic) ---
         if position == "right":
             start_x = self.x_pos + (1 - screen_ratio) * self.img_width
             start_y = self.y_pos
             width = self.img_width * screen_ratio
             height = self.img_height
-        # (keep your other cases unchanged)
+        elif position == "left":
+            start_x = self.x_pos
+            start_y = self.y_pos
+            width = self.img_width * screen_ratio
+            height = self.img_height
+        elif position == "top":
+            start_x = self.x_pos
+            start_y = self.y_pos
+            width = self.img_width
+            height = self.img_height * screen_ratio
+        elif position == "bottom":
+            start_x = self.x_pos
+            start_y = self.y_pos + (1 - screen_ratio) * self.img_height
+            width = self.img_width
+            height = self.img_height * screen_ratio
 
         rect = pygame.Rect(start_x, start_y, width, height)
 
-        # --- scale images ---
-        if self.panel_current is not None:
-            current = pygame.transform.smoothscale(self.panel_current, rect.size)
-        else:
-            current = None
+        # ------------------------------------------------------------------
+        # 1) Update idle alternation
+        # ------------------------------------------------------------------
+        if (
+            self.panel_phase == "idle"
+            and len(self.panel_active) > 1
+            and self.panel_fps > 0
+        ):
+            self.panel_timer += dt
+            interval = 1.0 / self.panel_fps
 
-        if self.panel_next is not None:
-            next_img = pygame.transform.smoothscale(self.panel_next, rect.size)
-        else:
-            next_img = None
+            while self.panel_timer >= interval:
+                self.panel_timer -= interval
+                self.panel_index = (self.panel_index + 1) % len(self.panel_active)
 
-        # --- update animation ---
+        # ------------------------------------------------------------------
+        # 2) Update cover/reveal animation
+        # ------------------------------------------------------------------
         if self.panel_phase in ("cover", "reveal"):
             self.panel_progress += self.panel_speed * dt
 
@@ -371,21 +466,43 @@ class PygameWindow:
                 self.panel_progress = 0.0
 
                 if self.panel_phase == "cover":
-                    # swap images
-                    self.panel_current = self.panel_next
-                    self.panel_next = None
+                    # Swap in the new panel set
+                    self.panel_active = self.panel_pending if self.panel_pending else []
+                    self.panel_pending = []
+                    self.panel_index = 0
+                    self.panel_timer = 0.0
                     self.panel_phase = "reveal"
                 else:
                     self.panel_phase = "idle"
 
-        # --- draw ---
+        # ------------------------------------------------------------------
+        # 3) Determine which panel surface to draw
+        # ------------------------------------------------------------------
+        old_surface = self.panel_visible
+        new_surface = self.panel_active[self.panel_index] if self.panel_active else None
+
+        old_scaled = (
+            pygame.transform.smoothscale(old_surface, rect.size)
+            if old_surface is not None
+            else None
+        )
+        new_scaled = (
+            pygame.transform.smoothscale(new_surface, rect.size)
+            if new_surface is not None
+            else None
+        )
+
+        # ------------------------------------------------------------------
+        # 4) Draw according to phase
+        # ------------------------------------------------------------------
         if self.panel_phase == "idle":
-            if current:
-                self.screen.blit(current, rect.topleft)
+            if new_scaled is not None:
+                self.screen.blit(new_scaled, rect.topleft)
 
         elif self.panel_phase == "cover":
-            if current:
-                self.screen.blit(current, rect.topleft)
+            # Show frozen old panel while covering it
+            if old_scaled is not None:
+                self.screen.blit(old_scaled, rect.topleft)
 
             w = int(rect.width * self.panel_progress)
             pygame.draw.rect(
@@ -393,13 +510,14 @@ class PygameWindow:
             )
 
         elif self.panel_phase == "reveal":
+            # Start fully covered, then reveal the new panel from left to right
             pygame.draw.rect(self.screen, (255, 255, 255), rect)
 
-            if current:
+            if new_scaled is not None:
                 w = int(rect.width * self.panel_progress)
                 if w > 0:
                     area = pygame.Rect(0, 0, w, rect.height)
-                    self.screen.blit(current, rect.topleft, area)
+                    self.screen.blit(new_scaled, rect.topleft, area)
 
     def draw_info_panel(
         self,

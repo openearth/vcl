@@ -9,8 +9,9 @@ Classes:
     DisplayMap: Interactive map display window with advanced visualization features.
 """
 
+import re
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pygame
@@ -199,7 +200,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.bottom_text = None
         self.hand_tracking = None
 
-        self.panel_current = self.panels["contamination"]
+        self.panel_active = [self.panels["contamination"]]
 
     def draw_line(self):
         """
@@ -558,7 +559,8 @@ class DisplayMap(PygameWindow.PygameWindow):
     def change_scenario(self, scenario):
         self.current_scenario = scenario
         new_panel_name = f"{self.current_scenario}_{self.current_measure}"
-        self.start_panel_transition(new_panel_name)
+        self.set_info_panels(new_panel_name, fps=2)
+        # self.start_panel_transition(new_panel_name)
 
     def change_measure(self, measure):
         self.current_measure = measure
@@ -606,7 +608,8 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         self._recompute_current_measure()
         new_panel_name = f"{self.current_scenario}_{self.current_measure}"
-        self.start_panel_transition(new_panel_name)
+        self.set_info_panels(new_panel_name, fps=2)
+        # self.start_panel_transition(new_panel_name)
 
     def remove_measure(self, measure: str):
         """Disable a measure. 'contamination' cannot be removed."""
@@ -626,7 +629,8 @@ class DisplayMap(PygameWindow.PygameWindow):
         self._recompute_current_measure()
 
         new_panel_name = f"{self.current_scenario}_{self.current_measure}"
-        self.start_panel_transition(new_panel_name)
+        self.set_info_panels(new_panel_name, fps=2)
+        # self.start_panel_transition(new_panel_name)
 
     def index_to_year(self, min_year, max_year):
         year = min_year + int((max_year - min_year) * self.i / self.i_max)
@@ -690,10 +694,39 @@ class DisplayMap(PygameWindow.PygameWindow):
             frame_text = animation_data[self.animation_frame]["text"]
             self.bottom_text = frame_text
 
+    def get_panels_for_combo(self, new_panel_name):
+        exact_panel = None
+        numbered_panels = []
+
+        pattern = re.compile(rf"^{re.escape(new_panel_name)}_(\d+)$")
+
+        for key, panel in self.panels.items():
+            if key == new_panel_name:
+                exact_panel = panel
+            else:
+                match = pattern.match(key)
+                if match:
+                    idx = int(match.group(1))
+                    numbered_panels.append((idx, panel))
+
+        # Sort numbered panels by suffix: _1, _2, _3, ...
+        numbered_panels.sort(key=lambda x: x[0])
+
+        if numbered_panels:
+            return [panel for _, panel in numbered_panels]
+        elif exact_panel is not None:
+            return [exact_panel]
+        else:
+            return []
+
     def start_panel_transition(self, new_panel_name):
         if new_panel_name in self.panels:
             new_panel = self.panels[new_panel_name]
             super().start_panel_transition(new_panel)
+
+    def set_info_panels(self, new_panel_name, fps=None):
+        panels = self.get_panels_for_combo(new_panel_name)
+        return super().set_info_panels(panels, fps)
 
     def start_hand_tracking(self, coords):
         """
