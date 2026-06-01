@@ -47,6 +47,7 @@ class PygameWindow:
         self.current_layer = None
         self.show_flows = False
         self.show_animation = False
+        self.paused_animation = False
 
         self.adjust_aspect_ratio()
         self.font = pygame.font.Font(None, 96)

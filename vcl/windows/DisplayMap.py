@@ -319,16 +319,25 @@ class DisplayMap(PygameWindow.PygameWindow):
         self.animation_update_time = pygame.time.get_ticks()
         if not self.show_animation:
             self.show_animation = True
+            self.paused_animation = False
             self.animation_frame = 0
         else:
             self.show_animation = False
             self.bottom_text = None
+
+    def pause_animation(self):
+        if self.paused_animation:
+            self.paused_animation = False
+        else:
+            self.paused_animation = True
 
     def update_animation(self):
         now = pygame.time.get_ticks()
         frame_time = 1000
         if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
             frame_time = 3000
+        if self.paused_animation:
+            frame_time = np.inf
         if now - self.animation_update_time > frame_time:
             self.animation_frame = (self.animation_frame + 1) % len(
                 self.animation_data[self.current_layer]

@@ -127,6 +127,7 @@ def displaymap(datasets):
         },
         "fishery": {"type": "RGB", "text": "Fishing effort", "alpha": 0.8},
         "fishing_catch": {"type": "RGB", "text": "Fishing catch", "alpha": 0.8},
+        "fishing_catch_species": {"type": "RGB", "text": "Fishing catch", "alpha": 0.8},
         "navisafe": {"type": "RGB", "text": "Navisafe"},
         "vessel-traffic": {"type": "RGB", "text": "Vessel traffic"},
         "windfarms": {"type": "RGB", "text": "Windfarms", "cmap": windfarm_cmap},
@@ -137,6 +138,8 @@ def displaymap(datasets):
         },
         "eez": {"type": "RGB", "text": ""},
         "ospar": {"type": "RGB", "text": ""},
+        "mpa": {"type": "RGB", "text": ""},
+        "mpa_overlay": {"type": "RGB", "text": ""},
         "cod_MPA": {"type": "RGB", "text": "Cods MPA"},
         "cod_survey": {"type": "RGB", "text": "Cods MPA"},
         "hp_data": {"type": "RGB", "text": "Harbour Porpoise data"},
@@ -156,6 +159,7 @@ def displaymap(datasets):
         "seagrass_presence": {"type": "RGB", "text": "Seagrass presence"},
         "seagrass_presence_g": {"type": "RGB", "text": "Seagrass presence (grid)"},
         "oysters": {"type": "RGB", "text": ""},
+        "sabellaria": {"type": "RGB", "text": ""},
         "approach_2": {"type": "RGB", "text": "Ecological importance"},
         "multi_use": {"type": "RGB", "text": ""},
         "owf_2030": {"type": "RGB", "text": ""},
@@ -197,6 +201,8 @@ def displaymap(datasets):
                 display.display_overlay(layer)
             elif view_type == "mask":
                 display.display_mask()
+            elif view_type == "pause":
+                display.pause_animation()
             else:
                 display.change_layer(layer)
 
@@ -321,6 +327,8 @@ def keyboard_publisher():
     nature_track = collections.deque(
         [
             "hp_distribution_MPA",
+            "oysters",
+            "sabellaria",
             "hp_distribution_OWF",
             "approach_2",
             "cod_MPA",
@@ -333,10 +341,9 @@ def keyboard_publisher():
             "oyster_presence_g",
             "seagrass_presence",
             "seagrass_presence_g",
-            "oysters",
         ]
     )
-    fishing = collections.deque(["fishery", "fishery_catch"])
+    fishing = collections.deque(["fishery", "fishing_catch_species", "fishery_catch"])
     windfarms = collections.deque(["owf_2030", "owf_2040", "owf_all"])
 
     collection_type_mapping_1 = {layer: "nature_track" for layer in nature_track}
@@ -444,7 +451,9 @@ def keyboard_publisher():
                 elif event.key == pygame.K_4:
                     change_layer("windfarms,layer")
                 elif event.key == pygame.K_5:
-                    change_layer(f"{windfarms[0]},overlay")
+                    change_layer("mpa,layer")
+                elif event.key == pygame.K_MINUS:
+                    change_layer("mpa_overlay,overlay")
                 elif event.key == pygame.K_6:
                     change_layer(f"{nature_track[0]},layer")
                 elif event.key == pygame.K_7:
@@ -466,15 +475,20 @@ def keyboard_publisher():
                 elif event.key == pygame.K_o:
                     change_year(2050)
                 elif event.key == pygame.K_p:
-                    change_year(2100)
+                    socket.send_string("maps animation,pause")
                 elif event.key == pygame.K_m:
                     change_layer("mask,mask")
                 elif event.key == pygame.K_n:
                     cycle_collection("next")
                 elif event.key == pygame.K_b:
                     cycle_collection("prev")
-                elif event.key == pygame.K_DOWN:
-                    1
+                elif event.key == pygame.K_z:
+                    change_layer("owf_2030,overlay")
+                elif event.key == pygame.K_x:
+                    change_layer("owf_2040,overlay")
+                elif event.key == pygame.K_c:
+                    change_layer("owf_all,overlay")
+
                 if event.key == pygame.K_h:
                     print("Sending 'instance_1' message")
                     # Send a message indicating an event for the first instance

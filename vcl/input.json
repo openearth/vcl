@@ -8,7 +8,8 @@
         "layers": {
             "fishery": "fishing-effort.png",
             "fishing_catch": "fishing-catch.png",
-            "navisafe": "NaviSafev2.png",
+            "fishing_catch_species": "june-4/TreeMap0.05_notSca_Tot_confNA_CWght_aggr_run_DEU.DNK.NLD.SWE.BEL_allYrs18-22_SpecAgg.png",
+            "navisafe": "june-4/NaviSafe_revisionv1_inclOWF.png",
             "windfarms": "windfarm_map.png",
             "owf_2030": "2030_windfarm_map.png",
             "owf_2040": "2040_windfarm_map.png",
@@ -26,9 +27,12 @@
             "seagrass_presence": "nature-track/GNSBI_Drafts_for_Deltares/Seagrass_Presence_FinalDraft.png",
             "seagrass_presence_g": "nature-track/GNSBI_Drafts_for_Deltares/Seagrass_Presence_Gridded0.05_FinalDraft.png",
             "approach_2": "nature-track/GNSBI_Drafts_for_Deltares/Approach2_Gridded.png",
-            "vessel-traffic": "Vessel_density.png",
-            "oysters": "combined_oysters.png",
-            "multi_use": "GNSBI_Multiusev2_inclOWE.png",
+            "vessel-traffic": "june-4/Vessel_density_revisionv1.png",
+            "oysters": "june-4/combined_oysters_excl_france_incleez_revisionv1.png",
+            "sabellaria": "june-4/sabellaria.png",
+            "multi_use": "june-4/GNSBI_Multiuse_revisionv1.png",
+            "mpa": "june-4/MPA.png",
+            "mpa_overlay": "june-4/mpa-overlay.png",
             "eez": "eez.png",
             "ospar": "ospar_regions.png",
             "mask": "mask-layer.gpkg"
@@ -44,17 +48,17 @@
             },
             "navisafe": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/NaviSafe_Legend.png"
+                    "info-sheets/Slide10.png"
                 ]
             },
             "windfarms": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/Slide3.png"
+                    "info-sheets/Slide2.png"
                 ]
             },
             "hp_distribution_MPA": {
                 "image": [
-                    "info-sheets/map-factsheets/Slide5.png"
+                    "info-sheets/Slide3.png"
                 ]
             },
             "hp_distribution_OWF": {
@@ -74,12 +78,12 @@
             },
             "oysters": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/Legend_Oyster.png"
+                    "info-sheets/Slide5.png"
                 ]
             },
             "vessel-traffic": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/Legend_vessel_densityv1.png"
+                    "info-sheets/Slide9.png"
                 ]
             },
             "approach_2": {
@@ -96,6 +100,16 @@
                 "image": [
                     "info-sheets/map-factsheets/map-factsheets/Slide2.png"
                 ]
+            },
+            "mpa": {
+                "image": [
+                    "info-sheets/Slide11.png"
+                ]
+            },
+            "mpa_overlay": {
+                "image": [
+                    "info-sheets/Slide11.png"
+                ]
             }
         },
         "particles": {
@@ -111,6 +125,14 @@
                 ]
             },
             "fishing_catch": {
+                "extent": [
+                    -18,
+                    45,
+                    16,
+                    64
+                ]
+            },
+            "fishing_catch_species": {
                 "extent": [
                     -18,
                     45,
@@ -246,6 +268,14 @@
                     62.84111327
                 ]
             },
+            "sabellaria": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
             "multi_use": {
                 "extent": [
                     -15.19886427,
@@ -287,6 +317,14 @@
                 ]
             },
             "ospar": {
+                "extent": [
+                    -15.19886427,
+                    47.55220244,
+                    15.37895738,
+                    62.84111327
+                ]
+            },
+            "mpa": {
                 "extent": [
                     -15.19886427,
                     47.55220244,
