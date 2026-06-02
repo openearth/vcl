@@ -471,7 +471,9 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.show_animation = False
             self.bottom_text = None
 
-    def update_animation(self):
+    def update_animation(
+        self, frame_time=50, final_frame_time=3000, show_text=False, animation_data=None
+    ):
         """
         Update and render the current animation frame.
 
@@ -480,27 +482,26 @@ class DisplayMap(PygameWindow.PygameWindow):
         Renders the frame image and associated text overlay.
         """
         now = pygame.time.get_ticks()
-        frame_time = 200
-        if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
-            frame_time = 3000
+        if animation_data is None:
+            animation_data = self.animation_data[self.current_layer]
+
+        if self.animation_frame == len(animation_data) - 1:
+            frame_time = final_frame_time
         if now - self.animation_update_time > frame_time:
-            self.animation_frame = (self.animation_frame + 1) % len(
-                self.animation_data[self.current_layer]
-            )
+            self.animation_frame = (self.animation_frame + 1) % len(animation_data)
             self.animation_update_time = now
 
         frame_surface = self.create_pygame_surface_from_rgb(
-            self.animation_data[self.current_layer][self.animation_frame]["frame"]
+            animation_data[self.animation_frame]["frame"]
         )
         frame_surface = pygame.transform.scale(
             frame_surface, (self.img_width, self.img_height)
         )
         self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
 
-        frame_text = self.animation_data[self.current_layer][self.animation_frame][
-            "text"
-        ]
-        self.bottom_text = frame_text
+        if show_text:
+            frame_text = animation_data[self.animation_frame]["text"]
+            self.bottom_text = frame_text
 
     def start_hand_tracking(self, coords):
         """
@@ -550,7 +551,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         if self.current_layer in self.dataset_kwargs and not self.show_animation:
             self.draw_layer(self.current_layer)
         if self.show_animation:
-            self.update_animation()
+            self.update_animation(frame_time=500, final_frame_time=500)
         for overlay in self.overlays:
             self.draw_layer(overlay)
 

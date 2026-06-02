@@ -202,6 +202,9 @@ def displaymap(data_path):
         "bathymetry": {"type": "CMAP"},
         "map_1": {"type": "RGB", "alpha": 1.0},
         "map_2": {"type": "RGB", "alpha": 1.0},
+        "watergangen": {"type": "RGB"},
+        "brak_zoutgehalte": {"type": "RGB"},
+        "brakmin_zoutgehalte": {"type": "RGB"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -563,11 +566,11 @@ def keyboard_publisher():
                 elif event.key == pygame.K_2:
                     change_layer("map_1,layer")
                 elif event.key == pygame.K_3:
-                    change_layer("map_2,layer")
+                    change_layer("watergangen,overlay")
                 elif event.key == pygame.K_4:
-                    change_layer("aangepast_bouwen,layer")
+                    change_layer("brak_zoutgehalte,layer")
                 elif event.key == pygame.K_5:
-                    change_layer("bescherming,layer")
+                    change_layer("brakmin_zoutgehalte,layer")
                 elif event.key == pygame.K_6:
                     change_layer("compartiment,layer")
                 elif event.key == pygame.K_7:

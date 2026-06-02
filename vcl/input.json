@@ -7,29 +7,18 @@
         "extent": "extent-1-to-2.gpkg",
         "layers": {
             "map_1": "overgangsvariant_zoutgehalte_08.png",
-            "map_2": "waterdepth_step_08.png"
+            "map_2": "waterdepth_step_08.png",
+            "watergangen": "maps/watergangen.png",
+            "brak_zoutgehalte": "maps/klimaattafel/01 brakke variant/brak_zoutgehalte_01.png",
+            "brakmin_zoutgehalte": "maps/klimaattafel/02 brakmin variant/brakmin_zoutgehalte_01.png"
         },
-        "animations": {},
+        "animations": {
+            "brak_zoutgehalte": "maps/klimaattafel/01 brakke variant",
+            "brakmin_zoutgehalte": "maps/klimaattafel/02 brakmin variant"
+        },
         "interactivity": {},
         "stats": {},
         "particles": {},
-        "extra_info": {
-            "map_1": {
-                "extent": [
-                    55077.61673008,
-                    417573.00376074,
-                    70125.8822952,
-                    430311.89705176
-                ]
-            },
-            "map_2": {
-                "extent": [
-                    55077.61673008,
-                    417573.00376074,
-                    70125.8822952,
-                    430311.89705176
-                ]
-            }
-        }
+        "extra_info": {}
     }
 }

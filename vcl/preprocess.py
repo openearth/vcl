@@ -368,13 +368,18 @@ def preprocess_png(file_path: Path, layer: str, extra_info: dict):
 
     if not file_path.with_suffix(".pgw").exists():
         layer_info = extra_info.get(layer, None)
-        assert layer_info is not None, ValueError(
-            f"Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
-        )
-        bounds = layer_info.get("extent", None)
-        assert bounds is not None, ValueError(
-            f"Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
-        )
+        # assert layer_info is not None, ValueError(
+        #     f"Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
+        # )
+        if layer_info is None:
+            bounds = extra_info["extent"].bounds
+        else:
+            bounds = layer_info.get("extent", None)
+            if bounds is None:
+                bounds = extra_info["extent"].bounds
+        # assert bounds is not None, ValueError(
+        #     f"Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
+        # )
 
     cropped_data = vcl.data.rotate_and_crop_array(
         array=np.transpose(data, (1, 2, 0)),
