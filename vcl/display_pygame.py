@@ -1184,18 +1184,14 @@ def uid_detector(data_path):
     """
     try:
         datasets = load_preprocessed(data_path=data_path)
-        print("WUUMP")
         context = zmq.Context()
         socket = context.socket(zmq.PUB)
         socket.setsockopt(zmq.CONFLATE, 1)
         socket.bind("tcp://*:5558")
-        print("WUUMP")
         extent = datasets[""]["extent"].bounds
-        print("WUUMP")
         uid_detection.main(
             socket=socket, extent=extent, datasets=datasets[""]["interactivity"]
         )
-        print("WOOMP")
     except Exception as e:
         print(e)
 

@@ -24,7 +24,6 @@ class Camera:
         if not ret:
             return None
         # Preprocess frame
-        frame = cv2.flip(frame, 1)
         frame = cv2.resize(frame, self.frame_size)
         h, w, _ = frame.shape
 
