@@ -29,7 +29,7 @@
             "approach_2": "nature-track/GNSBI_Drafts_for_Deltares/Approach2_Gridded.png",
             "vessel-traffic": "june-4/Vessel_density_revisionv1.png",
             "oysters": "june-4/combined_oysters_excl_france_incleez_revisionv1.png",
-            "sabellaria": "june-4/sabellaria.png",
+            "sabellaria": "june-4/sabellaria_alternativecolor.png",
             "multi_use": "june-4/GNSBI_Multiuse_revisionv1.png",
             "mpa": "june-4/MPA.png",
             "mpa_overlay": "june-4/mpa-overlay.png",
@@ -43,7 +43,7 @@
         "stats": {
             "fishery": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/Slide6.png"
+                    "info-sheets/Slide4.png"
                 ]
             },
             "navisafe": {
@@ -81,6 +81,11 @@
                     "info-sheets/Slide5.png"
                 ]
             },
+            "sabellaria": {
+                "image": [
+                    "info-sheets/Slide12.png"
+                ]
+            },
             "vessel-traffic": {
                 "image": [
                     "info-sheets/Slide9.png"
@@ -93,7 +98,7 @@
             },
             "multi_use": {
                 "image": [
-                    "info-sheets/map-factsheets/map-factsheets/Legend_Multiuse.png"
+                    "info-sheets/Slide8.png"
                 ]
             },
             "eez": {

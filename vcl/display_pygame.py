@@ -247,7 +247,6 @@ def displaystats(datasets):
         layers_to_ignore=["mask", "animation", "20", "30"],
         overlay_layers=[
             "eez",
-            "vessel-traffic",
             "ospar",
             "owf_2030",
             "owf_2040",
