@@ -338,7 +338,7 @@ def displaystats(data_path):
         "2008": {"image": {"title": ""}},
         "2009": {"image": {"title": ""}},
         "2014": {"image": {"title": ""}},
-        "2018": {"image": {"title": "", "multiple": "sequence", "interval_s": 3.0}},
+        "2018": {"image": {"title": "", "multiple": "loop", "interval_s": 5.0}},
         "housing_contamination": {
             "image": {"title": "", "multiple": "sequence", "interval_s": 1.0}
         },
