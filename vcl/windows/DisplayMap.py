@@ -471,6 +471,12 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.show_animation = False
             self.bottom_text = None
 
+    def pause_animation(self):
+        if self.paused_animation:
+            self.paused_animation = False
+        else:
+            self.paused_animation = True
+
     def update_animation(
         self, frame_time=50, final_frame_time=3000, show_text=False, animation_data=None
     ):
@@ -487,9 +493,13 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         if self.animation_frame == len(animation_data) - 1:
             frame_time = final_frame_time
+        if self.paused_animation:
+            frame_time = np.inf
         if now - self.animation_update_time > frame_time:
-            self.animation_frame = (self.animation_frame + 1) % len(animation_data)
+            self.animation_frame = self.animation_frame + 1
             self.animation_update_time = now
+
+        self.animation_frame = self.animation_frame % len(animation_data)
 
         frame_surface = self.create_pygame_surface_from_rgb(
             animation_data[self.animation_frame]["frame"]
@@ -502,6 +512,14 @@ class DisplayMap(PygameWindow.PygameWindow):
         if show_text:
             frame_text = animation_data[self.animation_frame]["text"]
             self.bottom_text = frame_text
+
+    def next_frame(self):
+        if self.paused_animation:
+            self.animation_frame += 1
+
+    def previous_frame(self):
+        if self.paused_animation:
+            self.animation_frame += 1
 
     def start_hand_tracking(self, coords):
         """
@@ -551,7 +569,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         if self.current_layer in self.dataset_kwargs and not self.show_animation:
             self.draw_layer(self.current_layer)
         if self.show_animation:
-            self.update_animation(frame_time=500, final_frame_time=500)
+            self.update_animation(frame_time=1000, final_frame_time=1000)
         for overlay in self.overlays:
             self.draw_layer(overlay)
 

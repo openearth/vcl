@@ -200,10 +200,10 @@ def displaymap(data_path):
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
         "bathymetry": {"type": "CMAP"},
-        "map_1": {"type": "RGB", "alpha": 1.0},
-        "map_2": {"type": "RGB", "alpha": 1.0},
+        "overzichtskaart": {"type": "RGB", "alpha": 1.0},
         "watergangen": {"type": "RGB"},
         "brak_zoutgehalte": {"type": "RGB"},
+        "brak_waterdepth": {"type": "RGB"},
         "brakmin_zoutgehalte": {"type": "RGB"},
     }
     socket = sockets["maps"]
@@ -239,6 +239,12 @@ def displaymap(data_path):
                 display.display_overlay(layer)
             elif view_type == "mask":
                 display.display_mask()
+            elif view_type == "pause":
+                display.pause_animation()
+            elif view_type == "next":
+                display.next_frame()
+            elif view_type == "prev":
+                display.previous_frame()
             else:
                 display.change_layer(layer)
 
@@ -564,15 +570,15 @@ def keyboard_publisher():
                 if event.key == pygame.K_1:
                     change_layer("bathymetry,layer")
                 elif event.key == pygame.K_2:
-                    change_layer("map_1,layer")
+                    change_layer("overzichtskaart,layer")
                 elif event.key == pygame.K_3:
                     change_layer("watergangen,overlay")
                 elif event.key == pygame.K_4:
                     change_layer("brak_zoutgehalte,layer")
                 elif event.key == pygame.K_5:
-                    change_layer("brakmin_zoutgehalte,layer")
+                    change_layer("brak_waterdepth,layer")
                 elif event.key == pygame.K_6:
-                    change_layer("compartiment,layer")
+                    change_layer("brakmin_zoutgehalte,layer")
                 elif event.key == pygame.K_7:
                     change_layer("schuilen,layer")
                 elif event.key == pygame.K_8:
@@ -589,63 +595,63 @@ def keyboard_publisher():
                 elif event.key == pygame.K_o:
                     change_layer(f"{overviews[0]},layer")
                 elif event.key == pygame.K_p:
-                    change_year(2100)
+                    socket.send_string("maps animation,pause")
                 elif event.key == pygame.K_m:
                     change_layer("mask,mask")
                 elif event.key == pygame.K_n:
                     cycle_collection("next")
                 elif event.key == pygame.K_b:
                     cycle_collection("prev")
-                # elif event.key == pygame.K_RIGHT:
-                #     socket.send_string("slice R")
-                # elif event.key == pygame.K_LEFT:
-                #     socket.send_string("slice L")
+                elif event.key == pygame.K_RIGHT:
+                    socket.send_string("maps animation,next")
+                elif event.key == pygame.K_LEFT:
+                    socket.send_string("maps animation,prev")
                 # elif event.key == pygame.K_ESCAPE:
                 #     running = False
             # for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT and event.key not in keys_held:
-                    # slice_index = (slice_index + 1) % max_slices
-                    # socket.send_string("slice R_START")
-                    # keys_held[event.key] = pygame.time.get_ticks()
-                    R_runnig = True
-                elif event.key == pygame.K_LEFT and event.key not in keys_held:
-                    # slice_index = (slice_index - 1) % max_slices
-                    # socket.send_string("slice L_START")
-                    # keys_held[event.key] = pygame.time.get_ticks()
-                    L_running = True
+        #     if event.type == pygame.KEYDOWN:
+        #         if event.key == pygame.K_RIGHT and event.key not in keys_held:
+        #             # slice_index = (slice_index + 1) % max_slices
+        #             # socket.send_string("slice R_START")
+        #             # keys_held[event.key] = pygame.time.get_ticks()
+        #             R_runnig = True
+        #         elif event.key == pygame.K_LEFT and event.key not in keys_held:
+        #             # slice_index = (slice_index - 1) % max_slices
+        #             # socket.send_string("slice L_START")
+        #             # keys_held[event.key] = pygame.time.get_ticks()
+        #             L_running = True
 
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_RIGHT:
-                    # socket.send_string("slice R_STOP")
-                    # keys_held.pop(event.key, None)
-                    R_runnig = False
-                elif event.key == pygame.K_LEFT:
-                    # socket.send_string("slice L_STOP")
-                    # keys_held.pop(event.key, None)
-                    L_running = False
+        #     if event.type == pygame.KEYUP:
+        #         if event.key == pygame.K_RIGHT:
+        #             # socket.send_string("slice R_STOP")
+        #             # keys_held.pop(event.key, None)
+        #             R_runnig = False
+        #         elif event.key == pygame.K_LEFT:
+        #             # socket.send_string("slice L_STOP")
+        #             # keys_held.pop(event.key, None)
+        #             L_running = False
 
-        if R_runnig:
-            slice_index = (slice_index + 1) % max_slices
-            socket.send_string(f"slice {slice_index}")
-        if L_running:
-            slice_index = (slice_index - 1) % max_slices
-            socket.send_string(f"slice {slice_index}")
+        # if R_runnig:
+        #     slice_index = (slice_index + 1) % max_slices
+        #     socket.send_string(f"slice {slice_index}")
+        # if L_running:
+        #     slice_index = (slice_index - 1) % max_slices
+        #     socket.send_string(f"slice {slice_index}")
         # Check for held keys and send a continuous message
-        current_time = pygame.time.get_ticks()
-        hold_delay = 10  # milliseconds
-        if (
-            pygame.K_RIGHT in keys_held
-            and current_time - keys_held[pygame.K_RIGHT] > hold_delay
-        ):
-            socket.send_string("slice R_HOLD")
-            keys_held[pygame.K_RIGHT] = current_time
-        if (
-            pygame.K_LEFT in keys_held
-            and current_time - keys_held[pygame.K_LEFT] > hold_delay
-        ):
-            socket.send_string("slice L_HOLD")
-            keys_held[pygame.K_LEFT] = current_time
+        # current_time = pygame.time.get_ticks()
+        # hold_delay = 10  # milliseconds
+        # if (
+        #     pygame.K_RIGHT in keys_held
+        #     and current_time - keys_held[pygame.K_RIGHT] > hold_delay
+        # ):
+        #     socket.send_string("slice R_HOLD")
+        #     keys_held[pygame.K_RIGHT] = current_time
+        # if (
+        #     pygame.K_LEFT in keys_held
+        #     and current_time - keys_held[pygame.K_LEFT] > hold_delay
+        # ):
+        #     socket.send_string("slice L_HOLD")
+        #     keys_held[pygame.K_LEFT] = current_time
 
         # --- Display Instructions ---
         screen.fill((50, 50, 50))

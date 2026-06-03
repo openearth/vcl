@@ -381,14 +381,6 @@ def preprocess_png(file_path: Path, layer: str, extra_info: dict):
         #     f"Bounds for layer {layer} not found. Please add pgw file or add bounds as extra info."
         # )
 
-    cropped_data = vcl.data.rotate_and_crop_array(
-        array=np.transpose(data, (1, 2, 0)),
-        array_extent=bounds,
-        center_point=extra_info["mid_point"],
-        angle=extra_info["angle"],
-        crop_extent=extra_info["extent"],
-        crs=extra_info["crs"],
-    )
     extent_bbox = extra_info["extent"].bounds
     cropped_bounds = (
         max(bounds[0], extent_bbox[0]),
@@ -398,10 +390,19 @@ def preprocess_png(file_path: Path, layer: str, extra_info: dict):
     )
 
     filled_data = vcl.data.fill_array_to_bbox(
-        array=cropped_data, array_extent=cropped_bounds, bbox=extent_bbox
+        array=data, array_extent=cropped_bounds, bbox=extent_bbox
     )
 
-    return filled_data
+    cropped_data = vcl.data.rotate_and_crop_array(
+        array=np.transpose(filled_data, (1, 2, 0)),
+        array_extent=bounds,
+        center_point=extra_info["mid_point"],
+        angle=extra_info["angle"],
+        crop_extent=extra_info["extent"],
+        crs=extra_info["crs"],
+    )
+
+    return cropped_data
 
 
 def preprocess_tif(file_path: Path, layer: str, extra_info: dict):
