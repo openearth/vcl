@@ -800,6 +800,12 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_info_panel(
                 colour=(255, 255, 255),
                 border_colour=(0, 0, 0),
+                screen_ratio=1 / 10,
+                position="bottom",
+            )
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
                 screen_ratio=1 / 8,
                 position="right",
             )
@@ -828,6 +834,13 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_info_panel(
                 colour=(255, 255, 255),
                 border_colour=(0, 0, 0),
+                screen_ratio=1 / 10,
+                position="bottom",
+            )
+
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
                 screen_ratio=1 / 8,
                 position="right",
             )
@@ -844,6 +857,12 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_layer(self.current_scenario)
             self.draw_layer("2022_lines")
 
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio=1 / 10,
+                position="bottom",
+            )
             self.draw_info_panel_r(
                 self.clock.tick(60) / 1000,
                 screen_ratio=1 / 8,
@@ -864,6 +883,13 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_info_panel(
                 colour=(255, 255, 255),
                 border_colour=(0, 0, 0),
+                screen_ratio=1 / 10,
+                position="bottom",
+            )
+
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
                 screen_ratio=1 / 8,
                 position="right",
             )
@@ -877,6 +903,12 @@ class DisplayMap(PygameWindow.PygameWindow):
                     image=self.panels["2018"],
                 )
         elif year < 1983 or (year >= 2006 and year < 2022):
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio=1 / 10,
+                position="bottom",
+            )
             self.draw_info_panel(
                 colour=(255, 255, 255),
                 border_colour=(0, 0, 0),
@@ -902,20 +934,6 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         if self.show_mask:
             self.draw_layer(self.mask_layer)
-
-        self.draw_info_panel(
-            colour=(255, 255, 255),
-            border_colour=(0, 0, 0),
-            screen_ratio=1 / 10,
-            position="bottom",
-        )
-        # self.draw_info_panel(
-        #     colour=(255, 255, 255),
-        #     border_colour=(0, 0, 0),
-        #     screen_ratio=1 / 8,
-        #     position="right",
-        #     image=self.panels["none_treat_water"],
-        # )
 
         # self.draw_line()
         # pygame.draw.line(
