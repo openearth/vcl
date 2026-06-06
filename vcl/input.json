@@ -6,22 +6,187 @@
         "bathymetry": "ahn-merged-dtm-smooth-v4.tif",
         "extent": "extent-1-to-2.gpkg",
         "layers": {
-            "overzichtskaart": "maps/overzichtskaart Zuiderdiepproject 7 mei basis natuurgebied.png",
+            "overzichtskaart_1": "maps/overzichtskaart Zuiderdiepproject 7 mei basis natuurgebied.png",
+            "overzichtskaart_2": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 brak min.png",
+            "overzichtskaart_3": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 brakke variant.png",
+            "overzichtskaart_4": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 overgangsvariant.png",
+            "overzichtskaart_5": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 verplaatste dam plus variant.png",
+            "overzichtskaart_6": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 verplaatste dam variant.png",
+            "overzichtskaart_7": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 zoete variant.png",
+            "overzichtskaart_8": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2.png",
+            "overzichtskaart_9": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem.png",
             "watergangen": "maps/watergangen.png",
             "brak_zoutgehalte": "maps/klimaattafel/01 brakke variant/zoutgehalte/brak_zoutgehalte_01.png",
             "brak_waterdepth": "maps/klimaattafel/01 brakke variant/waterdepth/waterdepth_step_01.png",
-            "brakmin_zoutgehalte": "maps/klimaattafel/02 brakmin variant/zoutgehalte/brakmin_zoutgehalte_01.png"
+            "brak_waterlevel": "maps/klimaattafel/01 brakke variant/waterlevel/waterlevel_step_01.png",
+            "brakmin_zoutgehalte": "maps/klimaattafel/02 brakmin variant/zoutgehalte/brakmin_zoutgehalte_01.png",
+            "brakmin_waterdepth": "maps/klimaattafel/02 brakmin variant/waterdepth/waterdepth_step_01.png",
+            "brakmin_waterlevel": "maps/klimaattafel/02 brakmin variant/waterlevel/waterlevel_step_01.png",
+            "dam_zoutgehalte": "maps/klimaattafel/03 dam variant/zoutgehalte/dam_zoutgehalte_01.png",
+            "dam_waterdepth": "maps/klimaattafel/03 dam variant/waterdepth/waterdepth_step_01.png",
+            "dam_waterlevel": "maps/klimaattafel/03 dam variant/waterlevel/waterlevel_step_01.png",
+            "damplus_zoutgehalte": "maps/klimaattafel/04 damplus variant/zoutgehalte/damplus_zoutgehalte_01.png",
+            "damplus_waterdepth": "maps/klimaattafel/04 damplus variant/waterdepth/waterdepth_step_01.png",
+            "damplus_waterlevel": "maps/klimaattafel/04 damplus variant/waterlevel/waterlevel_step_01.png",
+            "overgang_zoutgehalte": "maps/klimaattafel/05 overgangsvariant/zoutgehalte/overgang_zoutgehalte_01.png",
+            "zoet_zoutgehalte": "maps/klimaattafel/06 zoete variant/zoutgehalte/overgang_zoutgehalte_01.png"
         },
         "animations": {
             "brak_zoutgehalte": "maps/klimaattafel/01 brakke variant/zoutgehalte",
             "brak_waterdepth": "maps/klimaattafel/01 brakke variant/waterdepth",
-            "brakmin_zoutgehalte": "maps/klimaattafel/02 brakmin variant/zoutgehalte"
+            "brak_waterlevel": "maps/klimaattafel/01 brakke variant/waterlevel",
+            "brakmin_zoutgehalte": "maps/klimaattafel/02 brakmin variant/zoutgehalte",
+            "brakmin_waterdepth": "maps/klimaattafel/02 brakmin variant/waterdepth",
+            "brakmin_waterlevel": "maps/klimaattafel/02 brakmin variant/waterlevel",
+            "dam_zoutgehalte": "maps/klimaattafel/03 dam variant/zoutgehalte",
+            "dam_waterdepth": "maps/klimaattafel/03 dam variant/waterdepth",
+            "dam_waterlevel": "maps/klimaattafel/03 dam variant/waterlevel",
+            "damplus_zoutgehalte": "maps/klimaattafel/04 damplus variant/zoutgehalte",
+            "damplus_waterdepth": "maps/klimaattafel/04 damplus variant/waterdepth",
+            "damplus_waterlevel": "maps/klimaattafel/04 damplus variant/waterlevel",
+            "overgang_zoutgehalte": "maps/klimaattafel/05 overgangsvariant/zoutgehalte",
+            "zoet_zoutgehalte": "maps/klimaattafel/06 zoete variant/zoutgehalte"
         },
         "interactivity": {},
-        "stats": {},
+        "stats": {
+            "brak_zoutgehalte": {
+                "image": [
+                    "slides/legenda/Slide3.png"
+                ]
+            },
+            "brak_waterdepth": {
+                "image": [
+                    "slides/legenda/Slide1.png"
+                ]
+            },
+            "brak_waterlevel": {
+                "image": [
+                    "slides/legenda/Slide2.png"
+                ]
+            },
+            "brakmin_zoutgehalte": {
+                "image": [
+                    "slides/legenda/Slide3.png"
+                ]
+            },
+            "brakmin_waterdepth": {
+                "image": [
+                    "slides/legenda/Slide1.png"
+                ]
+            },
+            "brakmin_waterlevel": {
+                "image": [
+                    "slides/legenda/Slide2.png"
+                ]
+            },
+            "dam_zoutgehalte": {
+                "image": [
+                    "slides/legenda/Slide3.png"
+                ]
+            },
+            "dam_waterdepth": {
+                "image": [
+                    "slides/legenda/Slide1.png"
+                ]
+            },
+            "dam_waterlevel": {
+                "image": [
+                    "slides/legenda/Slide2.png"
+                ]
+            },
+            "damplus_zoutgehalte": {
+                "image": [
+                    "slides/legenda/Slide3.png"
+                ]
+            },
+            "damplus_waterdepth": {
+                "image": [
+                    "slides/legenda/Slide1.png"
+                ]
+            },
+            "damplus_waterlevel": {
+                "image": [
+                    "slides/legenda/Slide2.png"
+                ]
+            },
+            "overgang_zoutgehalte": {
+                "image": [
+                    "slides/legenda/Slide3.png"
+                ]
+            },
+            "zoet_zoutgehalte": {
+                "image": [
+                    "slides/legenda/Slide3.png"
+                ]
+            }
+        },
         "particles": {},
         "extra_info": {
-            "overzichtskaart": {
+            "overzichtskaart_1": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_2": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_3": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_4": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_5": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_6": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_7": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_8": {
+                "extent": [
+                    54905,
+                    418507,
+                    70560,
+                    428736
+                ]
+            },
+            "overzichtskaart_9": {
                 "extent": [
                     54905,
                     418507,

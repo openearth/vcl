@@ -375,7 +375,13 @@ class DisplayMap(PygameWindow.PygameWindow):
                 True,
                 self.dataset_kwargs[self.current_layer]["text_color"],
             )
-            self.screen.blit(text_top, (self.x_pos + 10, self.y_pos + 10))
+            text_top_rect = text_top.get_rect(
+                topright=(
+                    self.img_width + self.x_pos - 10,
+                    self.y_pos + 10,
+                )
+            )
+            self.screen.blit(text_top, text_top_rect)
 
     def display_mask(self):
         """
