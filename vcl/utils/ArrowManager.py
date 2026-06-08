@@ -1,9 +1,23 @@
+"""Animated arrow / particle overlay for the VCL map display.
+
+Arrows represent ocean current or tidal flow vectors.  Each :class:`Arrow`
+is a short-lived particle that advects itself along the local velocity field
+and is reborn at a new spawn point when it expires, leaves the screen, or
+becomes stagnant.
+
+:class:`ArrowManager` owns a pool of up to :data:`MAX_ARROWS` arrows and
+exposes :meth:`~ArrowManager.update_and_draw` to advance the simulation by
+one time-step and blit the result onto a Pygame surface.
+
+:func:`initialize_arrow_manager` is the recommended factory: it normalises
+the input dataset to screen coordinates and returns a ready-to-use manager.
+"""
+
 import numpy as np
 import pygame
 from matplotlib import colormaps
 from scipy.spatial import KDTree
 
-# --- Constants ---
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 BACKGROUND_COLOR = (20, 20, 30)
 FLOW_SPEED = 50
@@ -14,20 +28,6 @@ SPAWN_THRESHOLD_MAG = 0.02
 STAGNANT_MAGNITUDE_THRESHOLD = 0.02
 OFFSCREEN_BUFFER = 50
 ARROW_LIFETIME_RANGE = (5, 10)  # Min and Max lifetime in seconds
-
-
-# --- Sample Data Generation ---
-def generate_sample_data(num_points=1000):
-    np.random.seed(42)
-    x_grid = np.linspace(-10, 10, int(np.sqrt(num_points)))
-    y_grid = np.linspace(-10, 10, int(np.sqrt(num_points)))
-    face_x, face_y = np.meshgrid(x_grid, y_grid)
-    face_x = face_x.flatten()
-    face_y = face_y.flatten()
-    ucx = np.cos(face_x) * np.sin(face_y)
-    ucy = -np.sin(face_x) * np.cos(face_y)
-
-    return {"face_x": face_x, "face_y": face_y, "ucx": ucx, "ucy": ucy}
 
 
 def get_vector_at_position(pos_x, pos_y, dataset, tree):
@@ -325,17 +325,19 @@ def initialize_arrow_manager(tidal_data, screen_size):
 
 
 def update_arrow_manager(arrow_manager, event, min_max_data):
+    """Handle Pygame events that affect the arrow manager (resize).
+
+    Args:
+        arrow_manager: An :class:`ArrowManager` instance to update.
+        event: A :class:`pygame.event.Event` to process.
+        min_max_data: Tuple ``(data_min_x, data_max_x, data_min_y, data_max_y)``
+            returned by :func:`initialize_arrow_manager`.
+    """
     data_min_x, data_max_x, data_min_y, data_max_y = min_max_data
 
-    if event.type == pygame.QUIT:
-        running = False
-
     if event.type == pygame.VIDEORESIZE:
-        # Recalculate everything on resize
+        # Recalculate scale factors to fit the new window dimensions.
         screen_width, screen_height = event.size
-        # screen = pygame.display.set_mode(
-        #     (screen_width, screen_height), pygame.RESIZABLE
-        # )
 
         scale_x = screen_width / (data_max_x - data_min_x)
         scale_y = screen_height / (data_max_y - data_min_y)
@@ -348,16 +350,10 @@ def update_arrow_manager(arrow_manager, event, min_max_data):
             (screen_width, screen_height), pygame.SRCALPHA
         )
 
-        # Rescale existing arrows
+        # Rescale existing arrows to their new screen positions.
         for arrow in arrow_manager.arrows:
             data_x = (arrow.pos[0] / arrow.scale_x) + data_min_x
             data_y = (arrow.pos[1] / arrow.scale_y) - data_min_y
             arrow.pos[0] = (data_x - data_min_x) * scale_x
             arrow.pos[1] = (data_y - data_min_y) * scale_y
             arrow.rect.center = arrow.pos
-
-    # screen.fill(BACKGROUND_COLOR)
-
-    # arrow_manager.update_and_draw(screen, dt)
-
-    # pygame.display.flip()

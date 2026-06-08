@@ -1,6 +1,16 @@
+"""Action registry for UID-driven interactive events.
+
+The :class:`ActionManager` maps detected UID strings to callbacks that are
+executed when a tag is first seen (or re-triggered) and when it is lost.
+"""
+
+
 class ActionManager:
+    """Map UID strings to callbacks for detected and lost events."""
+
     def __init__(self):
         self.actions = {}
+        self.lost_actions = {}
 
     def register_action(self, uid_pattern, callback):
         """
@@ -30,15 +40,9 @@ class ActionManager:
         uid_pattern: The string ID to match.
         callback: Function to call. Should accept (uid, context).
         """
-        # Store lost actions with a specific prefix or separate dict to avoid collision if needed
-        # For simplicity, we'll use a separate dictionary
-        if not hasattr(self, "lost_actions"):
-            self.lost_actions = {}
         self.lost_actions[uid_pattern] = callback
 
     def execute_lost_action(self, uid, context):
-        """
-        Execute the lost action associated with the UID.
-        """
-        if hasattr(self, "lost_actions") and uid in self.lost_actions:
+        """Execute the lost action associated with the UID."""
+        if uid in self.lost_actions:
             self.lost_actions[uid](uid, context)

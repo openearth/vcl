@@ -1,3 +1,14 @@
+"""UID detection pipeline for the Virtual Climate Lab.
+
+This module reads frames from the projector-facing camera, detects physical
+tag markers (AprilTags / ArUco) via :class:`~vcl.interactivity.uid_detector.Detector`,
+translates their table-space positions to map coordinates using a pre-computed
+homography, and dispatches ZMQ messages to the display processes.
+
+The main entry point is :func:`main`, which is called from the process pool
+in :mod:`vcl.display_pygame` when the ``--uid`` flag is active.
+"""
+
 import time
 
 import cv2
@@ -38,6 +49,16 @@ def draw_detections(frame, detections):
 
 
 def specify_eez(point, gdf: gpd.GeoDataFrame):
+    """Return the ISO territory code of the EEZ zone that contains *point*.
+
+    Args:
+        point: A ``(longitude, latitude)`` tuple in the dataset CRS.
+        gdf: GeoDataFrame with an ``ISO_TER1`` attribute column.
+
+    Returns:
+        str or None: The ``ISO_TER1`` value of the intersecting feature, or
+        ``None`` if *point* does not intersect any feature.
+    """
     point = shapely.Point(point)
     if gdf.intersects(point).any():
         return gdf[gdf.intersects(point)]["ISO_TER1"].values[0]
@@ -46,6 +67,20 @@ def specify_eez(point, gdf: gpd.GeoDataFrame):
 
 
 def specifiy_breach_location(point, gdf: gpd.GeoDataFrame):
+    """Return the location identifier of the breach zone that contains *point*.
+
+    Args:
+        point: A ``(longitude, latitude)`` tuple in the dataset CRS.
+        gdf: GeoDataFrame with a ``location`` attribute column.
+
+    Returns:
+        str or None: The ``location`` value of the intersecting feature, or
+        ``None`` if *point* does not intersect any feature.
+
+    Note:
+        The function name contains a historical typo (``specifiy``); callers
+        should use this name unchanged to avoid breaking existing code.
+    """
     point = shapely.Point(point)
     if gdf.intersects(point).any():
         return gdf[gdf.intersects(point)]["location"].values[0]
@@ -54,6 +89,22 @@ def specifiy_breach_location(point, gdf: gpd.GeoDataFrame):
 
 
 def specify_slider_position(point, gdf: gpd.GeoDataFrame):
+    """Map a point to an integer slice index along a linear slider geometry.
+
+    The function buffers the slider GeoDataFrame by 100 units before the
+    intersection test, so a physical marker placed near (but not exactly on)
+    the slider line still registers.  The resulting position is normalised to
+    ``[0, 1]`` along the total x-extent of the geometry, then mapped to the
+    range ``[0, 338]`` (the number of cross-section slices).
+
+    Args:
+        point: A ``(longitude, latitude)`` tuple in the dataset CRS.
+        gdf: GeoDataFrame representing the slider geometry.
+
+    Returns:
+        int or None: Slice index in ``[0, 338]``, or ``None`` if *point* is
+        not close to the slider geometry.
+    """
     point = shapely.Point(point)
     if gdf.buffer(100).intersects(point).any():
         xmin, ymin, xmax, ymax = gdf.total_bounds

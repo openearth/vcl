@@ -116,11 +116,7 @@ def start_thread_to_terminate_when_parent_process_dies(ppid):
     thread.start()
 
 
-def test(datasets):
-    print("data loaded")
-    for key, val in datasets.items():
-        print(key, type(val))
-    return "ok"
+
 
 
 @click.command()
@@ -222,7 +218,6 @@ def main(
     if satellite:
         executor.submit(vcl.display_pygame.displaymap, datasets)
     if contour:
-        # executor.submit(vcl.display.satellite_window2, datasets)
         executor.submit(vcl.display_pygame.displayslice, datasets)
     if stats:
         executor.submit(vcl.display_pygame.displaystats, datasets)

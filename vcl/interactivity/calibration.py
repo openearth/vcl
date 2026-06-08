@@ -1,3 +1,14 @@
+"""Camera calibration for the Virtual Climate Lab projector–camera setup.
+
+Run ``vcl --calibrate`` to open a live webcam view.  Click the four corners
+of the table surface (top-left \u2192 top-right \u2192 bottom-right \u2192 bottom-left) and
+press **c** to save the normalised coordinates.  Press **r** to reset the
+clicked points or **q** / **ESC** to abort without saving.
+
+The saved coordinates are used by :mod:`vcl.interactivity.camera` to compute
+a homography that maps camera-space pixels to table-space coordinates.
+"""
+
 import cv2
 import numpy as np
 import time
@@ -5,50 +16,6 @@ import time
 from vcl.interactivity.camera import Camera
 from vcl.interactivity.uid_detector import Detector
 from vcl.config import save_camera_points
-
-
-def order_corners(pts):
-    pts = np.array(pts, dtype=np.float32)
-
-    # Compute centroid
-    cx = np.mean(pts[:, 0])
-    cy = np.mean(pts[:, 1])
-
-    # Compute angle of each point relative to centroid
-    angles = np.arctan2(pts[:, 1] - cy, pts[:, 0] - cx)
-
-    # Sort points by angle (counter‑clockwise)
-    sorted_idx = np.argsort(angles)
-    pts = pts[sorted_idx]
-
-    # After sorting CCW, identify top-left as the point with smallest (x+y)
-    s = pts.sum(axis=1)
-    tl_idx = np.argmin(s)
-
-    # Rotate array so that TL is first
-    ordered = np.roll(pts, -tl_idx, axis=0)
-
-    # Now order is TL, TR, BR, BL
-    return ordered.tolist()
-
-
-def get_calibration_corner(tag_id, bbox):
-    """
-    Tag 0 -> top-left corner
-    Tag 1 -> top-right corner
-    Tag 2 -> bottom-right corner
-    Tag 3 -> bottom-left corner
-    In OpenCV ArUco returned corners: 0=TL, 1=TR, 2=BR, 3=BL relative to marker orientation.
-    """
-    if tag_id == 0:
-        return tuple(bbox[0])
-    elif tag_id == 1:
-        return tuple(bbox[1])
-    elif tag_id == 2:
-        return tuple(bbox[2])
-    elif tag_id == 3:
-        return tuple(bbox[3])
-    return None
 
 
 clicked_points = []

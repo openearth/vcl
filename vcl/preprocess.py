@@ -177,7 +177,6 @@ def preprocess_common(
         pbar.set_description(f"Processing: {layer}")
 
         layer_path = base_path / datasets["layers"][layer]
-        layer_path = base_path / layer_path
         file_extension = layer_path.suffix
 
         if file_extension == ".png":
@@ -189,7 +188,7 @@ def preprocess_common(
                 file_path=layer_path, layer=layer, extra_info=extra_info
             )
         elif file_extension == ".nc":
-            layer_data = preprocess_nc()
+            layer_data = preprocess_nc(file_path=layer_path, layer=layer, extra_info=extra_info)
         elif file_extension in [".shp", ".gpkg", ".geojson"]:
             layer_data = preprocess_shape(
                 file_path=layer_path, layer=layer, extra_info=extra_info
@@ -446,14 +445,22 @@ def preprocess_png(file_path: Path, layer: str, extra_info: dict):
 def preprocess_tif(file_path: Path, layer: str, extra_info: dict):
     """Preprocess TIF/GeoTIFF raster files.
 
-    Placeholder function for TIF file processing. Currently not implemented.
+    Loads a GeoTIFF, rotates and crops it to the target extent, then fills
+    the cropped result to the full bounding box – following the same
+    pipeline as :func:`preprocess_png`.
+
+    Args:
+        file_path: Path to the TIF file to process.
+        layer: Name/identifier of the layer being processed.
+        extra_info: Dictionary containing transformation parameters:
+            - extent: Target geometry extent
+            - mid_point: Center point for rotation
+            - angle: Rotation angle in degrees
+            - crs: Coordinate reference system
 
     Returns:
-        None
-
-    Note:
-        This function needs to be implemented to handle GeoTIFF preprocessing.
-        Implementation should follow the pattern of preprocess_png().
+        numpy.ndarray: Processed raster array aligned and cropped to the
+                      target extent, filled to match the bounding box.
     """
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
