@@ -6,15 +6,15 @@
         "bathymetry": "ahn-merged-dtm-smooth-v4.tif",
         "extent": "extent-1-to-2.gpkg",
         "layers": {
-            "overzichtskaart_1": "maps/overzichtskaart Zuiderdiepproject 7 mei basis natuurgebied.png",
-            "overzichtskaart_2": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 brak min.png",
-            "overzichtskaart_3": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 brakke variant.png",
-            "overzichtskaart_4": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 overgangsvariant.png",
-            "overzichtskaart_5": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 verplaatste dam plus variant.png",
-            "overzichtskaart_6": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 verplaatste dam variant.png",
-            "overzichtskaart_7": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 zoete variant.png",
-            "overzichtskaart_8": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2.png",
-            "overzichtskaart_9": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem.png",
+            "overzichtskaart_basis_3": "maps/overzichtskaart Zuiderdiepproject 7 mei basis natuurgebied.png",
+            "overzichtskaart_brakmin": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 brak min.png",
+            "overzichtskaart_brak": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 brakke variant.png",
+            "overzichtskaart_overgang": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 overgangsvariant.png",
+            "overzichtskaart_damplus": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 verplaatste dam plus variant.png",
+            "overzichtskaart_dam": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 verplaatste dam variant.png",
+            "overzichtskaart_zoet": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2 zoete variant.png",
+            "overzichtskaart_basis_2": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem v2.png",
+            "overzichtskaart_basis_1": "maps/overzichtskaart Zuiderdiepproject 7 mei basis watersysteem.png",
             "watergangen": "maps/watergangen.png",
             "brak_zoutgehalte": "maps/klimaattafel/01 brakke variant/zoutgehalte/brak_zoutgehalte_01.png",
             "brak_waterdepth": "maps/klimaattafel/01 brakke variant/waterdepth/waterdepth_step_01.png",
@@ -29,7 +29,9 @@
             "damplus_waterdepth": "maps/klimaattafel/04 damplus variant/waterdepth/waterdepth_step_01.png",
             "damplus_waterlevel": "maps/klimaattafel/04 damplus variant/waterlevel/waterlevel_step_01.png",
             "overgang_zoutgehalte": "maps/klimaattafel/05 overgangsvariant/zoutgehalte/overgang_zoutgehalte_01.png",
-            "zoet_zoutgehalte": "maps/klimaattafel/06 zoete variant/zoutgehalte/overgang_zoutgehalte_01.png"
+            "zoet_zoutgehalte": "maps/klimaattafel/06 zoete variant/zoutgehalte/overgang_zoutgehalte_01.png",
+            "zoet_waterdepth": "maps/klimaattafel/06 zoete variant/waterdepth/waterdepth_-0.350m.png",
+            "zoet_waterlevel": "maps/klimaattafel/06 zoete variant/waterlevel/waterlevel_-0.350m.png"
         },
         "animations": {
             "brak_zoutgehalte": "maps/klimaattafel/01 brakke variant/zoutgehalte",
@@ -45,7 +47,9 @@
             "damplus_waterdepth": "maps/klimaattafel/04 damplus variant/waterdepth",
             "damplus_waterlevel": "maps/klimaattafel/04 damplus variant/waterlevel",
             "overgang_zoutgehalte": "maps/klimaattafel/05 overgangsvariant/zoutgehalte",
-            "zoet_zoutgehalte": "maps/klimaattafel/06 zoete variant/zoutgehalte"
+            "zoet_zoutgehalte": "maps/klimaattafel/06 zoete variant/zoutgehalte",
+            "zoet_waterdepth": "maps/klimaattafel/06 zoete variant/waterdepth",
+            "zoet_waterlevel": "maps/klimaattafel/06 zoete variant/waterlevel"
         },
         "interactivity": {},
         "stats": {
@@ -114,6 +118,16 @@
                     "slides/legenda/Slide3.png"
                 ]
             },
+            "zoet_waterdepth": {
+                "image": [
+                    "slides/legenda/Slide1.png"
+                ]
+            },
+            "zoet_waterlevel": {
+                "image": [
+                    "slides/legenda/Slide2.png"
+                ]
+            },
             "zoet_zoutgehalte": {
                 "image": [
                     "slides/legenda/Slide3.png"
@@ -122,7 +136,7 @@
         },
         "particles": {},
         "extra_info": {
-            "overzichtskaart_1": {
+            "overzichtskaart_basis_1": {
                 "extent": [
                     54905,
                     418507,
@@ -130,7 +144,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_2": {
+            "overzichtskaart_basis_2": {
                 "extent": [
                     54905,
                     418507,
@@ -138,7 +152,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_3": {
+            "overzichtskaart_basis_3": {
                 "extent": [
                     54905,
                     418507,
@@ -146,7 +160,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_4": {
+            "overzichtskaart_brak": {
                 "extent": [
                     54905,
                     418507,
@@ -154,7 +168,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_5": {
+            "overzichtskaart_brakmin": {
                 "extent": [
                     54905,
                     418507,
@@ -162,7 +176,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_6": {
+            "overzichtskaart_dam": {
                 "extent": [
                     54905,
                     418507,
@@ -170,7 +184,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_7": {
+            "overzichtskaart_damplus": {
                 "extent": [
                     54905,
                     418507,
@@ -178,7 +192,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_8": {
+            "overzichtskaart_overgang": {
                 "extent": [
                     54905,
                     418507,
@@ -186,7 +200,7 @@
                     428736
                 ]
             },
-            "overzichtskaart_9": {
+            "overzichtskaart_zoet": {
                 "extent": [
                     54905,
                     418507,

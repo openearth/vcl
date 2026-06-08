@@ -200,15 +200,15 @@ def displaymap(data_path):
     dataset_kwargs = {
         "basemap": {"type": "RGB"},
         "bathymetry": {"type": "CMAP"},
-        "overzichtskaart_1": {"type": "RGB"},
-        "overzichtskaart_2": {"type": "RGB"},
-        "overzichtskaart_3": {"type": "RGB"},
-        "overzichtskaart_4": {"type": "RGB"},
-        "overzichtskaart_5": {"type": "RGB"},
-        "overzichtskaart_6": {"type": "RGB"},
-        "overzichtskaart_7": {"type": "RGB"},
-        "overzichtskaart_8": {"type": "RGB"},
-        "overzichtskaart_9": {"type": "RGB"},
+        "overzichtskaart_basis_1": {"type": "RGB"},
+        "overzichtskaart_brakmin": {"type": "RGB"},
+        "overzichtskaart_brak": {"type": "RGB"},
+        "overzichtskaart_overgang": {"type": "RGB"},
+        "overzichtskaart_damplus": {"type": "RGB"},
+        "overzichtskaart_dam": {"type": "RGB"},
+        "overzichtskaart_zoet": {"type": "RGB"},
+        "overzichtskaart_basis_2": {"type": "RGB"},
+        "overzichtskaart_basis_3": {"type": "RGB"},
         "watergangen": {"type": "RGB"},
         "brak_zoutgehalte": {"type": "RGB", "text": "Brak zoutgehalte"},
         "brak_waterdepth": {"type": "RGB", "text": "Brak waterdiepte"},
@@ -224,6 +224,8 @@ def displaymap(data_path):
         "damplus_waterlevel": {"type": "RGB", "text": "Damplus waterpeil"},
         "overgang_zoutgehalte": {"type": "RGB", "text": "Overgang zoutgehalte"},
         "zoet_zoutgehalte": {"type": "RGB", "text": "Zoet zoutgehalte"},
+        "zoet_waterdepth": {"type": "RGB", "text": "Zoet waterdiepte"},
+        "zoet_waterlevel": {"type": "RGB", "text": "Zoet waterpeil"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -453,16 +455,66 @@ def keyboard_publisher():
                 current_overlay = text
                 current_overlays.append(text)
 
-    zoutgehaltes = collections.deque(
+    basis = collections.deque(
         [
-            "brak_zoutgehalte",
-            "brakmin_zoutgehalte",
-            "dam_zoutgehalte",
-            "damplus_zoutgehalte",
-            "overgang_zoutgehalte",
-            "zoet_zoutgehalte",
+            "overzichtskaart_basis_1",
+            "overzichtskaart_basis_2",
+            "overzichtskaart_basis_3",
         ]
     )
+
+    brak = collections.deque(
+        [
+            "overzichtskaart_brak",
+            "brak_waterlevel",
+            "brak_zoutgehalte",
+            "brak_waterdepth",
+        ]
+    )
+
+    brakmin = collections.deque(
+        [
+            "overzichtskaart_brakmin",
+            "brakmin_waterlevel",
+            "brakmin_zoutgehalte",
+            "brakmin_waterdepth",
+        ]
+    )
+
+    dam = collections.deque(
+        [
+            "overzichtskaart_dam",
+            "dam_waterlevel",
+            "dam_zoutgehalte",
+            "dam_waterdepth",
+        ]
+    )
+
+    damplus = collections.deque(
+        [
+            "overzichtskaart_damplus",
+            "damplus_waterlevel",
+            "damplus_zoutgehalte",
+            "damplus_waterdepth",
+        ]
+    )
+
+    zoet = collections.deque(
+        [
+            "overzichtskaart_zoet",
+            "zoet_waterlevel",
+            "zoet_zoutgehalte",
+            "zoet_waterdepth",
+        ]
+    )
+
+    overgang = collections.deque(
+        [
+            "overzichtskaart_overgang",
+            "overgang_zoutgehalte",
+        ]
+    )
+
     waterdepths = collections.deque(
         [
             "brak_waterdepth",
@@ -495,17 +547,23 @@ def keyboard_publisher():
     )
 
     collection_type_mapping = (
-        {layer: "zoutgehalte" for layer in zoutgehaltes}
-        | {layer: "waterdepth" for layer in waterdepths}
-        | {layer: "waterlevel" for layer in waterlevels}
-        | {layer: "overview" for layer in overviews}
+        {layer: "basis_m" for layer in basis}
+        | {layer: "brak_m" for layer in brak}
+        | {layer: "brakmin_m" for layer in brakmin}
+        | {layer: "dam_m" for layer in dam}
+        | {layer: "damplus_m" for layer in damplus}
+        | {layer: "overgang_m" for layer in overgang}
+        | {layer: "zoet_m" for layer in zoet}
     )
 
     cycles = {
-        "zoutgehalte": zoutgehaltes,
-        "waterdepth": waterdepths,
-        "waterlevel": waterlevels,
-        "overview": overviews,
+        "basis_m": basis,
+        "brak_m": brak,
+        "brakmin_m": brakmin,
+        "dam_m": dam,
+        "damplus_m": damplus,
+        "overgang_m": overgang,
+        "zoet_m": zoet,
     }
 
     def cycle_collection(cycle):
@@ -596,13 +654,19 @@ def keyboard_publisher():
                 elif event.key == pygame.K_2:
                     change_layer("watergangen,overlay")
                 elif event.key == pygame.K_3:
-                    change_layer(f"{overviews[0]},layer")
+                    change_layer(f"{basis[0]},layer")
                 elif event.key == pygame.K_4:
-                    change_layer(f"{zoutgehaltes[0]},layer")
+                    change_layer(f"{brak[0]},layer")
                 elif event.key == pygame.K_5:
-                    change_layer(f"{waterdepths[0]},layer")
+                    change_layer(f"{brakmin[0]},layer")
                 elif event.key == pygame.K_6:
-                    change_layer(f"{waterlevels[0]},layer")
+                    change_layer(f"{dam[0]},layer")
+                elif event.key == pygame.K_7:
+                    change_layer(f"{damplus[0]},layer")
+                elif event.key == pygame.K_8:
+                    change_layer(f"{overgang[0]},layer")
+                elif event.key == pygame.K_9:
+                    change_layer(f"{zoet[0]},layer")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
                 elif event.key == pygame.K_s:
