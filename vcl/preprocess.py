@@ -33,6 +33,43 @@ import vcl.data
 
 logger = logging.getLogger(__name__)
 
+from pathlib import Path
+
+MONTHS = {
+    "januari": 1,
+    "februari": 2,
+    "maart": 3,
+    "april": 4,
+    "mei": 5,
+    "juni": 6,
+    "juli": 7,
+    "augustus": 8,
+    "september": 9,
+    "oktober": 10,
+    "november": 11,
+    "december": 12,
+}
+
+
+def get_prefix(filename):
+    return Path(filename).stem.split("_")[0]
+
+
+def sort_key(filename):
+    prefix = get_prefix(filename)
+    prefix_lower = prefix.lower()
+
+    # Case 1: month name
+    if prefix_lower in MONTHS:
+        return (0, MONTHS[prefix_lower])
+
+    # Case 2: numeric prefix
+    if prefix.isdigit():
+        return (1, int(prefix))
+
+    # Case 3: fallback alphabetical
+    return (2, prefix_lower)
+
 
 def preprocess(input_file: Union[str, Path]):
     """Main preprocessing function that orchestrates the entire preprocessing pipeline.
@@ -207,7 +244,7 @@ def preprocess_common(
         file_dir = base_path / datasets["animations"][layer]
         assert (base_path / file_dir).is_dir(), f"Directory {file_dir} does not exist."
         animation_data = []
-        for layer_path in sorted(file_dir.glob("*")):
+        for layer_path in sorted(file_dir.glob("*"), key=sort_key):
             year = layer_path.stem.split("_")[0]
             if layer_path.suffix == ".png":
                 layer_data = preprocess_png(

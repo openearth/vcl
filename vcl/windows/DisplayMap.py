@@ -367,11 +367,15 @@ class DisplayMap(PygameWindow.PygameWindow):
             )
         )
 
-        self.screen.blit(text_bottom, text_bottom_rect)
+        # self.screen.blit(text_bottom, text_bottom_rect)
 
         if self.current_layer in self.dataset_kwargs:
+            if self.bottom_text is not None:
+                text_top = f"{self.bottom_text} {self.dataset_kwargs[self.current_layer]["text"]}"
+            else:
+                text_top = self.dataset_kwargs[self.current_layer]["text"]
             text_top = self.font.render(
-                self.dataset_kwargs[self.current_layer]["text"],
+                text_top,
                 True,
                 self.dataset_kwargs[self.current_layer]["text_color"],
             )
@@ -575,7 +579,9 @@ class DisplayMap(PygameWindow.PygameWindow):
         if self.current_layer in self.dataset_kwargs and not self.show_animation:
             self.draw_layer(self.current_layer)
         if self.show_animation:
-            self.update_animation(frame_time=1000, final_frame_time=1000)
+            self.update_animation(
+                frame_time=1000, final_frame_time=1000, show_text=True
+            )
         for overlay in self.overlays:
             self.draw_layer(overlay)
 
