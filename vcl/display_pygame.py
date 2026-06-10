@@ -346,41 +346,25 @@ def displaystats(data_path):
         layers_to_ignore=[
             "mask",
             "animation",
-            "dam_brak"
-            "dam_dam"
-            "dam_damplus"
-            "fish_brak"
-            "fish_dam"
-            "fish_damplus"
-            "fish_overgang"
-            "fish_zoet"
-            "flow_brak"
-            "flow_dam_1"
-            "flow_dam_2"
-            "flow_damplus_1"
-            "flow_damplus_2"
-            "flow_overgang"
-            "flow_zoet_in"
+            "dam_brak",
+            "dam_dam",
+            "dam_damplus",
+            "fish_brak",
+            "fish_dam",
+            "fish_damplus",
+            "fish_overgang",
+            "fish_zoet",
+            "flow_brak",
+            "flow_dam_1",
+            "flow_dam_2",
+            "flow_damplus_1",
+            "flow_damplus_2",
+            "flow_overgang",
+            "flow_zoet_in",
             "flow_zoet",
+            "overlay",
         ],
-        overlay_layers=[
-            "dam_brak"
-            "dam_dam"
-            "dam_damplus"
-            "fish_brak"
-            "fish_dam"
-            "fish_damplus"
-            "fish_overgang"
-            "fish_zoet"
-            "flow_brak"
-            "flow_dam_1"
-            "flow_dam_2"
-            "flow_damplus_1"
-            "flow_damplus_2"
-            "flow_overgang"
-            "flow_zoet_in"
-            "flow_zoet"
-        ],
+        overlay_layers=[],
     )
 
     while True:
