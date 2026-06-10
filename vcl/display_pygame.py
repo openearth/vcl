@@ -226,6 +226,22 @@ def displaymap(data_path):
         "zoet_zoutgehalte": {"type": "RGB", "text": "Zoet zoutgehalte"},
         "zoet_waterdepth": {"type": "RGB", "text": "Zoet waterdiepte"},
         "zoet_waterlevel": {"type": "RGB", "text": "Zoet waterpeil"},
+        "dam_brak": {"type": "RGB"},
+        "dam_dam": {"type": "RGB"},
+        "dam_damplus": {"type": "RGB"},
+        "fish_brak": {"type": "RGB"},
+        "fish_dam": {"type": "RGB"},
+        "fish_damplus": {"type": "RGB"},
+        "fish_overgang": {"type": "RGB"},
+        "fish_zoet": {"type": "RGB"},
+        "flow_brak": {"type": "RGB"},
+        "flow_dam_1": {"type": "RGB"},
+        "flow_dam_2": {"type": "RGB"},
+        "flow_damplus_1": {"type": "RGB"},
+        "flow_damplus_2": {"type": "RGB"},
+        "flow_overgang": {"type": "RGB"},
+        "flow_zoet_in": {"type": "RGB"},
+        "flow_zoet": {"type": "RGB"},
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -266,6 +282,8 @@ def displaymap(data_path):
                 display.next_frame()
             elif view_type == "prev":
                 display.previous_frame()
+            elif view_type == "clear":
+                display.clear_overlays()
             else:
                 display.change_layer(layer)
 
@@ -325,8 +343,44 @@ def displaystats(data_path):
     display = StatsWindow.StatsWindow(
         datasets[""]["stats"],
         dataset_kwargs={},
-        layers_to_ignore=["mask", "animation", "20", "30"],
-        overlay_layers=["watergangen"],
+        layers_to_ignore=[
+            "mask",
+            "animation",
+            "dam_brak"
+            "dam_dam"
+            "dam_damplus"
+            "fish_brak"
+            "fish_dam"
+            "fish_damplus"
+            "fish_overgang"
+            "fish_zoet"
+            "flow_brak"
+            "flow_dam_1"
+            "flow_dam_2"
+            "flow_damplus_1"
+            "flow_damplus_2"
+            "flow_overgang"
+            "flow_zoet_in"
+            "flow_zoet",
+        ],
+        overlay_layers=[
+            "dam_brak"
+            "dam_dam"
+            "dam_damplus"
+            "fish_brak"
+            "fish_dam"
+            "fish_damplus"
+            "fish_overgang"
+            "fish_zoet"
+            "flow_brak"
+            "flow_dam_1"
+            "flow_dam_2"
+            "flow_damplus_1"
+            "flow_damplus_2"
+            "flow_overgang"
+            "flow_zoet_in"
+            "flow_zoet"
+        ],
     )
 
     while True:
@@ -515,23 +569,6 @@ def keyboard_publisher():
         ]
     )
 
-    waterdepths = collections.deque(
-        [
-            "brak_waterdepth",
-            "brakmin_waterdepth",
-            "dam_waterdepth",
-            "damplus_waterdepth",
-        ]
-    )
-    waterlevels = collections.deque(
-        [
-            "brak_waterlevel",
-            "brakmin_waterlevel",
-            "dam_waterlevel",
-            "damplus_waterlevel",
-        ]
-    )
-
     overviews = collections.deque(
         [
             "overzichtskaart_1",
@@ -656,29 +693,141 @@ def keyboard_publisher():
                 elif event.key == pygame.K_3:
                     change_layer(f"{basis[0]},layer")
                 elif event.key == pygame.K_4:
-                    change_layer(f"{brak[0]},layer")
-                elif event.key == pygame.K_5:
-                    change_layer(f"{brakmin[0]},layer")
-                elif event.key == pygame.K_6:
-                    change_layer(f"{dam[0]},layer")
-                elif event.key == pygame.K_7:
-                    change_layer(f"{damplus[0]},layer")
-                elif event.key == pygame.K_8:
-                    change_layer(f"{overgang[0]},layer")
-                elif event.key == pygame.K_9:
+                    socket.send_string("maps overlay,clear")
+                    time.sleep(0.01)
                     change_layer(f"{zoet[0]},layer")
+                    time.sleep(0.01)
+                    change_layer(f"flow_zoet_in,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_zoet,overlay")
+                elif event.key == pygame.K_5:
+                    socket.send_string("maps overlay,clear")
+                    time.sleep(0.01)
+                    change_layer(f"{brak[0]},layer")
+                    time.sleep(0.01)
+                    change_layer(f"flow_zoet_in,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_brak,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"dam_brak,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_zoet,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_brak,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_dam,overlay")
+                elif event.key == pygame.K_6:
+                    socket.send_string("maps overlay,clear")
+                    time.sleep(0.01)
+                    change_layer(f"{brakmin[0]},layer")
+                    time.sleep(0.01)
+                    change_layer(f"flow_zoet_in,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_brak,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"dam_brak,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_zoet,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_brak,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_dam,overlay")
+                elif event.key == pygame.K_7:
+                    socket.send_string("maps overlay,clear")
+                    time.sleep(0.01)
+                    change_layer(f"{dam[0]},layer")
+                    time.sleep(0.01)
+                    change_layer(f"flow_zoet_in,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_dam_1,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_dam_2,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"dam_dam,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_zoet,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_dam,overlay")
+                elif event.key == pygame.K_8:
+                    socket.send_string("maps overlay,clear")
+                    time.sleep(0.01)
+                    change_layer(f"{overgang[0]},layer")
+                    time.sleep(0.01)
+                    change_layer(f"flow_zoet_in,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_dam_1,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_dam_2,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_overgang,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_zoet,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_dam,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_damplus,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_overgang,overlay")
+                elif event.key == pygame.K_9:
+                    socket.send_string("maps overlay,clear")
+                    time.sleep(0.01)
+                    change_layer(f"{damplus[0]},layer")
+                    time.sleep(0.01)
+                    change_layer(f"flow_zoet_in,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_dam_1,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_damplus_1,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"flow_damplus_2,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"dam_dam,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"dam_damplus,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_zoet,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_dam,overlay")
+                    time.sleep(0.01)
+                    change_layer(f"fish_damplus,overlay")
+                elif event.key == pygame.K_q:
+                    change_layer("flow_brak,overlay")
+                elif event.key == pygame.K_w:
+                    change_layer(f"flow_dam_1,overlay")
+                elif event.key == pygame.K_e:
+                    change_layer(f"flow_dam_2,overlay")
+                elif event.key == pygame.K_r:
+                    change_layer(f"flow_damplus_1,overlay")
+                elif event.key == pygame.K_t:
+                    change_layer(f"flow_damplus_2,overlay")
+                elif event.key == pygame.K_y:
+                    change_layer(f"flow_overgang,overlay")
+                elif event.key == pygame.K_u:
+                    change_layer(f"flow_zoet_in,overlay")
+                elif event.key == pygame.K_i:
+                    change_layer(f"flow_zoet,overlay")
+                elif event.key == pygame.K_s:
+                    change_layer("fish_brak,overlay")
+                elif event.key == pygame.K_d:
+                    change_layer("fish_dam,overlay")
+                elif event.key == pygame.K_f:
+                    change_layer("fish_damplus,overlay")
+                elif event.key == pygame.K_g:
+                    change_layer("fish_overgang,overlay")
+                elif event.key == pygame.K_h:
+                    change_layer("fish_zoet,overlay")
+                elif event.key == pygame.K_z:
+                    change_layer("dam_brak,overlay")
+                elif event.key == pygame.K_x:
+                    change_layer("dam_dam,overlay")
+                elif event.key == pygame.K_v:
+                    change_layer("dam_damplus,overlay")
+                elif event.key == pygame.K_c:
+                    socket.send_string("maps overlay,clear")
                 elif event.key == pygame.K_a:
                     change_layer("animation,layer")
-                elif event.key == pygame.K_s:
-                    change_layer("bathymetry,layer")
-                elif event.key == pygame.K_d:
-                    change_layer("doorbraaklocaties,overlay")
-                elif event.key == pygame.K_o:
-                    change_layer(f"{overviews[0]},layer")
                 elif event.key == pygame.K_p:
                     socket.send_string("maps animation,pause")
-                elif event.key == pygame.K_m:
-                    change_layer("mask,mask")
                 elif event.key == pygame.K_n:
                     cycle_collection("next")
                 elif event.key == pygame.K_b:

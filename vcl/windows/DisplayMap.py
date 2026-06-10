@@ -426,6 +426,9 @@ class DisplayMap(PygameWindow.PygameWindow):
         else:
             self.overlays.append(overlay)
 
+    def clear_overlays(self):
+        self.overlays = []
+
     def change_line_index(self, i):
         """
         Change the slider position indicator.
