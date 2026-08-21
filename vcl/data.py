@@ -4,7 +4,6 @@ import cv2
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import rasterio
 
 import rioxarray as rxr
@@ -20,31 +19,30 @@ from shapely.geometry import mapping
 
 def compute_rotation_angle(extent: shapely.Polygon):
     """
-    Function for computing the rotation angle of the geometry extent
-    The angle is the counterclockwise angle between the geometry and the x-axis
+    Compute a stable rotation angle from an extent polygon.
+
+    The angle returned is the orientation of the longest edge of the minimum
+    rotated rectangle, normalized to [-90, 90]. This makes the angle robust for
+    clockwise and counterclockwise oriented extents without ad hoc "90 - angle"
+    corrections.
     """
-    # Get vertices of geometry (rectangle)
-    coords = list(extent.exterior.coords)
-    coords = pd.DataFrame(coords)
-    coords.columns = ["x", "y"]
+    oriented_rect = extent.minimum_rotated_rectangle
+    coords = np.array(oriented_rect.exterior.coords[:-1], dtype=float)
 
-    # Get minimum and maximum x and y values from vertices
-    xmin = coords.idxmin(0)["x"]
-    ymin = coords.idxmin(0)["y"]
-    xmax = coords.idxmax(0)["x"]
-    ymax = coords.idxmax(0)["y"]
+    edge_vectors = np.roll(coords, -1, axis=0) - coords
+    edge_lengths = np.linalg.norm(edge_vectors, axis=1)
 
-    # Find bottom left point and bottom right point of original extent
-    bottom_point = [coords.iloc[ymin]["x"], coords.iloc[ymin]["y"]]
-    right_point = [coords.iloc[xmax]["x"], coords.iloc[xmax]["y"]]
+    if np.allclose(edge_lengths, 0):
+        return 0.0
 
-    # Compute the rotation angle of original extent
-    o = right_point[1] - bottom_point[1]
-    a = right_point[0] - bottom_point[0]
+    longest_edge = edge_vectors[np.argmax(edge_lengths)]
+    angle = float(np.degrees(np.arctan2(longest_edge[1], longest_edge[0])))
 
-    if a == 0:
-        return 0
-    angle = np.rad2deg(np.arctan(o / a))
+    # Normalize to a compact range suitable for raster rotation.
+    if angle > 90:
+        angle -= 180
+    elif angle <= -90:
+        angle += 180
 
     return angle
 

@@ -27,6 +27,7 @@ import threading
 import time
 from pathlib import Path
 import geopandas as gpd
+import numpy as np
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -87,6 +88,45 @@ bathymetry_cmap = [
 bathymetry_cmap = LinearSegmentedColormap.from_list(
     "bathy_cmap", bathymetry_cmap, N=5000
 )
+
+
+def build_dataset_kwargs(datasets: dict):
+    """Build layer display configuration from preprocessed datasets.
+
+    This avoids maintaining large hard-coded layer maps by inspecting the first
+    dataset group and selecting only ndarray-based layers.
+    """
+    excluded_layers = {
+        "extent",
+        "mid_point",
+        "angle",
+        "crs",
+        "stats",
+        "animations",
+        "particles",
+        "interactivity",
+    }
+
+    first_group_key = next(iter(datasets.keys()))
+    group = datasets[first_group_key]
+    dataset_kwargs = {}
+
+    for layer_name, layer_value in group.items():
+        if layer_name in excluded_layers:
+            continue
+        if not isinstance(layer_value, np.ndarray):
+            continue
+
+        if layer_name == "bathymetry":
+            dataset_kwargs[layer_name] = {
+                "type": "CMAP",
+                "cmap": bathymetry_cmap,
+                "norm": mpl.colors.Normalize(vmin=-4000, vmax=0),
+            }
+        else:
+            dataset_kwargs[layer_name] = {"type": "RGB", "alpha": 1.0}
+
+    return dataset_kwargs
 
 
 def make_listen_sockets():
@@ -168,7 +208,14 @@ def make_listen_sockets():
     return sockets
 
 
-def displaymap(data_path):
+def displaymap(
+    data_path,
+    museum_mode=False,
+    inactivity_timeout=120.0,
+    default_layer="overview",
+    render_fps=60,
+    year_loop_fps=1.0,
+):
     """Main map display window showing geospatial layers and overlays.
 
     This function creates and runs the primary map visualization window. It handles
@@ -193,47 +240,7 @@ def displaymap(data_path):
     sockets = make_listen_sockets()
     poller = sockets["poller"]
 
-    from matplotlib.colors import Normalize
-
-    norm = Normalize(vmin=-4000, vmax=0)
-
-    dataset_kwargs = {
-        "basemap": {"type": "RGB"},
-        "bathymetry": {"type": "CMAP"},
-        "aangepast_bouwen": {"type": "RGB", "alpha": 1.0},
-        "bescherming": {"type": "RGB", "alpha": 1.0},
-        "compartiment": {"type": "RGB", "alpha": 1.0},
-        "d_T100_000": {"type": "RGB", "alpha": 1.0},
-        "d_T100": {"type": "RGB", "alpha": 1.0},
-        "c_management": {"type": "RGB", "alpha": 1.0},
-        "risico_zone": {"type": "RGB", "alpha": 1.0},
-        "risico_zone_20": {"type": "RGB", "alpha": 1.0},
-        "schuilen": {"type": "RGB", "alpha": 1.0},
-        "overview": {"type": "RGB"},
-        "overview_tags": {"type": "RGB"},
-        "doorbraaklocaties": {"type": "RGB"},
-        "d_T1000_noord": {"type": "RGB"},
-        "d_T1000_zuid": {"type": "RGB"},
-        "d_T1000_oost": {"type": "RGB"},
-        "d_T1000_west": {"type": "RGB"},
-        "d_T1000_barendrecht": {"type": "RGB"},
-        "d_T10_000_noord": {"type": "RGB"},
-        "d_T10_000_zuid": {"type": "RGB"},
-        "d_T10_000_oost": {"type": "RGB"},
-        "d_T10_000_west": {"type": "RGB"},
-        "d_T10_000_barendrecht": {"type": "RGB"},
-        "d_T100_000_1_noord": {"type": "RGB"},
-        "d_T100_000_1_zuid": {"type": "RGB"},
-        "d_T100_000_1_oost": {"type": "RGB"},
-        "d_T100_000_1_west": {"type": "RGB"},
-        "d_T100_000_1_barendrecht": {"type": "RGB"},
-        "d_T100_000_1_vp": {"type": "RGB"},
-        "d_T100_000_1_hw": {"type": "RGB"},
-        "d_T100_000_noord": {"type": "RGB"},
-        "d_T100_000_zuid": {"type": "RGB"},
-        "d_T100_000_oost": {"type": "RGB"},
-        "d_T100_000_west": {"type": "RGB"},
-    }
+    dataset_kwargs = build_dataset_kwargs(datasets)
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
@@ -249,9 +256,30 @@ def displaymap(data_path):
             mask_layer=None,
             i_max=127,
             aspect_ratio=1920 / 1080,
+            target_fps=render_fps,
         )
     except Exception as e:
         print(e)
+        return
+
+    if default_layer in dataset_kwargs:
+        display.change_layer(default_layer)
+
+    available_years = sorted([year for year in datasets.keys() if year != ""])
+    auto_year_loop = museum_mode and len(available_years) > 1 and year_loop_fps > 0
+    year_loop_interval = 1.0 / year_loop_fps if auto_year_loop else None
+    next_year_switch = time.monotonic() + year_loop_interval if auto_year_loop else None
+    current_year_index = 0
+
+    if auto_year_loop:
+        display.change_year(available_years[current_year_index])
+
+    last_activity = time.monotonic()
+
+    def mark_activity():
+        nonlocal last_activity
+        last_activity = time.monotonic()
+
     coords = None
     while True:
         socks = dict(poller.poll(10))
@@ -269,18 +297,25 @@ def displaymap(data_path):
                 display.display_mask()
             else:
                 display.change_layer(layer)
+            mark_activity()
 
         if socket_slice in socks and socks[socket_slice] == zmq.POLLIN:
             topic, message = socket_slice.recv(zmq.DONTWAIT).split()
             slice_index = float(message)
             display.change_line_index(slice_index)
+            mark_activity()
 
         if socket_year in socks and socks[socket_year] == zmq.POLLIN:
             topic, message = socket_year.recv(zmq.DONTWAIT).split()
             year = message.decode("utf-8")
             display.change_year(year)
+            mark_activity()
 
-        if socket_hands in socks and socks[socket_hands] == zmq.POLLIN:
+        if (
+            not museum_mode
+            and socket_hands in socks
+            and socks[socket_hands] == zmq.POLLIN
+        ):
             topic, coords = socket_hands.recv(zmq.DONTWAIT).split()
             coords = coords.decode("utf-8")
             xcoord, ycoord = coords.split(",")
@@ -288,8 +323,70 @@ def displaymap(data_path):
             ycoord = float(ycoord)
             coords = (xcoord, ycoord)
             display.start_hand_tracking(coords)
+            mark_activity()
+
+        now = time.monotonic()
+        if auto_year_loop and now >= next_year_switch:
+            current_year_index = (current_year_index + 1) % len(available_years)
+            display.change_year(available_years[current_year_index])
+            next_year_switch = now + year_loop_interval
+
+        if (
+            museum_mode
+            and inactivity_timeout > 0
+            and now - last_activity >= inactivity_timeout
+            and display.current_layer != default_layer
+        ):
+            display.change_layer(default_layer)
+            last_activity = now
 
         display.draw_layers()
+
+
+def museum_button_publisher():
+    """Publish a fixed 5-button command set for museum kiosk usage.
+
+    Mappings:
+        1: default overview
+        2: water depth
+        3: risk zone
+        4: adjusted building strategy
+        5: compartmentalisation strategy
+    """
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    socket.setsockopt(zmq.CONFLATE, 1)
+    socket.bind("tcp://*:5556")
+
+    key_to_layer = {
+        pygame.K_1: "overview,layer",
+        pygame.K_2: "d_T100,layer",
+        pygame.K_3: "risico_zone,layer",
+        pygame.K_4: "aangepast_bouwen,layer",
+        pygame.K_5: "compartiment,layer",
+    }
+
+    pygame.init()
+    screen = pygame.display.set_mode((420, 120))
+    pygame.display.set_caption("Museum Button Publisher")
+    font = pygame.font.Font(None, 24)
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN and event.key in key_to_layer:
+                socket.send_string(f"maps {key_to_layer[event.key]}")
+
+        screen.fill((30, 30, 30))
+        text = font.render("Museum keys: 1 2 3 4 5", True, (240, 240, 240))
+        screen.blit(text, (30, 45))
+        pygame.display.flip()
+        time.sleep(0.02)
+
+    pygame.quit()
+    sys.exit()
 
 
 def displaystats(data_path):

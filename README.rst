@@ -132,6 +132,144 @@ Create an ``input.json`` configuration file in the vcl package directory. **Requ
     # Keyboard-only mode
     vcl --no-midi --satellite
 
+Museum Mode
+-----------
+
+For the museum kiosk setup, VCL can run in a simplified 2-process mode:
+
+* **Process 1**: fixed input publisher for the five buttons
+* **Process 2**: the single beamer display process
+
+Museum mode disables the camera-based modules, hand tracking, UID detection,
+stats window, slice window, and MIDI input. It also supports an inactivity
+timeout and a slow automatic year loop.
+
+**Direct startup command:**
+
+.. code-block:: bash
+
+    vcl --museum --default-layer overview --inactivity-timeout 120 --render-fps 30 --year-loop-fps 1
+
+**Cross-platform startup wrapper from this repository:**
+
+.. code-block:: bash
+
+    python scripts/start_museum.py
+
+On Windows:
+
+.. code-block:: powershell
+
+    py scripts\start_museum.py
+
+The older shell wrapper remains available for macOS/Linux convenience:
+
+.. code-block:: bash
+
+    ./scripts/start_museum.sh
+
+The startup wrapper reads these environment variables if you want to override
+the defaults without editing the script:
+
+* ``DEFAULT_LAYER``
+* ``INACTIVITY_TIMEOUT``
+* ``RENDER_FPS``
+* ``YEAR_LOOP_FPS``
+
+**Watchdog wrapper:**
+
+.. code-block:: bash
+
+    python scripts/watchdog_museum.py
+
+On Windows:
+
+.. code-block:: powershell
+
+    py scripts\watchdog_museum.py
+
+The watchdog restarts the museum runtime whenever it exits. By default it waits
+5 seconds before restarting. You can change that with ``VCL_RESTART_DELAY``.
+
+**Path handling:**
+
+The Python startup wrapper is path-independent inside the repository. It resolves
+the repository root from its own location and then looks for a Python interpreter
+in this order:
+
+* ``PYTHON_BIN`` if set
+* the current Python executable
+* ``.venv/bin/python``
+* ``.venv/Scripts/python.exe``
+
+OS-level service definitions still need an absolute path somewhere because that
+is a requirement of the operating system service manager, not of VCL itself.
+To avoid hand-editing those paths, generate the service files from this repo.
+
+**macOS launchd setup:**
+
+1. Generate the plist:
+
+.. code-block:: bash
+
+    python scripts/generate_museum_service.py launchd ~/Library/LaunchAgents/com.openearth.vcl.museum.plist
+
+2. Load it:
+
+.. code-block:: bash
+
+    launchctl unload ~/Library/LaunchAgents/com.openearth.vcl.museum.plist 2>/dev/null || true
+    launchctl load ~/Library/LaunchAgents/com.openearth.vcl.museum.plist
+
+3. Inspect logs if needed:
+
+.. code-block:: bash
+
+    tail -f ~/Library/Logs/vcl-museum.stdout.log
+    tail -f ~/Library/Logs/vcl-museum.stderr.log
+
+The example file ``scripts/com.openearth.vcl.museum.plist.example`` is now a
+placeholder template for reference.
+
+**Linux systemd setup:**
+
+1. Generate the unit:
+
+.. code-block:: bash
+
+    python scripts/generate_museum_service.py systemd ~/.config/systemd/user/vcl-museum.service
+
+2. Enable and start it:
+
+.. code-block:: bash
+
+    systemctl --user daemon-reload
+    systemctl --user enable vcl-museum.service
+    systemctl --user start vcl-museum.service
+
+3. Inspect logs:
+
+.. code-block:: bash
+
+    journalctl --user -u vcl-museum.service -f
+
+The example file ``scripts/vcl-museum.service.example`` is also a placeholder
+template for reference.
+
+**Windows scheduled task setup:**
+
+Use Task Scheduler to start the watchdog at login. A typical action is:
+
+* Program/script: ``py``
+* Add arguments: ``scripts\watchdog_museum.py``
+* Start in: the repository root
+
+If you prefer the full Python path instead of ``py``, point the task at the
+interpreter inside ``.venv\Scripts\python.exe``.
+
+For Windows there is no checked-in task XML yet, but the launcher and watchdog
+are already cross-platform.
+
 Command-Line Options
 --------------------
 

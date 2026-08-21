@@ -70,6 +70,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         i_max: Optional[int] = 300,
         screen_size: Optional[Tuple[int, int]] = (800, 600),
         aspect_ratio: Optional[float] = 2 / 1,
+        target_fps: Optional[int] = 60,
     ):
         """
         Initialize a DisplayMap window.
@@ -115,6 +116,7 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         self.bottom_text = None
         self.hand_tracking = None
+        self.target_fps = max(1, int(target_fps))
 
     def draw_line(self):
         """
@@ -579,7 +581,7 @@ class DisplayMap(PygameWindow.PygameWindow):
             self.draw_hand_tracking()
 
         pygame.display.flip()
-        self.clock.tick(60)
+        self.clock.tick(self.target_fps)
 
     def go_fullscreen(self):
         """

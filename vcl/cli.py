@@ -139,6 +139,38 @@ def test(datasets):
 @click.option("--uid/--no-uid", default=False)
 @click.option("--preprocess/--no-preprocess", default=False)
 @click.option(
+    "--museum/--no-museum",
+    default=False,
+    help="Run in museum kiosk mode (single beamer screen, no camera/hand tracking).",
+)
+@click.option(
+    "--inactivity-timeout",
+    default=120.0,
+    type=float,
+    show_default=True,
+    help="Seconds of inactivity before returning to the default layer (museum mode).",
+)
+@click.option(
+    "--default-layer",
+    default="basemap",
+    show_default=True,
+    help="Layer shown by default and after inactivity timeout (museum mode).",
+)
+@click.option(
+    "--render-fps",
+    default=60,
+    type=int,
+    show_default=True,
+    help="Render loop FPS for the beamer screen.",
+)
+@click.option(
+    "--year-loop-fps",
+    default=1.0,
+    type=float,
+    show_default=True,
+    help="How fast the automatic year-loop advances (museum mode).",
+)
+@click.option(
     "--calibrate",
     is_flag=True,
     help="Run camera calibration using 4 AprilTags and exit.",
@@ -151,6 +183,11 @@ def main(
     hand_tracking,
     uid,
     preprocess,
+    museum,
+    inactivity_timeout,
+    default_layer,
+    render_fps,
+    year_loop_fps,
     calibrate,
     args=None,
 ):
@@ -206,6 +243,15 @@ def main(
     data_dir = input_dict.get("basepath")
     data_dir = Path(data_dir)
 
+    if museum:
+        # Museum mode intentionally disables high-cost optional modules.
+        satellite = True
+        contour = False
+        stats = False
+        midi = False
+        hand_tracking = False
+        uid = False
+
     executor = concurrent.futures.ProcessPoolExecutor(
         max_workers=10,
         initializer=start_thread_to_terminate_when_parent_process_dies,
@@ -222,12 +268,22 @@ def main(
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     task = executor.submit(test, datasets)
 
-    if midi:
+    if museum:
+        executor.submit(vcl.display_pygame.museum_button_publisher)
+    elif midi:
         executor.submit(vcl.display_pygame.midi_board, datasets)
     else:
         executor.submit(vcl.display_pygame.keyboard_publisher)
     if satellite:
-        executor.submit(vcl.display_pygame.displaymap, datasets)
+        executor.submit(
+            vcl.display_pygame.displaymap,
+            datasets,
+            museum,
+            inactivity_timeout,
+            default_layer,
+            render_fps,
+            year_loop_fps,
+        )
     if contour:
         # executor.submit(vcl.display.satellite_window2, datasets)
         executor.submit(vcl.display_pygame.displayslice, datasets)

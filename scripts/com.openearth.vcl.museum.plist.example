@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.openearth.vcl.museum</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON_BIN__</string>
+        <string>__REPO_DIR__/scripts/watchdog_museum.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>__LOG_DIR__/vcl-museum.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__LOG_DIR__/vcl-museum.stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DEFAULT_LAYER</key>
+        <string>overview</string>
+        <key>INACTIVITY_TIMEOUT</key>
+        <string>120</string>
+        <key>RENDER_FPS</key>
+        <string>30</string>
+        <key>YEAR_LOOP_FPS</key>
+        <string>1</string>
+        <key>VCL_RESTART_DELAY</key>
+        <string>5</string>
+    </dict>
+</dict>
+</plist>

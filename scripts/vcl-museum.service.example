@@ -1,0 +1,18 @@
+[Unit]
+Description=Virtual Climate Lab Museum Mode
+After=network.target graphical.target
+
+[Service]
+Type=simple
+WorkingDirectory=__REPO_DIR__
+Environment=DEFAULT_LAYER=overview
+Environment=INACTIVITY_TIMEOUT=120
+Environment=RENDER_FPS=30
+Environment=YEAR_LOOP_FPS=1
+Environment=VCL_RESTART_DELAY=5
+ExecStart=__PYTHON_BIN__ __REPO_DIR__/scripts/watchdog_museum.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
