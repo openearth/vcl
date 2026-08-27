@@ -251,6 +251,7 @@ def displaymap(
             start_year="1970",
             flow_data={},
             animations_data=datasets[""]["animations"],
+            sounds=datasets[""]["sounds"],
             dataset_kwargs=dataset_kwargs,
             bg_layer="basemap",
             mask_layer=None,
@@ -295,6 +296,8 @@ def displaymap(
                 display.display_overlay(layer)
             elif view_type == "mask":
                 display.display_mask()
+            elif view_type == "animation":
+                display.play_animation(layer)
             else:
                 display.change_layer(layer)
             mark_activity()
@@ -335,9 +338,12 @@ def displaymap(
             museum_mode
             and inactivity_timeout > 0
             and now - last_activity >= inactivity_timeout
-            and display.current_layer != default_layer
+            and (display.current_layer != default_layer or display.show_animation)
         ):
-            display.change_layer(default_layer)
+            if default_layer == "basemap":
+                display.change_layer("None")
+            else:
+                display.change_layer(default_layer)
             last_activity = now
 
         display.draw_layers()
@@ -359,12 +365,38 @@ def museum_button_publisher():
     socket.bind("tcp://*:5556")
 
     key_to_layer = {
-        pygame.K_1: "overview,layer",
-        pygame.K_2: "d_T100,layer",
+        pygame.K_1: "bathymetry,layer",
+        pygame.K_2: "satellite,animation",
         pygame.K_3: "risico_zone,layer",
         pygame.K_4: "aangepast_bouwen,layer",
         pygame.K_5: "compartiment,layer",
     }
+
+    def change_layer(text):
+        layer_type = text.split(",")[1]
+        global current_layer, current_overlay, current_tide, current_overlays
+        if text.split(",")[0] == "":
+            socket.send_string(f"maps {text}")
+            current_layer = ""
+            current_tide = ""
+        if current_layer == text or current_tide == text:
+            socket.send_string(f"maps None,{layer_type}")
+            if layer_type == "layer":
+                current_layer = ""
+            elif layer_type == "tide":
+                current_tide = ""
+        else:
+            socket.send_string(f"maps {text}")
+            if layer_type == "layer":
+                current_layer = text
+            elif layer_type == "tide":
+                current_tide = text
+            elif layer_type == "overlay" and text in current_overlays:
+                current_overlay = ""
+                current_overlays.remove(text)
+            elif layer_type == "overlay" and text not in current_overlays:
+                current_overlay = text
+                current_overlays.append(text)
 
     pygame.init()
     screen = pygame.display.set_mode((420, 120))
@@ -377,7 +409,8 @@ def museum_button_publisher():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN and event.key in key_to_layer:
-                socket.send_string(f"maps {key_to_layer[event.key]}")
+                # socket.send_string(f"maps {key_to_layer[event.key]}")
+                change_layer(key_to_layer[event.key])
 
         screen.fill((30, 30, 30))
         text = font.render("Museum keys: 1 2 3 4 5", True, (240, 240, 240))
@@ -689,7 +722,7 @@ def keyboard_publisher():
                 if event.key == pygame.K_1:
                     change_layer("bathymetry,layer")
                 elif event.key == pygame.K_2:
-                    change_layer(f"{waterdiepte[0]},layer")
+                    change_layer("satellite,animation")
                 elif event.key == pygame.K_3:
                     change_layer(f"{risico_zone[0]},layer")
                 elif event.key == pygame.K_4:

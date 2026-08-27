@@ -6,10 +6,16 @@
         "bathymetry": "originele_bodem.tif",
         "extent": "bounding_box.shp",
         "layers": {},
-        "animations": {},
+        "animations": {
+            "satellite": "landsat_annual/"
+        },
         "interactivity": {},
         "stats": {},
         "particles": {},
+        "sound": {
+            "basemap": "sounds/low-tide.mp3",
+            "satellite": "sounds/high-tide.mp3"
+        },
         "extra_info": {}
     }
 }

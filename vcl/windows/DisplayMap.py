@@ -64,6 +64,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         flow_data: Optional[dict] = None,
         bg_layer: Optional[str] = None,
         animations_data: Optional[dict] = None,
+        sounds: Optional[dict] = {},
         mask_layer: Optional[str] = None,
         start_year: Optional[str] = "",
         scenarios: Optional[List[str]] = ["Ref"],
@@ -100,6 +101,8 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         self.flow_data = flow_data
         self.animation_data = animations_data
+        self.animation_layer = None
+        self.sounds = sounds
         self.i = 0
         self.i_max = i_max
         self.overlays = []
@@ -397,14 +400,25 @@ class DisplayMap(PygameWindow.PygameWindow):
             layer: Name of the layer to display, or "animation" to play animation.
         """
         if layer == "animation":
-            # self.current_layer = ""
             if self.current_layer in self.animation_data:
                 self.play_animation()
-            # self.current_layer = ""
         else:
             if self.show_animation:
                 self.play_animation()
             self.current_layer = layer
+            if (
+                self.current_layer is None
+                or self.current_layer not in self.dataset_kwargs
+            ):
+                sound_file = self.sounds.get(self.bg_layer, None)
+            else:
+                sound_file = self.sounds.get(self.current_layer, None)
+            if sound_file is not None:
+                pygame.mixer.music.load(sound_file)
+                pygame.mixer.music.set_volume(0.3)
+                pygame.mixer.music.play(-1)
+            else:
+                pygame.mixer.music.stop()
 
     def display_overlay(self, overlay):
         """
@@ -459,7 +473,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         if layer in self.dataset_kwargs:
             self.dataset_kwargs[layer]["alpha"] = alpha
 
-    def play_animation(self):
+    def play_animation(self, animation_layer=None):
         """
         Toggle animation playback on or off.
 
@@ -469,11 +483,15 @@ class DisplayMap(PygameWindow.PygameWindow):
         if not self.show_animation:
             self.show_animation = True
             self.animation_frame = 0
+            self.animation_layer = animation_layer
         else:
             self.show_animation = False
             self.bottom_text = None
+            self.animation_layer = None
 
-    def update_animation(self):
+    def update_animation(
+        self, frame_time=50, final_frame_time=3000, show_text=False, animation_data=None
+    ):
         """
         Update and render the current animation frame.
 
@@ -482,27 +500,26 @@ class DisplayMap(PygameWindow.PygameWindow):
         Renders the frame image and associated text overlay.
         """
         now = pygame.time.get_ticks()
-        frame_time = 200
-        if self.animation_frame == len(self.animation_data[self.current_layer]) - 1:
-            frame_time = 3000
+        if animation_data is None:
+            animation_data = self.animation_data[self.current_layer]
+
+        if self.animation_frame == len(animation_data) - 1:
+            frame_time = final_frame_time
         if now - self.animation_update_time > frame_time:
-            self.animation_frame = (self.animation_frame + 1) % len(
-                self.animation_data[self.current_layer]
-            )
+            self.animation_frame = (self.animation_frame + 1) % len(animation_data)
             self.animation_update_time = now
 
         frame_surface = self.create_pygame_surface_from_rgb(
-            self.animation_data[self.current_layer][self.animation_frame]["frame"]
+            animation_data[self.animation_frame]["frame"]
         )
         frame_surface = pygame.transform.scale(
             frame_surface, (self.img_width, self.img_height)
         )
         self.screen.blit(frame_surface, (self.x_pos, self.y_pos))
 
-        frame_text = self.animation_data[self.current_layer][self.animation_frame][
-            "text"
-        ]
-        self.bottom_text = frame_text
+        if show_text:
+            frame_text = animation_data[self.animation_frame]["text"]
+            self.bottom_text = frame_text
 
     def start_hand_tracking(self, coords):
         """
@@ -552,7 +569,11 @@ class DisplayMap(PygameWindow.PygameWindow):
         if self.current_layer in self.dataset_kwargs and not self.show_animation:
             self.draw_layer(self.current_layer)
         if self.show_animation:
-            self.update_animation()
+            self.update_animation(
+                frame_time=1000,
+                final_frame_time=3000,
+                animation_data=self.animation_data[self.animation_layer],
+            )
         for overlay in self.overlays:
             self.draw_layer(overlay)
 
@@ -563,15 +584,6 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         if self.show_mask:
             self.draw_layer(self.mask_layer)
-
-        self.draw_line()
-        # pygame.draw.line(
-        #     self.screen,
-        #     (0, 0, 0),
-        #     (self.x_pos, 0.80 * self.img_height + self.y_pos),
-        #     (self.img_width, 0.80 * self.img_height + self.y_pos),
-        #     2,
-        # )
 
         self.draw_text()
 

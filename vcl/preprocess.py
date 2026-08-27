@@ -251,7 +251,7 @@ def preprocess_common(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
                 animation_data.append({"frame": layer_data, "text": year})
-            elif layer_path.suffix == ".tif":
+            elif layer_path.suffix == ".tif" or layer_path.suffix == ".tiff":
                 layer_data = preprocess_tif(
                     file_path=layer_path, layer=layer, extra_info=extra_info
                 )
@@ -267,6 +267,13 @@ def preprocess_common(
             file_path=layer_path, layer=layer, extra_info=extra_info
         )
         preprocessed["particles"][layer] = particle_data
+
+    logger.info("Preprocessing sound files...")
+    preprocessed["sounds"] = {}
+    pbar = tqdm(datasets["sound"], unit="layer")
+    for layer in pbar:
+        layer_path = base_path / datasets["sound"][layer]
+        preprocessed["sounds"][layer] = layer_path
 
     logger.info("Preprocessing interactivity polygons...")
     preprocessed["interactivity"] = {}
