@@ -114,7 +114,12 @@ class PygameWindow:
         self.adjust_aspect_ratio()
         self.font = pygame.font.Font(None, 96)
 
-        pygame.mixer.init()
+        self.audio_available = False
+        try:
+            pygame.mixer.init()
+            self.audio_available = True
+        except pygame.error as e:
+            print(f"Audio disabled: {e}")
 
     def prepare_surface_dict(self):
         """

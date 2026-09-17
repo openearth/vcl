@@ -3,7 +3,7 @@ name = "vcl"
 version = "0.1.0"
 description = "Virtual Climate Lab: an interactive table to discuss the future of your environment."
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 license = "GPL-3.0-only"
 authors = [
     { name = "Guus van Hemert", email = "guus.vanhemert@deltares.nl" }
@@ -40,8 +40,6 @@ dependencies = [
     "pyproj==3.6.1",
     "rioxarray==0.15.0",
     "zarr>=3.0.1",
-    "rtmidi>=2.5.0",
-    "python-rtmidi>=1.5.8",
 ]
 
 [project.optional-dependencies]
