@@ -451,6 +451,18 @@ class PygameWindow:
         # Draw text
         self.screen.blit(text_surface, (box_x + padding, box_y + padding))
 
+    def disable_mouse(self):
+        """
+        Disable the mouse cursor.
+        """
+        pygame.mouse.set_visible(False)
+
+    def enable_mouse(self):
+        """
+        Enable the mouse cursor.
+        """
+        pygame.mouse.set_visible(True)
+
     def enter_fullscreen(self):
         """
         Enter borderless fullscreen immediately.

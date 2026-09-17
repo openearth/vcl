@@ -276,6 +276,7 @@ def displaymap(
 
     if museum_mode:
         display.enter_fullscreen()
+        display.disable_mouse()
 
     if default_layer in dataset_kwargs:
         display.change_layer(default_layer)
