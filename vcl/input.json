@@ -2,7 +2,7 @@
     "basepath": "/Users/hemert/data/vcl/terschelling_museum/",
     "crs": "EPSG:28992",
     "common": {
-        "basemap": "ahn-photo.tif",
+        "basemap": "ahn-photo-filled.tif",
         "bathymetry": "originele_bodem.tif",
         "extent": "bounding_box.shp",
         "layers": {

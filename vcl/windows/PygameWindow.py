@@ -451,6 +451,67 @@ class PygameWindow:
         # Draw text
         self.screen.blit(text_surface, (box_x + padding, box_y + padding))
 
+    def enter_fullscreen(self):
+        """
+        Enter borderless fullscreen immediately.
+
+        This is the programmatic API used by museum mode startup.
+        """
+        self.is_fullscreen = True
+
+        window = gw.getActiveWindow()
+        current_monitor = None
+        monitors = get_monitors()
+
+        if window is not None:
+            for monitor in monitors:
+                if (
+                    monitor.x <= window.center.x < monitor.x + monitor.width
+                    and monitor.y <= window.center.y < monitor.y + monitor.height
+                ):
+                    current_monitor = monitor
+                    break
+
+        if current_monitor is None:
+            current_monitor = monitors[0]
+
+        self.screen = pygame.display.set_mode(
+            (current_monitor.width, current_monitor.height), pygame.NOFRAME
+        )
+
+        if window is not None:
+            window.moveTo(current_monitor.x, current_monitor.y)
+
+    def exit_fullscreen(self):
+        """
+        Return to the configured resizable window size.
+        """
+        self.is_fullscreen = False
+
+        window = gw.getActiveWindow()
+        current_monitor = None
+        monitors = get_monitors()
+
+        if window is not None:
+            for monitor in monitors:
+                if (
+                    monitor.x <= window.center.x < monitor.x + monitor.width
+                    and monitor.y <= window.center.y < monitor.y + monitor.height
+                ):
+                    current_monitor = monitor
+                    break
+
+        self.screen = pygame.display.set_mode(
+            (self.screen_width, self.screen_height), pygame.RESIZABLE
+        )
+
+        if window is not None and current_monitor is not None:
+            new_x = current_monitor.x + (current_monitor.width - self.screen_width) // 2
+            new_y = (
+                current_monitor.y + (current_monitor.height - self.screen_height) // 2
+            )
+            window.moveTo(new_x, new_y)
+
     def go_fullscreen(self):
         """
         Handle fullscreen toggle and mouse interaction events.
@@ -466,68 +527,11 @@ class PygameWindow:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_f:
-                    self.is_fullscreen = not self.is_fullscreen
-                    window = gw.getActiveWindow()
                     if self.is_fullscreen:
-                        monitors = get_monitors()
-                        current_monitor = None
-                        for monitor in monitors:
-                            # Check if the window's center is within this monitor's bounds
-                            if (
-                                monitor.x <= window.center.x < monitor.x + monitor.width
-                                and monitor.y
-                                <= window.center.y
-                                < monitor.y + monitor.height
-                            ):
-                                current_monitor = monitor
-                                break
-
-                        if current_monitor:
-                            # Go to borderless mode with the new full-screen size
-                            self.screen = pygame.display.set_mode(
-                                (current_monitor.width, current_monitor.height),
-                                pygame.NOFRAME,
-                            )
-
-                            # Manually reposition the new borderless window to the top-left of the current monitor
-                            window.moveTo(current_monitor.x, current_monitor.y)
+                        self.exit_fullscreen()
 
                     else:
-                        # Go back to a regular windowed mode
-                        # Define your desired windowed size
-                        windowed_width, windowed_height = (
-                            self.screen_width,
-                            self.screen_height,
-                        )
-
-                        self.screen = pygame.display.set_mode(
-                            (windowed_width, windowed_height), pygame.RESIZABLE
-                        )
-
-                        # Reposition the window to the center of the current monitor
-                        monitors = get_monitors()
-                        current_monitor = None
-                        for monitor in monitors:
-                            if (
-                                monitor.x <= window.center.x < monitor.x + monitor.width
-                                and monitor.y
-                                <= window.center.y
-                                < monitor.y + monitor.height
-                            ):
-                                current_monitor = monitor
-                                break
-
-                        if current_monitor:
-                            # Calculate the new position to center the window on the monitor
-                            new_x = (
-                                current_monitor.x
-                                + (current_monitor.width - windowed_width) // 2
-                            )
-                            new_y = (
-                                current_monitor.y
-                                + (current_monitor.height - windowed_height) // 2
-                            )
-                            window.moveTo(new_x, new_y)
+                        self.enter_fullscreen()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
