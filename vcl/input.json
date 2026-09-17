@@ -5,12 +5,17 @@
         "basemap": "ahn-photo.tif",
         "bathymetry": "originele_bodem.tif",
         "extent": "bounding_box.shp",
-        "layers": {},
+        "layers": {
+            "salt_concentration": "salt_concentration.tif"
+        },
         "animations": {
             "satellite": "landsat_annual/"
         },
         "interactivity": {},
         "stats": {},
+        "panels": {
+            "directory": "cbars"
+        },
         "particles": {},
         "sound": {
             "basemap": "sounds/low-tide.mp3",

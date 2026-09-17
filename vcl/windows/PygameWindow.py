@@ -9,7 +9,7 @@ Classes:
     PygameWindow: Base class for creating pygame windows with dataset visualization.
 """
 
-from typing import Optional, Tuple, Union, List
+from typing import Optional, Tuple, Union, List, Literal
 
 import matplotlib as mpl
 import matplotlib.colors
@@ -98,6 +98,9 @@ class PygameWindow:
         self.clock = pygame.time.Clock()
         self.surfaces = self.prepare_surface_dict()
         self.convert_dataset_to_surfaces()
+
+        self.panels = {}
+        self.convert_panels_to_surfaces()
 
         self.current_year = next(iter(self.datasets.keys()), None)
         if not bg_layer:
@@ -294,6 +297,12 @@ class PygameWindow:
 
         return surface
 
+    def convert_panels_to_surfaces(self):
+        for year, dataset_dict in self.datasets.items():
+            for panel_name, panel_path in dataset_dict["panels"].items():
+                panel_image = pygame.image.load(panel_path).convert_alpha()
+                self.panels[panel_name] = panel_image
+
     def adjust_aspect_ratio(self):
         """
         Adjust image dimensions to maintain target aspect ratio within screen bounds.
@@ -320,6 +329,68 @@ class PygameWindow:
 
         self.x_pos = (self.screen_width - new_image_width) // 2
         self.y_pos = (self.screen_height - new_image_height) // 2
+
+    def draw_info_panel(
+        self,
+        colour,
+        border_colour,
+        screen_ratio_height,
+        screen_ratio_width,
+        position: Literal[
+            "topleft", "topright", "bottomright", "bottomleft"
+        ] = "topright",
+        image=None,
+    ):
+        if position == "topleft":
+            start_x = self.x_pos
+            start_y = self.y_pos
+            width = self.img_width * screen_ratio_width
+            height = self.img_height * screen_ratio_height
+        elif position == "topright":
+            start_x = self.x_pos + (1 - screen_ratio_width) * self.img_width
+            start_y = self.y_pos
+            width = self.img_width * screen_ratio_width
+            height = self.img_height * screen_ratio_height
+        elif position == "bottomright":
+            start_x = self.x_pos + (1 - screen_ratio_width) * self.img_width
+            start_y = self.y_pos + (1 - screen_ratio_height) * self.img_height
+            width = self.img_width * screen_ratio_width
+            height = self.img_height * screen_ratio_height
+        elif position == "bottomleft":
+            start_x = self.x_pos
+            start_y = self.y_pos + (1 - screen_ratio_height) * self.img_height
+            width = self.img_width * screen_ratio_width
+            height = self.img_height * screen_ratio_height
+
+        if image is None:
+            pygame.draw.rect(
+                self.screen,
+                colour,
+                (
+                    start_x,
+                    start_y,
+                    width,
+                    height,
+                ),
+            )
+        else:
+            # scale image to panel size
+            panel_img = pygame.transform.smoothscale(image, (int(width), int(height)))
+
+            # draw image
+            self.screen.blit(panel_img, (start_x, start_y))
+
+        # pygame.draw.rect(
+        #     self.screen,
+        #     border_colour,
+        #     (
+        #         start_x,
+        #         start_y,
+        #         width,
+        #         height,
+        #     ),
+        #     2,
+        # )
 
     def draw_textbox(self, point, text, font):
         """

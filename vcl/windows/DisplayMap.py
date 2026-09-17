@@ -363,7 +363,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         text_bottom = self.font.render(
             text,
             True,
-            (0, 0, 0),
+            (255, 255, 255),
         )
         text_bottom_rect = text_bottom.get_rect(
             topright=(
@@ -481,6 +481,7 @@ class DisplayMap(PygameWindow.PygameWindow):
         """
         self.animation_update_time = pygame.time.get_ticks()
         if not self.show_animation:
+            self.change_layer(None)
             self.show_animation = True
             self.animation_frame = 0
             self.animation_layer = animation_layer
@@ -573,6 +574,7 @@ class DisplayMap(PygameWindow.PygameWindow):
                 frame_time=1000,
                 final_frame_time=3000,
                 animation_data=self.animation_data[self.animation_layer],
+                show_text=True,
             )
         for overlay in self.overlays:
             self.draw_layer(overlay)
@@ -584,6 +586,16 @@ class DisplayMap(PygameWindow.PygameWindow):
 
         if self.show_mask:
             self.draw_layer(self.mask_layer)
+
+        if self.current_layer in self.panels:
+            self.draw_info_panel(
+                colour=(255, 255, 255),
+                border_colour=(0, 0, 0),
+                screen_ratio_width=4 / 10,
+                screen_ratio_height=1 / 10,
+                position="topright",
+                image=self.panels[self.current_layer],
+            )
 
         self.draw_text()
 

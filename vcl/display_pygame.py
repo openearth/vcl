@@ -21,6 +21,7 @@ Communication:
 
 import collections
 import concurrent.futures
+import logging
 import os
 import sys
 import threading
@@ -37,6 +38,11 @@ import mido
 import pygame
 import zmq
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgb
+
+try:
+    from pynput import keyboard as pynput_keyboard
+except ImportError:
+    pynput_keyboard = None
 
 import vcl.preprocess
 
@@ -70,24 +76,20 @@ windfarm_cmap = [
 ]
 windfarm_cmap = ListedColormap(windfarm_cmap)
 
+logger = logging.getLogger(__name__)
+
 # Custom colormap for bathymetry (depth) visualization
 # Color scale transitions from deep blue (deep water) to yellow/red (shallow/land)
 bathymetry_cmap = [
-    # (0, (0 / 255, 0 / 255, 62 / 255)),
-    (0, ((0 / 255, 0 / 255, 53 / 255))),
-    (0.5, (10 / 255, 20 / 255, 220 / 255)),
-    (0.75, (0 / 255, 0 / 255, 205 / 255)),
-    (0.8875, (90 / 255, 213 / 255, 6 / 255)),
-    (0.9625, (181 / 255, 211 / 255, 4 / 255)),
-    (0.9875, (215 / 255, 215 / 255, 14 / 255)),
-    (0.9975, (218 / 255, 6 / 255, 22 / 255)),
-    (1, (222 / 255, 90 / 255, 93 / 255)),
-]  # Deep sea blue → shallow water blue → coastal green → land yellow/red
+    (0, (10 / 255, 28 / 255, 92 / 255)),
+    (0.13, (10 / 255, 173 / 255, 127 / 255)),  # 0m
+    (0.2, (24 / 255, 181 / 255, 81 / 255)),  # 10m
+    (0.5, (240 / 255, 233 / 255, 50 / 255)),
+    (1, (237 / 255, 189 / 255, 92 / 255)),  # 20m and above
+]
 
 # Create continuous colormap with 5000 discrete steps for smooth gradients
-bathymetry_cmap = LinearSegmentedColormap.from_list(
-    "bathy_cmap", bathymetry_cmap, N=5000
-)
+bathymetry_cmap = LinearSegmentedColormap.from_list("bathy_cmap", bathymetry_cmap, N=20)
 
 
 def build_dataset_kwargs(datasets: dict):
@@ -121,10 +123,10 @@ def build_dataset_kwargs(datasets: dict):
             dataset_kwargs[layer_name] = {
                 "type": "CMAP",
                 "cmap": bathymetry_cmap,
-                "norm": mpl.colors.Normalize(vmin=-4000, vmax=0),
+                "norm": mpl.colors.Normalize(vmin=-6, vmax=40),
             }
         else:
-            dataset_kwargs[layer_name] = {"type": "RGB", "alpha": 1.0}
+            dataset_kwargs[layer_name] = {"type": "RGB", "alpha": 0.7}
 
     return dataset_kwargs
 
@@ -241,6 +243,15 @@ def displaymap(
     poller = sockets["poller"]
 
     dataset_kwargs = build_dataset_kwargs(datasets)
+    dataset_kwargs = {
+        "basemap": {"type": "RGB", "alpha": 1},
+        "bathymetry": {
+            "type": "CMAP",
+            "cmap": bathymetry_cmap,
+            "norm": mpl.colors.Normalize(vmin=-6, vmax=40),
+        },
+        "salt_concentration": {"type": "RGB", "alpha": 0.7},
+    }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
     socket_year = sockets["year"]
@@ -364,12 +375,19 @@ def museum_button_publisher():
     socket.setsockopt(zmq.CONFLATE, 1)
     socket.bind("tcp://*:5556")
 
-    key_to_layer = {
-        pygame.K_1: "bathymetry,layer",
-        pygame.K_2: "satellite,animation",
-        pygame.K_3: "risico_zone,layer",
-        pygame.K_4: "aangepast_bouwen,layer",
-        pygame.K_5: "compartiment,layer",
+    joy_button_to_layer = {
+        0: "bathymetry,layer",
+        1: "satellite,animation",
+        2: "salt_concentration,layer",
+        3: "aangepast_bouwen,layer",
+        4: "compartiment,layer",
+    }
+    keyboard_key_to_layer = {
+        "1": "bathymetry,layer",
+        "2": "satellite,animation",
+        "3": "salt_concentration,layer",
+        "4": "aangepast_bouwen,layer",
+        "5": "compartiment,layer",
     }
 
     def change_layer(text):
@@ -397,29 +415,75 @@ def museum_button_publisher():
             elif layer_type == "overlay" and text not in current_overlays:
                 current_overlay = text
                 current_overlays.append(text)
+            elif layer_type == "animation":
+                current_layer = ""
+                current_tide = ""
+
+    pressed_keyboard_keys = set()
+    keyboard_listener = None
+
+    def on_press(key):
+        key_char = getattr(key, "char", None)
+        if key_char not in keyboard_key_to_layer or key_char in pressed_keyboard_keys:
+            return
+        pressed_keyboard_keys.add(key_char)
+        change_layer(keyboard_key_to_layer[key_char])
+
+    def on_release(key):
+        key_char = getattr(key, "char", None)
+        if key_char is not None:
+            pressed_keyboard_keys.discard(key_char)
+
+    if pynput_keyboard is not None:
+        keyboard_listener = pynput_keyboard.Listener(
+            on_press=on_press,
+            on_release=on_release,
+        )
+        keyboard_listener.start()
+    else:
+        logger.warning(
+            "pynput is not installed; museum keyboard buttons will still require a focused pygame window"
+        )
 
     pygame.init()
-    screen = pygame.display.set_mode((420, 120))
-    pygame.display.set_caption("Museum Button Publisher")
-    font = pygame.font.Font(None, 24)
+    pygame.joystick.init()
+    joysticks = []
+    for joystick_index in range(pygame.joystick.get_count()):
+        joystick = pygame.joystick.Joystick(joystick_index)
+        joystick.init()
+        joysticks.append(joystick)
 
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN and event.key in key_to_layer:
-                # socket.send_string(f"maps {key_to_layer[event.key]}")
-                change_layer(key_to_layer[event.key])
+    if not joysticks and keyboard_listener is None:
+        raise RuntimeError(
+            "museum_button_publisher needs either a joystick or pynput keyboard listener"
+        )
 
-        screen.fill((30, 30, 30))
-        text = font.render("Museum keys: 1 2 3 4 5", True, (240, 240, 240))
-        screen.blit(text, (30, 45))
-        pygame.display.flip()
-        time.sleep(0.02)
+    pressed_joystick_buttons = set()
 
-    pygame.quit()
-    sys.exit()
+    try:
+        while True:
+            pygame.event.pump()
+            for joystick_index, joystick in enumerate(joysticks):
+                for button_index, layer_name in joy_button_to_layer.items():
+                    if button_index >= joystick.get_numbuttons():
+                        pressed_joystick_buttons.discard((joystick_index, button_index))
+                        continue
+
+                    is_pressed = bool(joystick.get_button(button_index))
+                    button_key = (joystick_index, button_index)
+                    if is_pressed and button_key not in pressed_joystick_buttons:
+                        pressed_joystick_buttons.add(button_key)
+                        change_layer(layer_name)
+                    elif not is_pressed:
+                        pressed_joystick_buttons.discard(button_key)
+
+            time.sleep(0.02)
+    finally:
+        if keyboard_listener is not None:
+            keyboard_listener.stop()
+        pygame.joystick.quit()
+        pygame.quit()
+        sys.exit()
 
 
 def displaystats(data_path):
