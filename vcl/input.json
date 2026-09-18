@@ -8,7 +8,9 @@
         "layers": {
             "salt_concentration": "salt_concentration.tif",
             "gvg": "gvg_2023_clipped.tif",
-            "gvg_difference": "gvg_2100_difference_clipped.tif"
+            "gvg_difference": "gvg_2100_difference_clipped.tif",
+            "grensvlak": "grensvlak_clipped.tif",
+            "land_use": "land_use_clipped.tif"
         },
         "animations": {
             "satellite": "landsat_annual/"

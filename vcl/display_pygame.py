@@ -173,6 +173,29 @@ gvg_difference_cmap, gvg_difference_norm = from_levels_and_colors(
     gvg_difference_levels, gvg_difference_colors, extend="both"
 )
 
+colors = [
+    "#0b0887",
+    "#1122ff",
+    "#4f8be6",
+    "#63c7d8",
+    "#8bdc7b",
+    "#d7e44d",
+    "#f0c648",
+    "#ee8d33",
+    "#ef4b22",
+    "#c21f0f",
+]
+grensvlak_cmap = LinearSegmentedColormap.from_list("grensvlak_cmap", colors, N=2000)
+
+land_use_cmap = ListedColormap(
+    [
+        "#4E9A51",  # 1 natuur
+        "#E6C65C",  # 2 landbouw
+        "#4FC3F7",  # 3 recreatie
+        "#BDBDBD",  # 4 bebouwing
+    ]
+)
+
 
 def build_dataset_kwargs(datasets: dict):
     """Build layer display configuration from preprocessed datasets.
@@ -231,6 +254,17 @@ def build_display_dataset_kwargs(datasets: dict):
             "alpha": 1.0,
             "cmap": gvg_difference_cmap,
             "norm": gvg_difference_norm,
+        },
+        "grensvlak": {
+            "type": "CMAP",
+            "alpha": 1.0,
+            "cmap": grensvlak_cmap,
+            "norm": mpl.colors.Normalize(vmin=-100, vmax=5),
+        },
+        "land_use": {
+            "type": "CMAP",
+            "alpha": 1.0,
+            "cmap": land_use_cmap,
         },
     }
 
@@ -434,6 +468,17 @@ def displaymap(
             "cmap": gvg_difference_cmap,
             "norm": gvg_difference_norm,
         },
+        "grensvlak": {
+            "type": "CMAP",
+            "alpha": 1.0,
+            "cmap": grensvlak_cmap,
+            "norm": mpl.colors.Normalize(vmin=-100, vmax=5),
+        },
+        "land_use": {
+            "type": "CMAP",
+            "alpha": 1.0,
+            "cmap": land_use_cmap,
+        },
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -584,16 +629,18 @@ def museum_button_publisher():
     joy_button_to_layer = {
         0: "bathymetry,layer",
         1: "satellite,animation",
-        2: "salt_concentration,layer",
+        2: "grensvlak,layer",
         3: "gvg,layer",
         4: "gvg_difference,layer",
+        5: "land_use,layer",
     }
     keyboard_key_to_layer = {
         "1": "bathymetry,layer",
         "2": "satellite,animation",
-        "3": "salt_concentration,layer",
+        "3": "grensvlak,layer",
         "4": "gvg,layer",
         "5": "gvg_difference,layer",
+        "6": "land_use,layer",
     }
 
     def change_layer(text):
