@@ -6,7 +6,9 @@
         "bathymetry": "originele_bodem.tif",
         "extent": "bounding_box.shp",
         "layers": {
-            "salt_concentration": "salt_concentration.tif"
+            "salt_concentration": "salt_concentration.tif",
+            "gvg": "gvg_2023_clipped.tif",
+            "gvg_difference": "gvg_2100_difference_clipped.tif"
         },
         "animations": {
             "satellite": "landsat_annual/"
@@ -16,7 +18,9 @@
         "panels": {
             "directory": "cbars"
         },
-        "particles": {},
+        "particles": {
+            "current": "wadsea_small.nc"
+        },
         "sound": {
             "basemap": "sounds/low-tide.mp3",
             "satellite": "sounds/high-tide.mp3"

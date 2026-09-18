@@ -6,10 +6,10 @@ from scipy.spatial import KDTree
 # --- Constants ---
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 BACKGROUND_COLOR = (20, 20, 30)
-FLOW_SPEED = 50
-MAX_ARROWS = 1500  # The maximum number of arrows to maintain
-ARROW_SCALE = 35
-ARROWHEAD_SIZE = 10
+FLOW_SPEED = 60
+MAX_ARROWS = 300  # The maximum number of arrows to maintain
+ARROW_SCALE = 55
+ARROWHEAD_SIZE = 20
 SPAWN_THRESHOLD_MAG = 0.02
 STAGNANT_MAGNITUDE_THRESHOLD = 0.02
 OFFSCREEN_BUFFER = 50
@@ -304,8 +304,16 @@ def initialize_arrow_manager(tidal_data, screen_size):
     min_magnitude = np.min(magnitudes)
 
     # Define a scaling factor to fit the data to the screen
-    data_min_x, data_max_x = np.min(x_coords_o), np.max(x_coords_o)
-    data_min_y, data_max_y = np.min(y_coords_o), np.max(y_coords_o)
+    extent_bounds = original_dataset.get("extent_bounds")
+    if extent_bounds is None:
+        data_min_x, data_max_x = np.min(x_coords_o), np.max(x_coords_o)
+        data_min_y, data_max_y = np.min(y_coords_o), np.max(y_coords_o)
+    else:
+        min_x, min_y, max_x, max_y = extent_bounds
+        data_min_x = min_x
+        data_max_x = max_x
+        data_min_y = -max_y
+        data_max_y = -min_y
 
     scale_x = screen_width / (data_max_x - data_min_x)
     scale_y = screen_height / (data_max_y - data_min_y)

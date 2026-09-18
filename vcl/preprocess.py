@@ -191,7 +191,14 @@ def preprocess_common(
         datasets=datasets, preprocessed=preprocessed, base_path=base_path, crs=crs
     )
 
-    extra_info = {"extent": extent, "mid_point": mid_point, "angle": angle, "crs": crs}
+    rotated_extent = shapely.affinity.rotate(extent, -angle, origin=mid_point)
+    extra_info = {
+        "extent": extent,
+        "rotated_extent": rotated_extent,
+        "mid_point": mid_point,
+        "angle": angle,
+        "crs": crs,
+    }
     extra_info = datasets.get("extra_info", {}) | extra_info
 
     logger.info("Preprocessing layers...")
@@ -473,7 +480,11 @@ def preprocess_tif(file_path: Path, layer: str, extra_info: dict):
         warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
         with rasterio.open(file_path) as src:
             bounds = src.bounds
-            data = src.read()
+            data = src.read().astype(np.float32)
+            nodata = src.nodata
+
+    if nodata is not None:
+        data[data == nodata] = np.nan
 
     extent_bbox = extra_info["extent"].bounds
     cropped_bounds = (
@@ -620,12 +631,24 @@ def preprocess_particles(file_path: Path, layer: str, extra_info: dict):
         - currents_u, currents_v: Velocity components
     """
     ds = xr.open_dataset(file_path)
-    x_values = ds["Mesh_face_x"].values
-    y_values = ds["Mesh_face_y"].values
-    cur_x = ds["currents_u"].values
-    cur_y = ds["currents_v"].values
+    x_values = ds["mesh2d_face_x"].values
+    y_values = ds["mesh2d_face_y"].values
+    cur_x = ds["mesh2d_ucx"].values
+    cur_y = ds["mesh2d_ucy"].values
 
-    xmin, ymin, xmax, ymax = extra_info["extent"].bounds
+    x_values, y_values = vcl.data.rotate_1d_array(
+        extra_info["mid_point"],
+        x_values,
+        y_values,
+        -np.deg2rad(extra_info["angle"]),
+    )
+    cur_x, cur_y = vcl.data.rotate_vector_components(
+        cur_x,
+        cur_y,
+        -np.deg2rad(extra_info["angle"]),
+    )
+
+    xmin, ymin, xmax, ymax = extra_info["rotated_extent"].bounds
 
     mask = (
         (x_values >= xmin)
@@ -640,5 +663,11 @@ def preprocess_particles(file_path: Path, layer: str, extra_info: dict):
     cur_y = cur_y[:, mask]
     # points = np.vstack((x_values, y_values)).T
 
-    particle_data = {"face_x": x_values, "face_y": y_values, "ucx": cur_x, "ucy": cur_y}
+    particle_data = {
+        "face_x": x_values,
+        "face_y": y_values,
+        "ucx": cur_x,
+        "ucy": cur_y,
+        "extent_bounds": extra_info["rotated_extent"].bounds,
+    }
     return particle_data

@@ -37,11 +37,16 @@ import mido
 # import pywinctl as gw
 import pygame
 import zmq
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgb
+from matplotlib.colors import (
+    LinearSegmentedColormap,
+    ListedColormap,
+    to_rgb,
+    from_levels_and_colors,
+)
 
 try:
     from pynput import keyboard as pynput_keyboard
-except ImportError:
+except ImportError as e:
     pynput_keyboard = None
 
 import vcl.preprocess
@@ -91,6 +96,83 @@ bathymetry_cmap = [
 # Create continuous colormap with 5000 discrete steps for smooth gradients
 bathymetry_cmap = LinearSegmentedColormap.from_list("bathy_cmap", bathymetry_cmap, N=20)
 
+gvg_colors, gvg_levels = (
+    [
+        "#004da8",
+        "#267300",
+        "#38a800",
+        "#4ce600",
+        "#55ff00",
+        "#a3ff73",
+        "#d1ff73",
+        "#ffffbe",
+        "#feff73",
+        "#feff00",
+        "#fedd33",
+        "#fec414",
+        "#febf0a",
+        "#feaa00",
+        "#fe8c00",
+        "#fe7300",
+        "#ff5500",
+        "#ff2a00",
+        "#ed0000",
+        "#d90000",
+        "#bf0000",
+        "#a60000",
+        "#730000",
+        "#4b0000",
+    ],
+    [
+        0.0,
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4,
+        1.6,
+        1.8,
+        2.0,
+        2.2,
+        2.4,
+        2.6,
+        2.8,
+        3.0,
+        3.2,
+        3.4,
+        3.6,
+        3.8,
+        4.0,
+        6.0,
+        10.0,
+    ],
+)
+gvg_cmap, gvg_norm = from_levels_and_colors(gvg_levels, gvg_colors, extend="both")
+
+gvg_difference_colors, gvg_difference_levels = (
+    [
+        "#730000",
+        "#ca0000",
+        "#ff6600",
+        "#ecbd00",
+        "#ffe375",
+        "#ffffb3",
+        "#c8c8c8",
+        "#d2ffff",
+        "#8ce8ff",
+        "#00bbea",
+        "#0066ff",
+        "#000099",
+        "#000073",
+    ],
+    [-2.0, -1.0, -0.5, -0.25, -0.1, -0.05, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0],
+)
+gvg_difference_cmap, gvg_difference_norm = from_levels_and_colors(
+    gvg_difference_levels, gvg_difference_colors, extend="both"
+)
+
 
 def build_dataset_kwargs(datasets: dict):
     """Build layer display configuration from preprocessed datasets.
@@ -129,6 +211,100 @@ def build_dataset_kwargs(datasets: dict):
             dataset_kwargs[layer_name] = {"type": "RGB", "alpha": 0.7}
 
     return dataset_kwargs
+
+
+def build_display_dataset_kwargs(datasets: dict):
+    """Build display kwargs while preserving specialized styling for known layers."""
+    dataset_kwargs = build_dataset_kwargs(datasets)
+
+    layer_overrides = {
+        "basemap": {"type": "RGB", "alpha": 1},
+        "bathymetry": {
+            "type": "CMAP",
+            "cmap": bathymetry_cmap,
+            "norm": mpl.colors.Normalize(vmin=-6, vmax=40),
+        },
+        "salt_concentration": {"type": "RGB", "alpha": 0.7},
+        "gvg": {"type": "CMAP", "alpha": 1.0, "cmap": gvg_cmap, "norm": gvg_norm},
+        "gvg_difference": {
+            "type": "CMAP",
+            "alpha": 1.0,
+            "cmap": gvg_difference_cmap,
+            "norm": gvg_difference_norm,
+        },
+    }
+
+    for layer_name, overrides in layer_overrides.items():
+        if layer_name in dataset_kwargs:
+            dataset_kwargs[layer_name] = dataset_kwargs[layer_name] | overrides
+
+    return dataset_kwargs
+
+
+def build_museum_keyboard_layer_map(dataset_kwargs: dict):
+    """Map number keys to the first ten non-basemap layers for local testing."""
+    keys = ("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
+    layers = [layer for layer in dataset_kwargs if layer != "basemap"]
+    return dict(zip(keys, layers[: len(keys)]))
+
+
+def cycle_museum_layer(layer_names, current_layer, step):
+    """Return the next or previous test layer name."""
+    if not layer_names:
+        return None
+
+    if current_layer not in layer_names:
+        return layer_names[0]
+
+    current_index = layer_names.index(current_layer)
+    next_index = (current_index + step) % len(layer_names)
+    return layer_names[next_index]
+
+
+def handle_museum_keyboard_input(event, display, keyboard_layer_map):
+    """Handle focused-window keyboard shortcuts for museum-mode testing."""
+    if event.type != pygame.KEYDOWN:
+        return False
+
+    key_to_label = {
+        pygame.K_1: "1",
+        pygame.K_2: "2",
+        pygame.K_3: "3",
+        pygame.K_4: "4",
+        pygame.K_5: "5",
+        pygame.K_6: "6",
+        pygame.K_7: "7",
+        pygame.K_8: "8",
+        pygame.K_9: "9",
+        pygame.K_0: "0",
+    }
+    if event.key in key_to_label:
+        layer_name = keyboard_layer_map.get(key_to_label[event.key])
+        if layer_name is None:
+            return False
+        display.change_layer(layer_name)
+        return True
+
+    layer_names = list(keyboard_layer_map.values())
+    if event.key == pygame.K_LEFTBRACKET:
+        next_layer = cycle_museum_layer(layer_names, display.current_layer, -1)
+        if next_layer is None:
+            return False
+        display.change_layer(next_layer)
+        return True
+
+    if event.key == pygame.K_RIGHTBRACKET:
+        next_layer = cycle_museum_layer(layer_names, display.current_layer, 1)
+        if next_layer is None:
+            return False
+        display.change_layer(next_layer)
+        return True
+
+    if event.key == pygame.K_MINUS:
+        display.change_layer(None)
+        return True
+
+    return False
 
 
 def make_listen_sockets():
@@ -251,6 +427,13 @@ def displaymap(
             "norm": mpl.colors.Normalize(vmin=-6, vmax=40),
         },
         "salt_concentration": {"type": "RGB", "alpha": 0.7},
+        "gvg": {"type": "CMAP", "alpha": 1.0, "cmap": gvg_cmap, "norm": gvg_norm},
+        "gvg_difference": {
+            "type": "CMAP",
+            "alpha": 1.0,
+            "cmap": gvg_difference_cmap,
+            "norm": gvg_difference_norm,
+        },
     }
     socket = sockets["maps"]
     socket_slice = sockets["slice"]
@@ -260,7 +443,7 @@ def displaymap(
         display = DisplayMap.DisplayMap(
             datasets=datasets,
             start_year="1970",
-            flow_data={},
+            flow_data=datasets[""]["particles"]["current"],
             animations_data=datasets[""]["animations"],
             sounds=datasets[""]["sounds"],
             dataset_kwargs=dataset_kwargs,
@@ -286,9 +469,21 @@ def displaymap(
     year_loop_interval = 1.0 / year_loop_fps if auto_year_loop else None
     next_year_switch = time.monotonic() + year_loop_interval if auto_year_loop else None
     current_year_index = 0
+    museum_keyboard_layer_map = build_museum_keyboard_layer_map(dataset_kwargs)
+
+    if museum_mode:
+        logger.info(
+            "Museum keyboard shortcuts enabled: %s | '[' and ']' cycle layers | '-' clears to basemap",
+            ", ".join(
+                f"{key}={value}" for key, value in museum_keyboard_layer_map.items()
+            )
+            or "no numbered layer shortcuts available",
+        )
 
     if auto_year_loop:
         display.change_year(available_years[current_year_index])
+
+    # display.init_arrowmanager(170)
 
     last_activity = time.monotonic()
 
@@ -298,6 +493,13 @@ def displaymap(
 
     coords = None
     while True:
+        if museum_mode:
+            for event in pygame.event.get([pygame.KEYDOWN]):
+                if handle_museum_keyboard_input(
+                    event, display, museum_keyboard_layer_map
+                ):
+                    mark_activity()
+
         socks = dict(poller.poll(10))
         # If slider sends message, update vertical line
         if socket in socks and socks[socket] == zmq.POLLIN:
@@ -383,15 +585,15 @@ def museum_button_publisher():
         0: "bathymetry,layer",
         1: "satellite,animation",
         2: "salt_concentration,layer",
-        3: "aangepast_bouwen,layer",
-        4: "compartiment,layer",
+        3: "gvg,layer",
+        4: "gvg_difference,layer",
     }
     keyboard_key_to_layer = {
         "1": "bathymetry,layer",
         "2": "satellite,animation",
         "3": "salt_concentration,layer",
-        "4": "aangepast_bouwen,layer",
-        "5": "compartiment,layer",
+        "4": "gvg,layer",
+        "5": "gvg_difference,layer",
     }
 
     def change_layer(text):
@@ -439,14 +641,18 @@ def museum_button_publisher():
             pressed_keyboard_keys.discard(key_char)
 
     if pynput_keyboard is not None:
-        keyboard_listener = pynput_keyboard.Listener(
-            on_press=on_press,
-            on_release=on_release,
-        )
-        keyboard_listener.start()
+        try:
+            keyboard_listener = pynput_keyboard.Listener(
+                on_press=on_press,
+                on_release=on_release,
+            )
+            keyboard_listener.start()
+        except Exception as exc:
+            keyboard_listener = None
+            logger.warning("Global museum keyboard listener unavailable: %s", exc)
     else:
         logger.warning(
-            "pynput is not installed; museum keyboard buttons will still require a focused pygame window"
+            "pynput is not installed; use the focused map window keyboard shortcuts for museum-mode testing"
         )
 
     pygame.init()
@@ -458,8 +664,8 @@ def museum_button_publisher():
         joysticks.append(joystick)
 
     if not joysticks and keyboard_listener is None:
-        raise RuntimeError(
-            "museum_button_publisher needs either a joystick or pynput keyboard listener"
+        logger.warning(
+            "museum_button_publisher running without joystick or global keyboard listener; use the map window keyboard shortcuts instead"
         )
 
     pressed_joystick_buttons = set()

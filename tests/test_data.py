@@ -159,6 +159,16 @@ class TestRotate1DArray:
         assert np.allclose(rotated_x, np.zeros_like(x), atol=0.01)
         assert np.allclose(rotated_y, x, atol=0.01)
 
+    def test_rotate_vector_components(self):
+        """Verify vector components rotate without positional translation."""
+        u = np.array([1.0, 0.0])
+        v = np.array([0.0, 1.0])
+
+        rotated_u, rotated_v = data.rotate_vector_components(u, v, np.pi / 2)
+
+        assert np.allclose(rotated_u, np.array([0.0, -1.0]), atol=0.01)
+        assert np.allclose(rotated_v, np.array([1.0, 0.0]), atol=0.01)
+
 
 class TestComputeMidPointRectangle:
     """Test rectangle midpoint computation."""
@@ -225,3 +235,43 @@ class TestRotateAndCropArray:
 
         assert result is not None
         assert isinstance(result, np.ndarray)
+
+    def test_rotate_and_crop_array_keeps_masked_corners_nan_for_integer_raster(self):
+        """Verify integer crops hide outside-geometry corners instead of showing nodata 0."""
+        array = np.full((5, 5), 7, dtype=np.uint8)
+        crop_extent = Polygon([(2.5, 0.5), (4.5, 2.5), (2.5, 4.5), (0.5, 2.5)])
+
+        result = data.rotate_and_crop_array(
+            array=array,
+            array_extent=(0, 0, 5, 5),
+            center_point=(2.5, 2.5),
+            angle=0.0,
+            crop_extent=crop_extent,
+            crs="EPSG:4326",
+        )
+
+        assert np.isnan(result[0, 0])
+        assert np.isnan(result[0, -1])
+        assert np.isnan(result[-1, 0])
+        assert np.isnan(result[-1, -1])
+
+    def test_rotate_and_crop_array_does_not_create_zero_artifacts_from_nan_padding(
+        self,
+    ):
+        """Verify rotated NaN padding stays invisible instead of turning into 0-valued wedges."""
+        array = np.full((7, 7), np.nan, dtype=np.float32)
+        array[2:5, 2:5] = 7.0
+        crop_extent = box(0, 0, 7, 7)
+
+        result = data.rotate_and_crop_array(
+            array=array,
+            array_extent=(0, 0, 7, 7),
+            center_point=(3.5, 3.5),
+            angle=45.0,
+            crop_extent=crop_extent,
+            crs="EPSG:4326",
+        )
+
+        finite_values = result[np.isfinite(result)]
+        assert finite_values.size > 0
+        assert not np.any(np.isclose(finite_values, 0.0))

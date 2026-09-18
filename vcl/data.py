@@ -10,6 +10,7 @@ import rioxarray as rxr
 import scipy
 import shapely
 from matplotlib.colors import LightSource
+from rasterio.features import geometry_mask
 from rasterio.enums import Resampling
 from rasterio.mask import mask
 from rasterio.transform import Affine, from_bounds
@@ -330,6 +331,14 @@ def rotate_1d_array(center, x, y, angle):
     return x_rotated, y_rotated
 
 
+def rotate_vector_components(u, v, angle):
+    """Rotate vector components by angle radians around the origin."""
+    u_rotated = u * np.cos(angle) - v * np.sin(angle)
+    v_rotated = u * np.sin(angle) + v * np.cos(angle)
+
+    return u_rotated, v_rotated
+
+
 def fit_rot_ds_to_bounds(ds, rot_ds, center, extent, angle):
     left = ds.conc.x.values[0]
     bottom = ds.conc.y.values[-1]
@@ -490,6 +499,10 @@ def array_to_rotated_raster(
     else:
         array_rio = array[np.newaxis, ...]
 
+    has_nan_nodata = np.issubdtype(array_rio.dtype, np.floating) and np.isnan(
+        array_rio
+    ).any()
+
     center_x, center_y = center_point
 
     T1 = Affine.translation(-center_x, -center_y)
@@ -497,18 +510,30 @@ def array_to_rotated_raster(
     T2 = Affine.translation(center_x, center_y)
     rot_affine = T2 * R * T1 * transform
 
-    rotated = np.empty_like(array_rio)
+    if has_nan_nodata:
+        rotated = np.full(array_rio.shape, np.nan, dtype=array_rio.dtype)
+    else:
+        rotated = np.empty_like(array_rio)
+
     for i in range(array_rio.shape[0]):
-        reproject(
-            source=array_rio[i],
-            destination=rotated[i],
-            src_transform=transform,
-            src_crs=crs,
-            dst_transform=rot_affine,
-            dst_crs=crs,
-            resampling=Resampling.bilinear,
-            num_threads=2,
-        )
+        reproject_kwargs = {
+            "source": array_rio[i],
+            "destination": rotated[i],
+            "src_transform": transform,
+            "src_crs": crs,
+            "dst_transform": rot_affine,
+            "dst_crs": crs,
+            "resampling": Resampling.bilinear,
+            "num_threads": 2,
+        }
+        if has_nan_nodata:
+            reproject_kwargs |= {
+                "src_nodata": np.nan,
+                "dst_nodata": np.nan,
+                "init_dest_nodata": True,
+            }
+
+        reproject(**reproject_kwargs)
 
     return rotated, rot_affine
 
@@ -540,13 +565,15 @@ def rotate_and_crop_array(
     with rasterio.io.MemoryFile() as memfile:
         with memfile.open(
             driver="GTiff",
-            height=array.shape[0],
-            width=array.shape[1],
+            height=rotated_array.shape[1],
+            width=rotated_array.shape[2],
             count=rotated_array.shape[0],
             dtype=rotated_array.dtype,
             transform=rot_affine,
             crs=crs,
         ) as dataset:
+            dtype = np.dtype(dataset.dtypes[0])
+            nodata = np.nan if np.issubdtype(dtype, np.floating) else 0
             dataset.write(rotated_array)
             out_array, out_transform = mask(
                 dataset,
@@ -554,8 +581,19 @@ def rotate_and_crop_array(
                 [crop_extent],
                 crop=True,
                 filled=True,
-                nodata=0,
+                nodata=nodata,
             )
+
+    if not np.issubdtype(out_array.dtype, np.floating):
+        out_array = out_array.astype(np.float32)
+
+    inside_mask = geometry_mask(
+        [crop_extent],
+        out_shape=out_array.shape[1:],
+        transform=out_transform,
+        invert=True,
+    )
+    out_array[:, ~inside_mask] = np.nan
 
     if out_array.shape[0] == 1:
         masked_array = out_array[0]
@@ -569,9 +607,6 @@ def fill_array_to_bbox(
 ):
     """
     Pads a raster array to fit a specified bounding box, preserving spatial resolution.
-
-    The fill value is NaN for floating-point dtypes and 0 for integer dtypes so
-    that uint8 image arrays are not unnecessarily promoted to float32.
 
     :param array: Input raster data as a NumPy array (2D or 3D).
     :param array_extent: Tuple or list defining the spatial extent of the array (min_x, min_y, max_x, max_y).
