@@ -476,7 +476,7 @@ def displaymap(
         },
         "land_use": {
             "type": "CMAP",
-            "alpha": 0.7,
+            "alpha": 0.5,
             "cmap": land_use_cmap,
         },
     }

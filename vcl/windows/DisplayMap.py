@@ -415,7 +415,7 @@ class DisplayMap(PygameWindow.PygameWindow):
                 sound_file = self.sounds.get(self.current_layer, None)
             if sound_file is not None and self.audio_available:
                 pygame.mixer.music.load(sound_file)
-                pygame.mixer.music.set_volume(0.3)
+                pygame.mixer.music.set_volume(1.0)
                 pygame.mixer.music.play(-1)
             elif sound_file is None and self.audio_available:
                 pygame.mixer.music.stop()
