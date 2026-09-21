@@ -476,7 +476,7 @@ def displaymap(
         },
         "land_use": {
             "type": "CMAP",
-            "alpha": 1.0,
+            "alpha": 0.7,
             "cmap": land_use_cmap,
         },
     }
@@ -508,8 +508,8 @@ def displaymap(
 
     if default_layer in dataset_kwargs:
         display.change_layer(default_layer)
-    if default_layer == "satellite":
-        display.play_animation("satellite")
+    if default_layer in datasets[""]["animations"]:
+        display.play_animation(default_layer)
 
     available_years = sorted([year for year in datasets.keys() if year != ""])
     auto_year_loop = museum_mode and len(available_years) > 1 and year_loop_fps > 0
@@ -598,6 +598,7 @@ def displaymap(
             display.change_year(available_years[current_year_index])
             next_year_switch = now + year_loop_interval
 
+        global current_layer
         if (
             museum_mode
             and inactivity_timeout > 0
@@ -605,9 +606,13 @@ def displaymap(
             and (display.current_layer != default_layer or display.show_animation)
         ):
             if default_layer == "basemap":
-                display.change_layer("None")
-            elif default_layer == "satellite" and display.show_animation == False:
-                display.play_animation("satellite")
+                display.change_layer(None)
+            elif (
+                default_layer in datasets[""]["animations"]
+                and display.show_animation == False
+            ):
+                display.play_animation(default_layer)
+                current_layer = "satellite"
             # else:
             #     display.change_layer(default_layer)
             last_activity = now
@@ -615,7 +620,7 @@ def displaymap(
         display.draw_layers()
 
 
-def museum_button_publisher():
+def museum_button_publisher(inactivity_timeout=120.0):
     """Publish a fixed 5-button command set for museum kiosk usage.
 
     Mappings:
@@ -624,6 +629,9 @@ def museum_button_publisher():
         3: risk zone
         4: adjusted building strategy
         5: compartmentalisation strategy
+
+    Args:
+        inactivity_timeout: Seconds before state expires and double-press toggle resets (matches displaymap inactivity_timeout).
     """
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
@@ -646,17 +654,27 @@ def museum_button_publisher():
         "6": "land_use,layer",
     }
 
+    last_press_times = {}
+
     def change_layer(text):
+        layer_name = text.split(",")[0]
         layer_type = text.split(",")[1]
         global current_layer, current_overlay, current_tide, current_overlays
+
+        current_time = time.time()
+        time_since_last_press = current_time - last_press_times.get(layer_name, 0)
+
         if text.split(",")[0] == "":
             socket.send_string(f"maps {text}")
             current_layer = ""
             current_tide = ""
-        if current_layer == text or current_tide == text:
+        elif (
+            current_layer == text or current_tide == text
+        ) and time_since_last_press < inactivity_timeout:
+            # Only trigger toggle if same button pressed within inactivity_timeout window (double-press feature)
             socket.send_string(f"maps satellite,animation")
             if layer_type == "layer":
-                current_layer = ""
+                current_layer = ""  # Clear state after toggle
             elif layer_type == "tide":
                 current_tide = ""
         else:
@@ -674,6 +692,8 @@ def museum_button_publisher():
             elif layer_type == "animation":
                 current_layer = ""
                 current_tide = ""
+
+        last_press_times[layer_name] = current_time
 
     pressed_keyboard_keys = set()
     keyboard_listener = None

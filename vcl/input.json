@@ -24,8 +24,7 @@
             "current": "wadsea_small.nc"
         },
         "sound": {
-            "basemap": "sounds/low-tide.mp3",
-            "satellite": "sounds/high-tide.mp3"
+            "basemap": "sounds/low-tide.mp3"
         },
         "extra_info": {}
     }

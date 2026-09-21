@@ -269,7 +269,7 @@ def main(
     #     task = executor.submit(test, datasets)
 
     if museum:
-        executor.submit(vcl.display_pygame.museum_button_publisher)
+        executor.submit(vcl.display_pygame.museum_button_publisher, inactivity_timeout)
     elif midi:
         executor.submit(vcl.display_pygame.midi_board, datasets)
     else:
