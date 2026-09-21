@@ -508,6 +508,8 @@ def displaymap(
 
     if default_layer in dataset_kwargs:
         display.change_layer(default_layer)
+    if default_layer == "satellite":
+        display.play_animation("satellite")
 
     available_years = sorted([year for year in datasets.keys() if year != ""])
     auto_year_loop = museum_mode and len(available_years) > 1 and year_loop_fps > 0
@@ -604,8 +606,10 @@ def displaymap(
         ):
             if default_layer == "basemap":
                 display.change_layer("None")
-            else:
-                display.change_layer(default_layer)
+            elif default_layer == "satellite" and display.show_animation == False:
+                display.play_animation("satellite")
+            # else:
+            #     display.change_layer(default_layer)
             last_activity = now
 
         display.draw_layers()
@@ -627,12 +631,11 @@ def museum_button_publisher():
     socket.bind("tcp://*:5556")
 
     joy_button_to_layer = {
-        0: "bathymetry,layer",
-        1: "satellite,animation",
-        2: "grensvlak,layer",
-        3: "gvg,layer",
+        0: "land_use,layer",
+        1: "bathymetry,layer",
+        2: "gvg,layer",
+        3: "grensvlak,layer",
         4: "gvg_difference,layer",
-        5: "land_use,layer",
     }
     keyboard_key_to_layer = {
         "1": "bathymetry,layer",
@@ -651,7 +654,7 @@ def museum_button_publisher():
             current_layer = ""
             current_tide = ""
         if current_layer == text or current_tide == text:
-            socket.send_string(f"maps None,{layer_type}")
+            socket.send_string(f"maps satellite,animation")
             if layer_type == "layer":
                 current_layer = ""
             elif layer_type == "tide":
