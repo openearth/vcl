@@ -115,6 +115,7 @@ class PygameWindow:
         self.font = pygame.font.Font(None, 96)
 
         self.audio_available = False
+        self._current_sound_file = None
         try:
             pygame.mixer.init()
             self.audio_available = True

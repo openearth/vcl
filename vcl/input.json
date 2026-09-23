@@ -24,7 +24,13 @@
             "current": "wadsea_small.nc"
         },
         "sound": {
-            "basemap": "sounds/low-tide.mp3"
+            "basemap": "sounds/low-tide.mp3",
+            "bathymetry": "sounds/low-tide.mp3",
+            "salt_concentration": "sounds/low-tide.mp3",
+            "gvg": "sounds/low-tide.mp3",
+            "gvg_difference": "sounds/low-tide.mp3",
+            "grensvlak": "sounds/low-tide.mp3",
+            "land_use": "sounds/low-tide.mp3"
         },
         "extra_info": {}
     }
