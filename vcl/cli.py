@@ -43,6 +43,8 @@ import zmq
 import vcl.data
 import vcl.display_pygame
 import vcl.interactivity.calibration
+from vcl.input_handlers.keyboard import keyboard_publisher
+from vcl.input_handlers.museum import museum_button_publisher
 
 # import vcl.display
 import vcl.load_data
@@ -269,11 +271,11 @@ def main(
     #     task = executor.submit(test, datasets)
 
     if museum:
-        executor.submit(vcl.display_pygame.museum_button_publisher, inactivity_timeout)
+        executor.submit(museum_button_publisher, inactivity_timeout)
     elif midi:
         executor.submit(vcl.display_pygame.midi_board, datasets)
     else:
-        executor.submit(vcl.display_pygame.keyboard_publisher)
+        executor.submit(keyboard_publisher)
     if satellite:
         executor.submit(
             vcl.display_pygame.displaymap,
